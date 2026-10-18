@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Working art files. Never commit loose frame sequences or source art —
+# see docs/ANIMATION.md. Only packed, web-ready output under public/scene/
+# belongs in this repository.
+art-src/
+*.psd
+*.psb
+*.ai
+*.aep
+*.blend
+*.blend1
+*.clip
+
+# Legacy assets from the previous site, kept on disk as reference but not tracked.
+# assets/video/ is the 173-frame PNG character sequence (34 MB) whose loose-frame
+# approach caused the old animation bug and inflated the old repo to 100 MB; it is
+# replaced by a packed atlas in Phase 5. glitch.mp4 is the retro intro, dropped per
+# docs/DESIGN.md. See docs/ANIMATION.md.
+assets/video/
+assets/glitch.mp4
+
+# Env
+.env
+.env*.local
+
+# macOS
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo

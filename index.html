@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Portfolio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<div class="scene-container">
+  <div class="scene-wrapper">
+    <div id="room-anim">
+      <img src="assets/room.png" class="room" alt="Room" /> 
+      <div id="visualizer"></div>
+      <img src="assets/beanbag.png" class="beanbag" alt="Beanbag" />
+      <img src="assets/bookshelf.png" class="bookshelf" alt="Bookshelf" />
+      <img src="assets/speaker.png" class="speaker" alt="Speaker" />
+      <img src="assets/desk.png" class="desk" alt="Desk" />
+      <img src="assets/skateboard.png" class="skateboard" alt="Skateboard" />
+      <img src="assets/linkedin.png" class="linkedin" alt="Linkedin" />
+      <img src="assets/resume.png" class="resume" alt="Resume" />
+      <img src="assets/github.png" class="github" alt="Github" />
+
+      <video src="assets/room.mp4" autoplay loop muted></video>
+
+      
+      <div class="hidden-btn" id="skills-btn"></div>
+      <div class="hidden-btn" id="projects-btn"></div>
+      <div class="hidden-btn" id="about-btn"></div>
+      <div class="hidden-btn" id="anim-btn"></div>
+      <div class="hidden-btn" id="songs-btn"></div>
+
+      <div class="hidden-btn" id="linkedin-btn"></div>
+      <div class="hidden-btn" id="github-btn"></div>
+      <div class="hidden-btn" id="resume-btn"></div>
+
+      <iframe 
+        id="spotify-player"
+        src="https://open.spotify.com/embed/playlist/5It0iunZv7J73m6hp6lmig"
+        width="600"
+        height="360"
+        frameborder="0"
+        allowtransparency="true"
+        allow="encrypted-media">
+      </iframe>
+
+      <video id="glitch-intro" autoplay muted playsinline style="
+        transition: opacity 1s ease;
+        opacity: 100%;
+      ">
+        <source src="assets/glitch.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+
+<div id="overlay-window" class="hidden">
+  <div id="window" class="window-content">
+    <button class="close-button" id="close-btn">✕</button>
+
+    <div id="projects-section">
+      <h1>Projects</h1>
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">fwubbo: Personal Dashboard Wrapper</div>
+        <div class="project-content">
+          <div class="project-desc">
+            A personal dashboard I made for daily use. Streams Claude API to allow for modifications to widgets and creating new widgets and themes. Useful for saving all the visualization tools I've ever made in one place!
+            <br><a href="https://github.com/henryyjiang/fwubbo" target="_blank">GitHub</a>
+          </div>
+          <div class="project-image">
+            <img src="assets/fwubbo.png" alt="fwubbo Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">ML POTS Flareup Predictor</div>
+        <div class="project-content">
+          <div class="project-desc">
+            Created full stack iOS app for my lovely girlfriend, connecting via BLE to collect and organize 1M+ entries of live heart rate and ECG data and trained boosted tree classifier on collected data, achieving 70%+ flareup detection accuracy 15 minutes in advance
+            <br><a href="https://github.com/henryyjiang/potsmonitor" target="_blank">Github</a>
+          </div>
+          <div class="project-image">
+            <img src="assets/pots.png" alt="POTS Predictor Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">Self-Excitatory Hawkes Process + Kinetic Theory HFT Model</div>
+        <div class="project-content">
+          <div class="project-desc">
+            Engineered on 2 weeks of MSFT L3 data for kinetic queue prediction market making strategy, achieving 49% PnL, and calibrated Hawkes process strategy with MLE and achieved 65% win rate on 54M+ MBO events
+            <br><a href="https://henryyjiang.github.io/kinetichawkes/" target="_blank">Github</a>
+          </div>
+          <div class="project-image">
+            <img src="assets/hawkes.png" alt="Trading Model Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">Quantum Walk BQP Trading Model</div>
+        <div class="project-content">
+          <div class="project-desc">
+            Mid-cap macro equity trading model combining BQP and discrete quantum walk strategies proposed in papers and achieved 80%+ CAGR and 1.29 Sharpe with quantum stochastic walk asset correlation position sizing
+            <br><a href="https://www.quantconnect.com/strategies/478/Quantum-Walk-BQP-Mid-Cap-Macro" target="_blank">Quantconnect</a>
+          </div>
+          <div class="project-image">
+            <img src="assets/quantum.png" alt="Trading Model Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">Mandelbrotian Volatility Options ML Model</div>
+        <div class="project-content">
+          <div class="project-desc">
+            Engineered a fractal regime-detection OTM options strategy with Hurst exponents (DFA), Hill tail-index, and multifractal spectral width to classify volatility regimes achieving 60+% CAGR and 1.18 Sharpe across 105 trades from 2020-2025.
+            <br><a href="https://www.quantconnect.com/strategies/315/Mandelbrotian-Vol-Clustering-Options-Strat" target="_blank">Quantconnect</a>
+          </div>
+          <div class="project-image">
+            <img src="assets/stocks.png" alt="Trading Model Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">Darwin: Agentic Evolving GPT</div>
+        <div class="project-content">
+          <div class="project-desc">
+            Developed a proof-of-concept for a Darwin-Gödel model using genetic algorithms applied to GPT agents that iteratively modify and improve their own training code. Features a live chat window enabling model requests for new datasets and library upgrades. I plan to continue this project soon with finetuning 30B models and removing the API calls.
+            <br><a href="https://github.com/henryyjiang/DARWIN" target="_blank">GitHub</a>
+            <br><a href="http://arxiv.org/abs/2602.05848" target="_blank">ArXiV</a>
+          </div>
+          <div class="project-image">
+            <img src="assets/darwin.png" alt="Darwin Project Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">Batstick: Smart Walking Aid</div>
+        <div class="project-content">
+          <div class="project-desc">
+            Jointly designed an walking aid for the visually impaired in collaboration with VIBUG. Device converted ultrasonic readings into an array of vibration motors reading the position of objects with over 80% accuracy. Featured on Fox News and placed Top 12 at the National Innovator Challenge.
+          </div>
+          <div class="project-image">
+            <img src="assets/batstick.png" alt="Batstick Preview">
+          </div>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="project">
+        <div class="project-title">Automated Intersection Management for Self-Driving Vehicles</div>
+        <div class="project-content">
+          <div class="project-desc">
+            Designed an AI-based intersection management system improving simulated traffic flow by 50% using Pygame, Q-learning, and a Double Q-table approach. Built a physical Raspberry Pi car with YOLOv3-mini and OpenCV for lane detection and motor control.
+            <br><a href="https://github.com/henryyjiang/automatedintersectionmanagement" target="_blank">GitHub</a>
+          </div>
+          <div class="project-image">
+            <img src="assets/traffic.png" alt="Self-Driving Intersection Preview">
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <div id="skills-section">
+        <h1>Skills</h1>
+        <div class="separator"></div>
+        <div class="skills-grid">
+          <div id="page-body">
+          <span>Java</span>
+          <span>Python</span>
+          <span>C/C++/C#</span>
+          <span>HTML/JS/CSS</span>
+          <span>Tensorflow/Pytorch</span>
+          <span>Postgres</span>
+          <span>AWS</span>
+          <span>Docker</span>
+          <span>React</span>
+          <span>Typescript</span>
+          <span>Pandas</span>
+          <span>Node.js</span>
+          <span>JUnit</span>
+          <span>JIRA</span>
+        </div>
+      </div>
+
+      <div id="about-section">
+        <h1>About Me</h1>
+        <div class="separator"></div>
+        <div class="about-desc">
+          <div class="about-para">
+            I like coding, art, and animation, and I work on some AI and 2D/3D animation projects in my free time. I hope to get better each and every day to create incredible works.<br><br>
+          </div>
+          <div class="about-image">
+            <img src="assets/me.jpeg" alt="Me">
+          </div>
+        </div>
+        <div class="about-para-2">
+            You can contact me at: henryyjiang42@gmail.com | (850) 387-6688
+            Favorite Anime: Blue Lock<br>
+            Favorite Manga: Tokyo Ghoul<br>
+            Currently Watching: Witch Hat Atelier, Re:Zero, Dorohedoro<br>
+            Last Completed: Fire Force - 6.9/10<br><br>
+            Favorite Song: Shelter - Porter Robinson<br>
+            Favorite Music Artist: Ado<br>
+            Favorite Games: Nier: Automata, Overwatch, Limbus Company<br><br>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js" defer></script>
+</body>
+</html>
