@@ -108,10 +108,23 @@ specific is decided** — do not invent it before this phase.
 
 ## Phase 5 — Character animation
 
+**The runtime half is built and verified against a placeholder loop** (24 frames at 12 fps,
+generated, tested and deleted — it is not in the repo, and `manifest.character` is null on `main`).
+Frames are cut from the packed sheets with `orig` and `trim` restored, so trimmed frames sit where
+they were drawn; the sprite stands in the `room` band between the layer art and the objects, feet at
+the manifest's anchor; and the texture is swapped on the existing ticker rather than through React
+or a second ticker. What is left in this phase is Henry's animation and whatever tuning it needs.
+
+Verified in the browser: the loop plays at the manifest's fps with no frame-to-frame jitter despite
+13 distinct trim offsets across 24 frames; the tab-hidden path freezes the loop and resumes it
+without accumulating elapsed time; the scene survives a forced WebGL context loss and restore with
+the animation still running; and client-side navigation across all four routes never remounts the
+canvas.
+
 - Character animation from Henry, dropped into `art/character/` in whichever format his software
   exports — sequence, video with alpha, or pre-packed sheet (`art/character/README.md`)
 - Pack to an atlas within the constraints in `docs/ANIMATION.md`
-- `AnimatedSprite` on the shared ticker
+- ~~`AnimatedSprite` on the shared ticker~~ — done, see above
 - Verify the old bug is gone: long tab-away, memory pressure, multiple backgrounded tabs
 
 ---

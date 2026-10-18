@@ -1,9 +1,14 @@
 'use client'
 
-import { Assets, type Texture } from 'pixi.js'
+import { Assets, Rectangle, Texture } from 'pixi.js'
 import { useEffect, useState } from 'react'
 
-import { decodeMask, type SceneManifest } from '@/lib/scene-manifest'
+import {
+  decodeMask,
+  type ManifestCharacter,
+  type ManifestImage,
+  type SceneManifest,
+} from '@/lib/scene-manifest'
 
 export type LoadedObject = {
   id: string
@@ -12,10 +17,21 @@ export type LoadedObject = {
   cells: Uint8Array
 }
 
+export type LoadedCharacter = {
+  /** One texture per frame, in playback order, all pointing at the packed sheets. */
+  frames: Texture[]
+  fps: number
+  /** Where the feet sit, in scene coordinates. */
+  anchor: { x: number; y: number }
+  scale: number
+}
+
 export type SceneAssets = {
   manifest: SceneManifest
   layerTextures: Map<string, Texture>
   objects: Map<string, LoadedObject>
+  /** Null until an animation is dropped into `art/character/`. */
+  character: LoadedCharacter | null
 }
 
 export type SceneAssetsState =
@@ -58,6 +74,7 @@ export function useSceneAssets(): SceneAssetsState {
         const sources = [
           ...manifest.layers.map(pick),
           ...manifest.objects.map(pick),
+          ...(manifest.character?.sheets ?? []).map(pick),
         ]
 
         // One call, so Pixi batches the uploads rather than thrashing per texture.
@@ -84,7 +101,14 @@ export function useSceneAssets(): SceneAssetsState {
           })
         }
 
-        setState({ status: 'ready', assets: { manifest, layerTextures, objects } })
+        const character = manifest.character
+          ? buildCharacter(manifest.character, loaded, pick)
+          : null
+
+        setState({
+          status: 'ready',
+          assets: { manifest, layerTextures, objects, character },
+        })
       } catch (error) {
         if (cancelled) return
         setState({
@@ -101,6 +125,46 @@ export function useSceneAssets(): SceneAssetsState {
   }, [])
 
   return state
+}
+
+/**
+ * Cut one texture per frame out of the packed sheets.
+ *
+ * The frames were trimmed at pack time — transparent margins cost memory on the GPU
+ * for nothing — so each one carries the offset it was trimmed from. `orig` restores
+ * the untrimmed frame size and `trim` says where the kept pixels sit inside it,
+ * which is how Pixi puts a trimmed frame back exactly where it was drawn. Without
+ * both, a character whose arms swing outside their resting silhouette would jitter
+ * frame to frame, which is the kind of bug that looks like bad animation rather
+ * than bad code.
+ *
+ * Every frame shares its sheet's `source`, so a hundred frames is still one upload.
+ */
+function buildCharacter(
+  spec: ManifestCharacter,
+  loaded: Record<string, Texture>,
+  pick: (image: ManifestImage) => string,
+): LoadedCharacter | null {
+  const sheets = spec.sheets.map((sheet) => loaded[pick(sheet)])
+  const frames: Texture[] = []
+
+  for (const frame of spec.frames) {
+    const sheet = sheets[frame.sheet]
+    if (!sheet) return null
+
+    frames.push(
+      new Texture({
+        source: sheet.source,
+        frame: new Rectangle(frame.x, frame.y, frame.width, frame.height),
+        orig: new Rectangle(0, 0, spec.frameWidth, spec.frameHeight),
+        trim: new Rectangle(frame.offsetX, frame.offsetY, frame.width, frame.height),
+      }),
+    )
+  }
+
+  if (frames.length === 0) return null
+
+  return { frames, fps: spec.fps, anchor: spec.anchor, scale: spec.scale }
 }
 
 let webpSupport: Promise<boolean> | null = null

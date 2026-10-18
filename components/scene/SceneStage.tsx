@@ -18,6 +18,23 @@ extend({ Container, Sprite })
 let MOUNT_SEQUENCE = 0
 
 /**
+ * The band the character stands in, and where its own art is anchored.
+ *
+ * The room, because the character is in the room: it has to travel with the floor
+ * it stands on, or it slides across it as the camera pans. This is the same kind of
+ * decision as the billboard being in the skyline band — design, not measurement —
+ * so it lives in code rather than being inferred from the art.
+ *
+ * Within the room it draws after the layer art and before the objects, so the desk
+ * and the bed can occlude it. That is what makes the character read as *in* the
+ * room rather than pasted over it.
+ */
+const CHARACTER_BAND: BandId = 'room'
+
+/** Feet at the anchor point: centred horizontally, bottom-aligned vertically. */
+const CHARACTER_ANCHOR = { x: 0.5, y: 1 } as const
+
+/**
  * The contents of the Pixi application: a scaled root holding one container per
  * parallax band, driven by the camera rig on the ticker.
  *
@@ -49,24 +66,24 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
     const { manifest, layerTextures, objects } = assets
 
     return BANDS_IN_DRAW_ORDER.map((band) => {
-      const items: { id: string; texture: Texture; z: number; isObject: boolean }[] = []
+      const layers: { id: string; texture: Texture; z: number }[] = []
+      const bandObjects: { id: string; texture: Texture; z: number }[] = []
 
       for (const layer of manifest.layers) {
         if (layer.band !== band.id) continue
         const texture = layerTextures.get(layer.id)
-        if (texture) items.push({ id: layer.id, texture, z: layer.z, isObject: false })
+        if (texture) layers.push({ id: layer.id, texture, z: layer.z })
       }
 
       for (const object of manifest.objects) {
         if (object.band !== band.id) continue
         const loaded = objects.get(object.id)
-        if (loaded) {
-          items.push({ id: object.id, texture: loaded.texture, z: object.z, isObject: true })
-        }
+        if (loaded) bandObjects.push({ id: object.id, texture: loaded.texture, z: object.z })
       }
 
-      items.sort((a, b) => Number(a.isObject) - Number(b.isObject) || a.z - b.z)
-      return { band, items }
+      layers.sort((a, b) => a.z - b.z)
+      bandObjects.sort((a, b) => a.z - b.z)
+      return { band, layers, objects: bandObjects }
     })
   }, [assets])
 
@@ -75,6 +92,10 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
   // Populated by the Pixi ref callbacks, which fire during commit — before the
   // effect below runs. Kept separate from the glow objects for exactly that reason.
   const objectSprites = useRef(new Map<HotspotId, Sprite | null>())
+
+  // The character is one sprite whose texture changes, not a sprite per frame.
+  const characterRef = useRef<Sprite | null>(null)
+  const characterClock = useRef(0)
 
   useEffect(() => {
     const views = new Map<HotspotId, HotspotGlow>()
@@ -232,6 +253,28 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
 
       setHovered(hovered)
 
+      // --- character --------------------------------------------------------
+      // The texture is swapped straight on the sprite, like every other per-frame
+      // value here: routing a frame index through React state would re-render the
+      // scene tree twenty-four times a second to change one pointer.
+      const character = assets.character
+      const characterSprite = characterRef.current
+
+      if (character && characterSprite) {
+        if (reducedMotion) {
+          characterSprite.texture = character.frames[0]!
+        } else {
+          // Clamped, so a frame that took unusually long — a slow first paint, a
+          // ticker resuming — advances the loop by one step rather than by however
+          // much wall-clock went past. The ticker is stopped while the tab is
+          // hidden, so there is no backlog to catch up on by design.
+          characterClock.current += Math.min(dt, 1 / character.fps)
+          const index =
+            Math.floor(characterClock.current * character.fps) % character.frames.length
+          characterSprite.texture = character.frames[index]!
+        }
+      }
+
       // Exponential damping, same as the camera, so the glow cannot pop.
       const t = 1 - Math.exp(-GLOW_SPRING * Math.min(0.1, dt))
 
@@ -239,7 +282,7 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
         view.update(objectSprites.current.get(id), hovered === id ? 1 : 0, t)
       }
     },
-    [app, hitCandidates],
+    [app, assets.character, hitCandidates, reducedMotion],
   )
 
   useTick({ callback: onTick, isEnabled: isInitialised })
@@ -318,18 +361,35 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
 
   return (
     <pixiContainer ref={rootRef} label="scene-root">
-      {bandGroups.map(({ band, items }) => (
+      {bandGroups.map(({ band, layers, objects }) => (
         <pixiContainer key={band.id} ref={setBandRef(band.id)} label={`band:${band.id}`}>
-          {items.map((item) => (
+          {layers.map((layer) => (
+            <pixiSprite key={layer.id} label={layer.id} texture={layer.texture} x={0} y={0} />
+          ))}
+
+          {band.id === CHARACTER_BAND && assets.character && (
             <pixiSprite
-              key={item.id}
-              label={item.id}
-              texture={item.texture}
+              ref={characterRef}
+              label="character"
+              texture={assets.character.frames[0]}
+              x={assets.character.anchor.x}
+              y={assets.character.anchor.y}
+              anchor={CHARACTER_ANCHOR}
+              scale={assets.character.scale}
+            />
+          )}
+
+          {objects.map((object) => (
+            <pixiSprite
+              key={object.id}
+              label={object.id}
+              texture={object.texture}
               x={0}
               y={0}
-              ref={item.isObject ? setObjectRef(item.id) : undefined}
+              ref={setObjectRef(object.id)}
             />
           ))}
+
           {band.id === 'skyline' && billboardArea && (
             <BillboardText area={billboardArea} reducedMotion={reducedMotion} />
           )}
