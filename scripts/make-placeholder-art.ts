@@ -139,7 +139,9 @@ function buildTemplate(): Buffer {
         '18 12',
         `phone framing — all a ${PHONE.width} x ${PHONE.height} screen sees ` +
           `(anything under ${NARROW_WIDTH}px is a slice like this)`,
-        PHONE_SLICE.y + 110,
+        // Down the middle of the canvas: the top of this guide is where four other
+        // labels already are, and a legend that cannot be read is not a legend.
+        SCENE_H / 2,
       ) +
       `<text x="80" y="${SCENE_H - 70}" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="700" fill="rgba(255,255,255,0.8)">` +
       `${SCENE_W} x ${SCENE_H} design canvas — export every layer at this size, transparent where nothing is drawn` +
