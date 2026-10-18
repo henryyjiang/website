@@ -23,8 +23,3 @@ export const DESTINATIONS: readonly Destination[] = [
   { href: '/desk', label: 'Software' },
   { href: '/art', label: 'Art' },
 ]
-
-/** The destination a path belongs to, for labelling the nav's trigger. */
-export function destinationFor(pathname: string): Destination {
-  return DESTINATIONS.find((d) => d.href === pathname) ?? DESTINATIONS[0]!
-}

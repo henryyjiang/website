@@ -35,7 +35,14 @@ import {
   SAFE_AREA,
   WINDOW_OPENING,
 } from '../lib/scene-layout.ts'
-import { focalSlice, NARROW_WIDTH, SCENE_H, SCENE_W } from '../lib/scene-space.ts'
+import {
+  focalCamera,
+  NARROW_WIDTH,
+  SCENE_H,
+  SCENE_W,
+  sceneTransform,
+  visibleSlice,
+} from '../lib/scene-space.ts'
 
 const ART_DIR = 'art'
 
@@ -91,7 +98,8 @@ const PHONE = { width: 375, height: 812 }
 
 /** Rounded, because it is a drawn guide and sub-pixel precision reads as noise. */
 const PHONE_SLICE = (() => {
-  const slice = focalSlice(PHONE.width, PHONE.height)
+  const transform = sceneTransform(PHONE.width, PHONE.height)
+  const slice = visibleSlice(PHONE.width, PHONE.height, focalCamera(transform))
   return {
     x: Math.round(slice.x),
     y: Math.round(slice.y),
@@ -137,8 +145,8 @@ function buildTemplate(): Buffer {
         PHONE_SLICE,
         '#c792ea',
         '18 12',
-        `phone framing — all a ${PHONE.width} x ${PHONE.height} screen sees ` +
-          `(anything under ${NARROW_WIDTH}px is a slice like this)`,
+        `phone framing — where a ${PHONE.width} x ${PHONE.height} screen opens; ` +
+          `under ${NARROW_WIDTH}px the rest of the room is a swipe away`,
         // Down the middle of the canvas: the top of this guide is where four other
         // labels already are, and a legend that cannot be read is not a legend.
         SCENE_H / 2,

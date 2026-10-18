@@ -147,19 +147,37 @@ paths per object (unmaintainable as art is redrawn). Keeping interaction in Pixi
 DOM costs one extra list and makes both correct. `components/scene/hotspots.ts` says which object
 leads where; `content/nav.ts` is the list of destinations.
 
-### Narrow viewports: a frame, not a camera
+### Narrow viewports: swipe instead of follow
 
 The design canvas is 16:9 and a phone is around 9:19.5, so covering the viewport means scaling to the
 canvas's *height* and showing roughly a quarter of the room's width. That is arithmetic, not a
 choice: scaling down to fit more width leaves the canvas failing to cover the screen.
 
-So below `NARROW_WIDTH` (768) the scene stops being a camera and becomes a frame. It covers with no
-overscan — overscan exists to create room to pan, and there is no pointer to pan with — and centres
-on `FOCAL_POINT` rather than on the canvas, clamped so no canvas edge can come into view. The pan
-range is zero, so the same transform that draws the scene also hit-tests it, with no second rule to
-keep in step. `focalSlice()` reports exactly what a given screen sees, and `art/TEMPLATE.png` draws
-that slice for a reference phone, so the composition can be checked against it while it is being
-drawn.
+What changes below `NARROW_WIDTH` (768) is not the layout but the **input**. The transform is the
+same cover-and-pan everywhere, minus the 8% overscan, which exists to create pan range at the design
+aspect and is not needed on a screen that already has more overflow than it can use. The camera then
+opens at `focalCamera()` — the position that puts `FOCAL_POINT` in the middle of the screen — and a
+finger drags it from there, across the whole room and no further, because the camera is normalised
+to ±1 and the clamp is structural.
+
+That is why the bands still parallax on a phone: parallax is what the camera does, and swiping moves
+the camera. The depth is the same depth, driven by a hand instead of by a pointer.
+
+Three things follow from using the camera rather than a second transform: hit testing needs no
+separate rule, since it unprojects through the same numbers that drew the frame; the resting
+position of "the scene opens here" and of "the pointer left the window, go back" are one concept
+(`CameraRig.home`); and crossing the breakpoint, by rotation or resize, re-frames rather than leaving
+the camera somewhere that only made sense at the old size.
+
+A press that goes nowhere is a tap, and it hit-tests where it landed — synchronously, because the
+click that follows a tap is dispatched before the next frame and reads the hover the frame would
+otherwise have set. A press that travels further than `TAP_SLOP` is a swipe and navigates nothing.
+The camera stays where the finger left it: no spring back, and no momentum yet — flinging is a
+feel decision worth making against real art rather than placeholder lineart.
+
+`visibleSlice()` reports exactly what a given screen sees at a given camera, and `art/TEMPLATE.png`
+draws the opening slice for a reference phone, so the composition can be checked against it while it
+is being drawn.
 
 ## Routing
 

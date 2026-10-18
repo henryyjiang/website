@@ -1,10 +1,16 @@
 /**
- * The camera: a target the pointer writes, and a current position the ticker eases
+ * The camera: a target an input writes, and a current position the ticker eases
  * toward it.
  *
- * The pointer handler does nothing but store coordinates. It never touches the
- * transform, so input cost is constant no matter how fast events arrive, and touch
- * or device orientation drop in later as alternative target sources.
+ * Two inputs write that target, and which one depends on what the device has. A
+ * pointer sets it from where the pointer is, so the room leans toward whatever is
+ * being looked at. A finger sets it by dragging, because a phone has no "where the
+ * pointer is" — only where it has been moved to — and because on a screen that can
+ * see a quarter of the room at a time, moving across the room is the point rather
+ * than a flourish.
+ *
+ * Neither handler touches the transform. They store a number and return, so input
+ * costs the same no matter how fast events arrive.
  *
  * Smoothing lives here, in the ticker, and never in a CSS transition. The old site
  * wrote `wrapper.style.transform` on every mousemove while CSS had a transition on
@@ -13,6 +19,10 @@
  */
 
 import { type Camera, pointerToCamera } from '@/lib/scene-space'
+
+function clampUnit(value: number): number {
+  return Math.min(1, Math.max(-1, value))
+}
 
 /**
  * Damping rate, per second. Higher is snappier. The camera closes
@@ -31,27 +41,88 @@ export class CameraRig {
   readonly current: Camera = { x: 0, y: 0 }
   readonly target: Camera = { x: 0, y: 0 }
 
-  /** When true the camera is pinned at centre and parallax is off. */
+  /**
+   * Where the camera rests when nothing is driving it.
+   *
+   * Centre on a pointer device. On a phone it is the focal framing, so "the scene
+   * opens on the window" and "the pointer has left the window, go back" are the
+   * same mechanism rather than two.
+   */
+  readonly home: Camera = { x: 0, y: 0 }
+
+  /** When true the camera does not move on its own, and never eases. */
   reducedMotion = false
+
+  private dragging = false
 
   /** Store the pointer, and nothing else. */
   setPointer(clientX: number, clientY: number, viewportW: number, viewportH: number): void {
-    if (this.reducedMotion) return
+    if (this.reducedMotion || this.dragging) return
     const next = pointerToCamera(clientX, clientY, viewportW, viewportH)
     this.target.x = next.x
     this.target.y = next.y
   }
 
-  recentre(): void {
-    this.target.x = 0
-    this.target.y = 0
+  setHome(x: number, y: number): void {
+    this.home.x = x
+    this.home.y = y
   }
 
-  /** Snap both target and current to centre, with no travel. */
-  jumpToCentre(): void {
-    this.recentre()
-    this.current.x = 0
-    this.current.y = 0
+  /** A finger went down: stop easing anywhere else and follow it. */
+  startDrag(): void {
+    this.dragging = true
+    this.target.x = this.current.x
+    this.target.y = this.current.y
+  }
+
+  /**
+   * Move by a screen distance, in the direction the finger went.
+   *
+   * `pixelsPerUnit` is how many screen pixels one unit of camera travel is worth,
+   * which the caller gets from the transform — the rig stays unaware of scale and
+   * viewport, as it is for every other input.
+   *
+   * Target and current move together: a drag is not something to ease toward,
+   * because easing under a finger reads as the scene lagging behind the hand.
+   */
+  dragBy(deltaX: number, deltaY: number, pixelsPerUnitX: number, pixelsPerUnitY: number): void {
+    if (!this.dragging) return
+
+    if (pixelsPerUnitX > 0) this.target.x = clampUnit(this.target.x - deltaX / pixelsPerUnitX)
+    if (pixelsPerUnitY > 0) this.target.y = clampUnit(this.target.y - deltaY / pixelsPerUnitY)
+
+    this.current.x = this.target.x
+    this.current.y = this.target.y
+  }
+
+  /**
+   * The finger lifted. The camera stays where it was left: no spring back, because
+   * the room is a place to be moved through here rather than a thing that leans,
+   * and no momentum, because flinging past where you let go is a behaviour to add
+   * deliberately once there is real art to judge it against.
+   */
+  endDrag(): void {
+    this.dragging = false
+  }
+
+  get isDragging(): boolean {
+    return this.dragging
+  }
+
+  /** Ease back to wherever the camera rests. */
+  recentre(): void {
+    if (this.dragging) return
+    this.target.x = this.home.x
+    this.target.y = this.home.y
+  }
+
+  /** Snap both target and current home, with no travel. */
+  jumpHome(): void {
+    this.dragging = false
+    this.target.x = this.home.x
+    this.target.y = this.home.y
+    this.current.x = this.home.x
+    this.current.y = this.home.y
   }
 
   /**
@@ -60,8 +131,13 @@ export class CameraRig {
    * same speed rather than the faster one arriving 2.4x sooner.
    */
   update(deltaSeconds: number): void {
-    if (this.reducedMotion) {
-      this.jumpToCentre()
+    // Reduced motion means the camera does not drift on its own; a drag is the
+    // reader moving it, which is not drift. So the target is honoured either way
+    // and only the easing is dropped, rather than pinning the camera and leaving a
+    // phone unable to see the rest of the room.
+    if (this.reducedMotion || this.dragging) {
+      this.current.x = this.target.x
+      this.current.y = this.target.y
       return
     }
 

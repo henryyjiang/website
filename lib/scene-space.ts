@@ -47,23 +47,19 @@ export const OVERSCAN = 1.08
 export const NARROW_WIDTH = 768
 
 /**
- * The point of the canvas a narrow viewport puts in the middle of the screen.
+ * The point of the canvas a narrow viewport opens on.
  *
  * A point, not a rectangle, because the crop is not negotiable: the canvas has to
  * cover the viewport or its edges show, and covering a 9:19.5 phone with a 16:9
- * canvas means scaling to the canvas's *height*. That fixes how much is visible —
- * about 665 scene units wide on a 375 x 812 phone, a quarter of the room — and
- * leaves exactly one decision, which quarter. Framing a rectangle instead would
- * only have been a more complicated way of writing this point down, and a way to
- * ask for a crop that cannot be honoured.
+ * canvas means scaling to the canvas's *height*. That fixes how much is visible at
+ * once — about 665 scene units, a quarter of the room — and leaves exactly one
+ * decision, which quarter you land on. The rest of the room is a swipe away.
  *
  * It sits right of the canvas centre, on the window and the city behind it, which
- * says "a room above a city" in one glance. The bed and the desk are at the far
- * edges and cannot both be in frame; the nav reaches them, so what is lost on a
- * phone is the hover, not the destination.
+ * says "a room above a city" in one glance.
  *
- * `art/TEMPLATE.png` draws the slice this produces, so the composition can be
- * checked against it while it is being drawn rather than afterwards.
+ * `art/TEMPLATE.png` draws the slice it produces, so the opening shot can be
+ * composed against rather than discovered afterwards.
  */
 export const FOCAL_POINT = { x: 1500, y: 760 } as const
 
@@ -90,11 +86,15 @@ export type SceneTransform = {
 }
 
 export function sceneTransform(viewportW: number, viewportH: number): SceneTransform {
-  if (viewportW > 0 && viewportW < NARROW_WIDTH) return focalTransform(viewportW, viewportH)
-
   // Cover, not contain: the scene always fills the window and we pan within the
   // overflow — plus OVERSCAN, so that overflow exists even at the design aspect.
-  const scale = Math.max(viewportW / SCENE_W, viewportH / SCENE_H) * OVERSCAN
+  //
+  // Except on a narrow viewport, which has far more overflow than it can use: a
+  // 16:9 canvas covering a 9:19.5 screen already hides three quarters of itself, so
+  // the 8% overscan would buy pan range that is not needed and spend it on the one
+  // screen that can least afford it.
+  const narrow = viewportW > 0 && viewportW < NARROW_WIDTH
+  const scale = Math.max(viewportW / SCENE_W, viewportH / SCENE_H) * (narrow ? 1 : OVERSCAN)
 
   const overflowX = SCENE_W * scale - viewportW
   const overflowY = SCENE_H * scale - viewportH
@@ -109,49 +109,6 @@ export function sceneTransform(viewportW: number, viewportH: number): SceneTrans
   }
 }
 
-/**
- * Frame the focal point instead of centring the canvas, and do not pan.
- *
- * Cover with no overscan, because overscan exists to create room to pan and there
- * is nothing here to pan with: a phone has no pointer to follow, and a scene that
- * drifts on its own is motion nobody asked for. Dropping it also buys back the 8%
- * of the slice it would have spent, which is worth more here than anywhere else.
- *
- * The clamp is what lets the focal point sit well away from the canvas centre
- * without the framing having to know how close to an edge it is: ask for whatever
- * centring you want, and the scene slides back just far enough that no edge of the
- * canvas comes into view.
- */
-function focalTransform(viewportW: number, viewportH: number): SceneTransform {
-  const scale = Math.max(viewportW / SCENE_W, viewportH / SCENE_H)
-
-  const originX = clamp(viewportW / 2 - FOCAL_POINT.x * scale, viewportW - SCENE_W * scale, 0)
-  const originY = clamp(viewportH / 2 - FOCAL_POINT.y * scale, viewportH - SCENE_H * scale, 0)
-
-  return { scale, originX, originY, panRangeX: 0, panRangeY: 0 }
-}
-
-/**
- * What a narrow viewport of this size actually shows, in scene units.
- *
- * Exported so the drawing template can mark it rather than describe it, and so the
- * slice is a measurement both sides agree on instead of a number written twice.
- */
-export function focalSlice(viewportW: number, viewportH: number): Rect {
-  const transform = focalTransform(viewportW, viewportH)
-  return {
-    x: -transform.originX / transform.scale,
-    y: -transform.originY / transform.scale,
-    width: viewportW / transform.scale,
-    height: viewportH / transform.scale,
-  }
-}
-
-type Rect = { x: number; y: number; width: number; height: number }
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
 
 /**
  * Normalised camera position. Each axis is -1..1, where +1 means "looking at the
@@ -161,6 +118,54 @@ function clamp(value: number, min: number, max: number): number {
 export type Camera = { x: number; y: number }
 
 export const CAMERA_CENTRE: Camera = { x: 0, y: 0 }
+
+/**
+ * The camera position that puts `FOCAL_POINT` in the middle of the screen.
+ *
+ * Framing expressed as a camera position rather than as its own transform. The
+ * scene is laid out the same way at every size — cover, pan within the overflow —
+ * and "a phone opens on the window" becomes a starting position within that, which
+ * is why swiping from it needs nothing new and why one transform still serves both
+ * drawing and hit testing.
+ *
+ * Falls back to centre on an axis with no travel, where there is nothing to choose.
+ */
+export function focalCamera(transform: SceneTransform): Camera {
+  const clampUnit = (value: number) => Math.min(1, Math.max(-1, value))
+  return {
+    x:
+      transform.panRangeX > 0
+        ? clampUnit((FOCAL_POINT.x - SCENE_W / 2) / transform.panRangeX)
+        : 0,
+    y:
+      transform.panRangeY > 0
+        ? clampUnit((FOCAL_POINT.y - SCENE_H / 2) / transform.panRangeY)
+        : 0,
+  }
+}
+
+/**
+ * What a viewport of this size shows at a given camera, in scene units.
+ *
+ * Exported so the drawing template can mark the opening slice rather than describe
+ * it, and so what the phone sees is a measurement both sides agree on instead of a
+ * number written down twice.
+ */
+export function visibleSlice(
+  viewportW: number,
+  viewportH: number,
+  camera: Camera,
+): { x: number; y: number; width: number; height: number } {
+  const transform = sceneTransform(viewportW, viewportH)
+  const topLeft = screenToScene(transform, camera, 1, 0, 0)
+  const bottomRight = screenToScene(transform, camera, 1, viewportW, viewportH)
+  return {
+    x: topLeft.x,
+    y: topLeft.y,
+    width: bottomRight.x - topLeft.x,
+    height: bottomRight.y - topLeft.y,
+  }
+}
 
 /**
  * A band's offset, in scene units, for the current camera.

@@ -4,7 +4,13 @@ import { extend, useApplication, useTick } from '@pixi/react'
 import { Container, Sprite, type Texture } from 'pixi.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { bandOffset, sceneTransform } from '@/lib/scene-space'
+import {
+  bandOffset,
+  CAMERA_CENTRE,
+  focalCamera,
+  NARROW_WIDTH,
+  sceneTransform,
+} from '@/lib/scene-space'
 import { getSceneState, setHovered, type HotspotId } from '@/lib/store'
 import { BANDS_IN_DRAW_ORDER, type Band, type BandId } from './bands'
 import { BillboardText } from './BillboardText'
@@ -33,6 +39,18 @@ const CHARACTER_BAND: BandId = 'room'
 
 /** Feet at the anchor point: centred horizontally, bottom-aligned vertically. */
 const CHARACTER_ANCHOR = { x: 0.5, y: 1 } as const
+
+/**
+ * How far a press may travel and still count as a tap, in CSS pixels of total
+ * movement. Fingers are not still, and a tap that scrolls the room a hair and then
+ * refuses to open anything feels broken rather than precise.
+ */
+const TAP_SLOP = 12
+
+/** Swipe is for the viewports that are framed rather than panned (scene-space.ts). */
+function isNarrow(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth < NARROW_WIDTH
+}
 
 /**
  * The contents of the Pixi application: a scaled root holding one container per
@@ -97,6 +115,9 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
   const characterRef = useRef<Sprite | null>(null)
   const characterClock = useRef(0)
 
+  // Null until the first frame, so the first tick always frames the scene.
+  const wasNarrow = useRef<boolean | null>(null)
+
   useEffect(() => {
     const views = new Map<HotspotId, HotspotGlow>()
 
@@ -127,13 +148,82 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
   // so input cost is constant no matter how fast events arrive.
   const pointerRef = useRef<{ x: number; y: number } | null>(null)
 
+  // A drag in progress: which pointer, where it started, and how far it has moved.
+  // Held in a ref because none of it is rendered — it only ever reaches the rig.
+  const dragRef = useRef<{ id: number; x: number; y: number; moved: number } | null>(null)
+
   useEffect(() => {
     const rig = rigRef.current
     if (!rig) return
 
+    // Only presses that land on the page background drag the scene. Anything with
+    // real UI on it — the nav, an open panel — is not the scene's to move, and this
+    // is the same test the click handler in SceneCanvas uses.
+    const onBackground = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null
+      return !target || target === document.body || target === document.documentElement
+    }
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!isNarrow() || dragRef.current || !onBackground(event)) return
+      dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: 0 }
+      rig.startDrag()
+    }
+
     const onPointerMove = (event: PointerEvent) => {
+      const drag = dragRef.current
+
+      if (drag && event.pointerId === drag.id) {
+        const dx = event.clientX - drag.x
+        const dy = event.clientY - drag.y
+        drag.moved += Math.abs(dx) + Math.abs(dy)
+        drag.x = event.clientX
+        drag.y = event.clientY
+
+        // One unit of camera travel is `panRange` scene units, which is
+        // `panRange * scale` on screen. Recomputed per event rather than cached:
+        // it is three multiplications, and a cached copy would be wrong for the
+        // first frame after a rotation.
+        const transform = sceneTransform(app.screen.width, app.screen.height)
+        rig.dragBy(
+          dx,
+          dy,
+          transform.panRangeX * transform.scale,
+          transform.panRangeY * transform.scale,
+        )
+        return
+      }
+
+      if (isNarrow()) return
+
       rig.setPointer(event.clientX, event.clientY, window.innerWidth, window.innerHeight)
       pointerRef.current = { x: event.clientX, y: event.clientY }
+    }
+
+    const onPointerUp = (event: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag || event.pointerId !== drag.id) return
+
+      dragRef.current = null
+      rig.endDrag()
+
+      // A press that went nowhere is a tap, so hit-test where it landed. Done here
+      // rather than left to the next tick because the click that follows a tap is
+      // dispatched before any frame runs, and it navigates to whatever is hovered —
+      // so the hover has to exist by the time it reads it.
+      if (drag.moved > TAP_SLOP) {
+        pointerRef.current = null
+        setHovered(null)
+        return
+      }
+
+      pointerRef.current = { x: event.clientX, y: event.clientY }
+      const transform = sceneTransform(app.screen.width, app.screen.height)
+      setHovered(
+        getSceneState().overlay !== null
+          ? null
+          : hitTest(hitCandidates, transform, rig.current, event.clientX, event.clientY),
+      )
     }
 
     // Pointer has left the window entirely: ease back to centre rather than holding
@@ -146,22 +236,34 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
       }
     }
 
+    const onPointerCancel = (event: PointerEvent) => {
+      if (dragRef.current?.id !== event.pointerId) return
+      dragRef.current = null
+      rig.endDrag()
+    }
+
     const onBlur = () => {
       rig.recentre()
       pointerRef.current = null
       setHovered(null)
     }
 
+    window.addEventListener('pointerdown', onPointerDown, { passive: true })
     window.addEventListener('pointermove', onPointerMove, { passive: true })
+    window.addEventListener('pointerup', onPointerUp, { passive: true })
+    window.addEventListener('pointercancel', onPointerCancel, { passive: true })
     document.addEventListener('pointerout', onPointerOut, { passive: true })
     window.addEventListener('blur', onBlur)
 
     return () => {
+      window.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerCancel)
       document.removeEventListener('pointerout', onPointerOut)
       window.removeEventListener('blur', onBlur)
     }
-  }, [])
+  }, [app, hitCandidates])
 
   // --- prefers-reduced-motion ---------------------------------------------------
   // Camera held at centre, parallax off. The scene stays fully navigable: panning is
@@ -180,7 +282,7 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
       // decide whether to cycle. A ref read there would never trigger the re-render
       // that makes the change take effect.
       setReducedMotion(query.matches)
-      if (query.matches) rig.jumpToCentre()
+      if (query.matches) rig.jumpHome()
     }
 
     apply()
@@ -223,12 +325,26 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
       if (!rig || !root) return
 
       const dt = ticker.deltaMS / 1000
-      rig.update(dt)
 
       // Recomputed per frame from the renderer's own size rather than tracked
       // through resize events: it is a handful of multiplications and it cannot go
       // stale against the canvas it is describing.
       const transform = sceneTransform(app.screen.width, app.screen.height)
+
+      // Where the camera rests, which depends on the size it is resting at: centred
+      // on a pointer device, on the focal framing where the scene is a slice. A
+      // rotation or a resize across the breakpoint re-frames rather than leaving the
+      // camera somewhere that made sense at the old size.
+      const narrow = isNarrow()
+      const home = narrow ? focalCamera(transform) : CAMERA_CENTRE
+      rig.setHome(home.x, home.y)
+
+      if (narrow !== wasNarrow.current) {
+        wasNarrow.current = narrow
+        rig.jumpHome()
+      }
+
+      rig.update(dt)
 
       root.scale.set(transform.scale)
       root.position.set(transform.originX, transform.originY)

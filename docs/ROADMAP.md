@@ -91,9 +91,9 @@ with the sky left transparent above the roofline; nothing in the code needs to c
 - Revisit hover glow with the room's real lighting (`docs/DESIGN.md`)
 - Verify the asset budget in `docs/ANIMATION.md`
 - ~~Decide the narrow-viewport strategy, now that the composition is known~~ — decided and built:
-  frame a focal point with no panning below 768px, and promote the hidden nav to a visible menu
-  (`docs/ARCHITECTURE.md` § Narrow viewports). `FOCAL_POINT` is one constant and the template draws
-  the slice it produces, so the framing is tunable as the art firms up.
+  below 768px the scene opens on `FOCAL_POINT` and is explored by swiping, with the nav visible as
+  four buttons (`docs/ARCHITECTURE.md` § Narrow viewports). `FOCAL_POINT` is one constant and the
+  template draws the slice it produces, so the opening shot is tunable as the art firms up.
 
 ---
 
@@ -146,8 +146,11 @@ canvas.
 
 Tracked here so they don't get silently decided:
 
-- ~~**Narrow viewports.**~~ Settled in Phase 3: a focal crop with the nav carrying navigation. What
-  is left is art direction, not architecture — which slice of the room `FOCAL_POINT` should frame.
+- ~~**Narrow viewports.**~~ Settled in Phase 3: open on a focal slice, swipe to move across the room,
+  nav always visible. What is left is art direction, not architecture — which slice `FOCAL_POINT`
+  should open on. Deliberately not done: momentum on release, and device orientation as an input
+  (it needs a permission prompt on iOS, it cannot be tested here, and it is motion the reader did
+  not ask for — worth revisiting as an enhancement, never as the only way to move).
 - **Tab interior design.** Entirely open. (Phase 4)
 - **Hover glow treatment.** Depends on how the room is lit. (Phase 3)
 - **Project dates.** The old markup carried none; they need reconstructing. (Phase 2)
