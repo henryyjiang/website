@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  /* Behind the canvas, and what shows for one frame before it mounts. */
+  background-color: #0b1020;
+  color: #f2efe9;
+  overflow: hidden;
+}
+
+/*
+ * No transition is declared anywhere on a property the ticker writes. The scene's
+ * smoothing lives in the ticker as a damped lerp toward a target; a CSS transition
+ * on the same property would restart its own interpolation on every frame we wrote,
+ * which is exactly what broke the old site. See docs/ARCHITECTURE.md § Camera.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
