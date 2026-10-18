@@ -13,8 +13,9 @@ harden into a design decision.
 - [x] Choose the stack: Next.js + React + Pixi.js
 - [x] Write project and framework docs
 - [x] Point `origin` at `henryyjiang/website`
+- [x] Create the `art/` inbox and document the drop-in conventions
 - [ ] Confirm the old Vercel integration is disabled
-- [ ] First commit on the new origin
+- [x] First commit on the new origin
 
 **Deployment isolation is the gate on everything else.** The old site is live on Vercel through a
 Git integration watching `henryyjiang/portfoliosite` on `main`. Nothing in this phase may push to
@@ -45,7 +46,12 @@ and leaving the tab for five minutes and returning changes nothing.
 
 The layout Henry needs in order to draw against.
 
-- Four parallax bands wired as data (`sky`, `skyline`, `room`, `near`)
+- `scripts/import-art.ts` + `npm run art`: walk the `art/` inbox, derive each layer's band from its
+  folder and `z` from its filename prefix, optimise to WebP with PNG fallback, and write
+  `public/scene/manifest.json`. Pack the character atlas from whichever of the three input formats is
+  present. This is the piece that makes art a drop-in operation rather than a code change — build it
+  before the placeholder art, not after.
+- Four parallax bands wired as data (`sky`, `skyline`, `room`, `near`), read from the manifest
 - Placeholder art blocking out: window opening, room interior, skyline with the skyscraper, the
   billboard surface
 - Three hotspots positioned in scene space, with hover glow and alpha-accurate hit testing
@@ -53,17 +59,17 @@ The layout Henry needs in order to draw against.
 - Billboard rendering live text from `content/updates.ts`
 - Content modules populated with the real data carried over from the old site
 
-**Done when:** the room is navigable, all three destinations open, and the scene-space coordinates
-for every layer and hotspot are documented well enough that redrawn art drops in by replacing files
-and adjusting numbers in one table.
+**Done when:** the room is navigable, all three destinations open, and — the real test — replacing a
+placeholder file in `art/` and running `npm run art` changes the scene with no code edit at all.
 
-**→ Henry implements the real background, foreground, and object art here.**
+**→ Henry implements the real background, foreground, and object art here**, by exporting into
+`art/` per `art/README.md`. If that handoff requires him to touch a component, Phase 2 isn't done.
 
 ---
 
 ## Phase 3 — Real art integration
 
-- Swap placeholder layers for the real exports
+- Replace the placeholder files in `art/` with the real exports and re-run `npm run art`
 - Tune parallax factors against art that actually has depth cues
 - Revisit hover glow with the room's real lighting (`docs/DESIGN.md`)
 - Verify the asset budget in `docs/ANIMATION.md`
@@ -85,7 +91,8 @@ specific is decided** — do not invent it before this phase.
 
 ## Phase 5 — Character animation
 
-- Character art and frames from Henry
+- Character animation from Henry, dropped into `art/character/` in whichever format his software
+  exports — sequence, video with alpha, or pre-packed sheet (`art/character/README.md`)
 - Pack to an atlas within the constraints in `docs/ANIMATION.md`
 - `AnimatedSprite` on the shared ticker
 - Verify the old bug is gone: long tab-away, memory pressure, multiple backgrounded tabs

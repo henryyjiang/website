@@ -35,7 +35,7 @@ aspect approaches the scene aspect, and reaches zero on its own.
 
 ## Layer model
 
-Layers are data, not components:
+Layers are data, not components — and that data is **generated, not written by hand**:
 
 ```ts
 type Layer = {
@@ -45,6 +45,13 @@ type Layer = {
   z: number
 }
 ```
+
+`npm run art` walks the `art/` inbox and emits this list into `public/scene/manifest.json`. The
+band comes from which folder a file is in; `z` comes from its filename prefix (`10-`, `20-`, …).
+So adding a layer is dropping a file, reordering is a rename, and changing a layer's depth is moving
+it between folders. No component changes, no hand-maintained list. See `art/README.md`.
+
+The scene reads the manifest at runtime and never looks at `art/`.
 
 Parallax factor comes from the band, so depth is a design decision made in one table rather than
 scattered across sprites:

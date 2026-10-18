@@ -36,6 +36,11 @@ in a `<canvas>` 2D context. Put the frames on the GPU as one texture and they st
 manifest, loaded via `Assets.load`, and played by an `AnimatedSprite` driven by Pixi's shared
 `Ticker`.
 
+The input format is Henry's choice — a PNG sequence, a video with alpha, or a pre-packed sheet, each
+with its own subfolder under `art/character/`. `npm run art` normalises all three to the same atlas,
+so the pipeline below is identical regardless of what was dropped in. Details and constraints per
+format are in `art/character/README.md`.
+
 What this fixes, point by point:
 
 - One texture upload instead of 173 independent decodes. The frames live in GPU memory as a single
@@ -92,9 +97,11 @@ old repository's `.git` reaching 100 MB.
 For scale: the old site shipped 34 MB of character frames alone, plus a 4.4 MB intro video and a
 1.9 MB room image.
 
-**Loose frame sequences are never committed.** Working art lives in `art-src/`, which is gitignored;
-only packed, web-ready output under `public/scene/` enters the repository. If source frames need to
-be versioned, that is a job for Git LFS or a separate art repository, not for this one's history.
+**Loose frame sequences are a fine input and never a committed artifact.** Drop them in
+`art/character/sequence/` — that folder is gitignored. `npm run art` packs them and only the atlas
+under `public/scene/` enters the repository, so a clean clone still builds and runs the site. If the
+source frames need versioning, that is a job for Git LFS or a separate art repository, not for this
+one's history. See `art/character/README.md` for the accepted input formats.
 
 ## Overlay animation
 

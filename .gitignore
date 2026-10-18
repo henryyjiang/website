@@ -12,10 +12,24 @@ next-env.d.ts
 # Vercel
 .vercel
 
-# Working art files. Never commit loose frame sequences or source art —
-# see docs/ANIMATION.md. Only packed, web-ready output under public/scene/
-# belongs in this repository.
-art-src/
+# Art inbox (art/). Scene layers and objects ARE tracked — they are a handful of
+# files and they are the scene. These are not:
+#
+#   - character frame sequences and raw video, because committing a frame
+#     sequence is what inflated the old repo's history to 100 MB (72 MB of it
+#     the same frames committed repeatedly). The packed atlas under
+#     public/scene/ is committed instead, so a clean clone still builds.
+#   - reference material, which is never shipped.
+#
+# See art/character/README.md and docs/ANIMATION.md.
+art/character/sequence/*
+!art/character/sequence/.gitkeep
+art/character/video/*
+!art/character/video/.gitkeep
+art/reference/*
+!art/reference/.gitkeep
+
+# Source art files, wherever they land
 *.psd
 *.psb
 *.ai

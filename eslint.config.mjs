@@ -1,0 +1,15 @@
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { FlatCompat } from '@eslint/eslintrc'
+
+const compat = new FlatCompat({
+  baseDirectory: dirname(fileURLToPath(import.meta.url)),
+})
+
+export default [
+  {
+    // The previous vanilla site is kept on disk as reference only.
+    ignores: ['.next/**', 'node_modules/**', 'assets/**', 'main.js', 'out/**'],
+  },
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+]

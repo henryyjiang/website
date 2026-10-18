@@ -33,6 +33,7 @@ npm run build        # production build; must pass before any push
 npm run start        # serve the production build locally
 npm run typecheck    # tsc --noEmit
 npm run lint
+npm run art          # import art/ → public/scene/ (optimise layers, pack atlas, write manifest)
 ```
 
 ## Layout
@@ -51,10 +52,39 @@ lib/
   scene-space.ts      Scene↔screen coordinate maths. Single source of truth.
   store.ts            Shared state between Pixi and React
 content/              Typed content modules. All copy and project data lives here.
-public/scene/         Exported web assets: layer PNGs/WebPs, character atlases
-art-src/              Working art files. Gitignored. Never committed.
+art/                  ART INBOX. Henry drops exports here; see art/README.md.
+public/scene/         Build output: optimised layers, packed atlases, manifest. Generated.
+scripts/import-art.ts Converts art/ → public/scene/. Run via npm run art.
 docs/
 ```
+
+## The art inbox
+
+`art/` is where art enters the project, and it is the interface between Henry's drawing software and
+the code. Adding, replacing or reordering a layer must never require touching a component.
+
+```
+art/background/sky/        parallax 0.10
+art/background/skyline/    parallax 0.30   (city, skyscraper, billboard)
+art/foreground/room/       parallax 1.00   (walls, window frame, furniture)
+art/foreground/near/       parallax 1.15   (foreground clutter)
+art/objects/               the three clickable objects
+art/character/             frame sequence, video, or pre-packed atlas
+```
+
+Rules enforced by this layout, all of them read from `art/README.md` rather than hardcoded:
+
+- **Folder determines parallax band.** Depth is a filing decision, not a code change.
+- **Filename prefix determines draw order** within a band (`10-`, `20-`, `30-`), so reordering is a
+  rename.
+- **Layers export at the full 2560 × 1440 design canvas** with transparency around the content, so
+  art and hit areas share one coordinate space by construction.
+
+`npm run art` reads `art/`, writes optimised assets and a manifest to `public/scene/`, and packs the
+character animation into an atlas regardless of which of the three input formats was supplied. The
+scene reads the manifest; it never reads `art/` at runtime.
+
+**Never read from `art/` in application code**, and never hand-maintain the manifest.
 
 ## Rules
 
@@ -75,9 +105,10 @@ target, never in a CSS transition.
 **Pixi is client-only.** It touches `window` and WebGL at import time. Load scene components through
 `next/dynamic` with `ssr: false`. A Pixi import that leaks into a server component breaks the build.
 
-**Assets have a budget.** See `docs/ANIMATION.md`. Frame sequences as loose PNGs are banned —
-they are what broke the old site and what inflated its git history to 100 MB. Character animation
-ships as a packed atlas.
+**Assets have a budget.** See `docs/ANIMATION.md`. Loose PNG frame sequences are never *shipped or
+committed* — they are what broke the old site and what inflated its git history to 100 MB. A
+sequence dropped into `art/character/sequence/` is a fine *input*; `npm run art` packs it into an
+atlas, and only the atlas is committed.
 
 **Respect the user's machine.** Honour `prefers-reduced-motion`, stop the ticker when the tab is
 hidden, cap device pixel ratio, and degrade to a static composite where WebGL is unavailable.
