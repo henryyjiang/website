@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "art": "node scripts/import-art.ts",
+    "art:placeholders": "node scripts/make-placeholder-art.ts"
   },
   "dependencies": {
     "@pixi/react": "8.0.5",
@@ -25,6 +27,7 @@
     "@typescript/native": "npm:typescript@7.0.2",
     "eslint": "10.13.0",
     "eslint-config-next": "16.4.2",
+    "sharp": "^0.35.5",
     "tailwindcss": "4.3.3",
     "typescript": "npm:@typescript/typescript6@6.0.2"
   }

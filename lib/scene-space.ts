@@ -17,6 +17,25 @@ export const SCENE_H = 1440
 export const SCENE_ASPECT = SCENE_W / SCENE_H
 
 /**
+ * Scale applied beyond cover, to create room to pan.
+ *
+ * Cover alone is not enough. The design canvas is exactly 16:9, so on a 16:9
+ * viewport — 1920x1080 and 2560x1440, the two most common desktop sizes — cover
+ * produces zero overflow and therefore zero pan. The scene would sit perfectly
+ * still for most visitors, which is not the intent.
+ *
+ * So the scene is drawn slightly larger than the viewport and panned within the
+ * margin that creates. The old site did the same thing with a 1.05 zoom; this is
+ * that idea expressed where the rest of the geometry already lives, so the pan
+ * range stays derivable rather than being a magic number in a mousemove handler.
+ *
+ * The cost is that roughly 4% of each edge is outside the viewport at the design
+ * aspect. That is the overscan margin art should not put anything important in —
+ * art/TEMPLATE.png marks it.
+ */
+export const OVERSCAN = 1.08
+
+/**
  * How the scene is currently sitting on the screen.
  *
  * `scale` and the origin describe the scene at camera centre; the camera is applied
@@ -39,8 +58,9 @@ export type SceneTransform = {
 }
 
 export function sceneTransform(viewportW: number, viewportH: number): SceneTransform {
-  // Cover, not contain: the scene always fills the window and we pan within the overflow.
-  const scale = Math.max(viewportW / SCENE_W, viewportH / SCENE_H)
+  // Cover, not contain: the scene always fills the window and we pan within the
+  // overflow — plus OVERSCAN, so that overflow exists even at the design aspect.
+  const scale = Math.max(viewportW / SCENE_W, viewportH / SCENE_H) * OVERSCAN
 
   const overflowX = SCENE_W * scale - viewportW
   const overflowY = SCENE_H * scale - viewportH

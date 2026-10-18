@@ -15,13 +15,25 @@ rectangles in it, and the character's anchor is a point in it.
 `lib/scene-space.ts` owns the only mapping from scene space to screen space:
 
 ```ts
-// Scale needed to cover the viewport, then the pan offset on top.
-const scale = Math.max(vw / SCENE_W, vh / SCENE_H)
+// Scale needed to cover the viewport, plus overscan so there is room to pan.
+const scale = Math.max(vw / SCENE_W, vh / SCENE_H) * OVERSCAN
 ```
 
 Cover, not contain: the scene always fills the window and we pan within the overflow. The amount of
 overflow available for panning is `(SCENE_W * scale - vw)` horizontally, and the camera is clamped
 to it, so panning can never reveal an edge.
+
+**Why cover alone is not enough.** The design canvas is exactly 16:9, so on a 16:9 viewport —
+1920×1080 and 2560×1440, the two most common desktop sizes — cover produces *zero* overflow and
+therefore zero pan. The scene would sit perfectly still for most visitors. `OVERSCAN` (1.08) draws
+the scene slightly larger than the viewport so the margin always exists; the old site did the same
+thing with a 1.05 zoom, expressed here where the rest of the geometry lives so the pan range stays
+derivable instead of being a magic number in a mousemove handler.
+
+The cost is that roughly 4% of each edge is off-screen at the design aspect, and the camera can
+reveal it. `SAFE_AREA` in `lib/scene-layout.ts` derives the region that is visible *regardless* of
+camera position, and `art/TEMPLATE.png` draws it, so art has a marked boundary to keep important
+content inside.
 
 **Why this matters.** The old site positioned hotspots in CSS percentages over an
 `object-fit: cover` background. Percentages are relative to the *element*, while `cover` crops

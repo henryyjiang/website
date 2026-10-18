@@ -42,7 +42,7 @@ and leaving the tab for five minutes and returning changes nothing.
 
 ---
 
-## Phase 2 — Rough layout *(the handoff point)*
+## Phase 2 — Rough layout *(complete — the handoff point)*
 
 The layout Henry needs in order to draw against.
 
@@ -61,6 +61,13 @@ The layout Henry needs in order to draw against.
 
 **Done when:** the room is navigable, all three destinations open, and — the real test — replacing a
 placeholder file in `art/` and running `npm run art` changes the scene with no code edit at all.
+
+**Verified in a browser, not assumed.** Band offsets matched their expected parallax factors
+exactly; a point inside the desk's bounding box but in empty air correctly did *not* hit, proving
+the alpha mask rather than a rectangle; hover attached and detached its filter; hit testing was
+suppressed under an open panel; the canvas survived navigation across all four routes without
+remounting; and dropping a new `15-*.png` into `art/background/skyline/` made it appear in the
+scene behind the tower, ordered purely by its filename, with no code touched.
 
 **→ Henry implements the real background, foreground, and object art here**, by exporting into
 `art/` per `art/README.md`. If that handoff requires him to touch a component, Phase 2 isn't done.

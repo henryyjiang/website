@@ -1,0 +1,15 @@
+{
+  "marker": "portfolio-placeholder",
+  "files": {
+    "art/TEMPLATE.png": "f18c3b66b3c6d238f6494d7714a2f61543fd272a8c3559b7952c537f33d092d0",
+    "art/background/sky/10-gradient.png": "2a713015c145214ab8c7b0f4da3d43c23988ec4c82ec853060ed2422d9c3b9fc",
+    "art/background/skyline/10-far-blocks.png": "30f98139826aa5b6302169c0f0380c39629432c852fe00a9e3abb774dd0aa027",
+    "art/background/skyline/20-tower.png": "a0f906efa3a3d01454e19d50bc90fed80ce0887dad8b37333b901d39eb4b97eb",
+    "art/foreground/room/10-walls.png": "98497cf3f2bb585ff03c28f6db424df74962558bc8c5bde5c6687563757cf250",
+    "art/foreground/room/20-mullions.png": "d3c7cdac8355a0e47795a608c46755768de58f450f31cebb47f66f114a2166d6",
+    "art/foreground/near/10-floor.png": "35e2a56409c2a77b863f6656d7cfd7aeb6774f693a4ad9dc3c3dfb8e3029f21a",
+    "art/objects/desk.png": "2f4a2651f092547f3fbb2358f03f1af5e756a2999a5046e36abfd0636506929f",
+    "art/objects/art.png": "fc67c030975e3ef3523c2c82eaef8a6e7558feb3d469878067b4a727b08385b5",
+    "art/objects/billboard.png": "6df0ee25213b5d358d47bf40eec34f2c8a109ea31f419929a39ccb2b62b63509"
+  }
+}
