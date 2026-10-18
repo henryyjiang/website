@@ -131,7 +131,7 @@ function buildPieces(): Piece[] {
   // transparent, so the bands behind it composite through. That transparency is the
   // window — nothing masks the skyline to this shape.
   pieces.push({
-    path: join(ART_DIR, 'foreground', 'room', '10-walls.png'),
+    path: join(ART_DIR, 'foreground', '10-walls.png'),
     svg: svg(
       `<defs>${hatch('w', '#5e4433')}</defs>` +
         rect({ x: 0, y: 0, width: SCENE_W, height: W.y }, 'url(#w)') +
@@ -149,7 +149,7 @@ function buildPieces(): Piece[] {
   })
 
   pieces.push({
-    path: join(ART_DIR, 'foreground', 'room', '20-mullions.png'),
+    path: join(ART_DIR, 'foreground', '20-mullions.png'),
     svg: svg(
       rect({ x: 990, y: W.y, width: 26, height: W.height }, '#7a5b43') +
         rect({ x: 1560, y: W.y, width: 26, height: W.height }, '#7a5b43') +
@@ -158,16 +158,16 @@ function buildPieces(): Piece[] {
     ),
   })
 
-  // --- near, 1.15 ---------------------------------------------------------------
-  // Drawn past the canvas edges on purpose: a band above 1.00 travels further than
-  // the overflow that hides it, so without bleed its edge slides into view at the
-  // extremes of a pan. bandBleed() in lib/scene-space.ts is the number.
+  // --- floor, part of the room at 1.00 ------------------------------------------
+  // Drawn past the canvas edges anyway: it costs nothing here, and it is what a
+  // layer would need if it were ever filed under the 1.15 near band, which travels
+  // further than the overflow that hides it. bandBleed() in lib/scene-space.ts.
   pieces.push({
-    path: join(ART_DIR, 'foreground', 'near', '10-floor.png'),
+    path: join(ART_DIR, 'foreground', '30-floor.png'),
     svg: svg(
       `<defs>${hatch('n', '#2e211c')}</defs>` +
         rect({ x: -200, y: 1280, width: SCENE_W + 400, height: 400 }, 'url(#n)') +
-        label('near · 1.15', 80, SCENE_H - 40),
+        label('floor · room 1.00', 80, SCENE_H - 40),
     ),
   })
 

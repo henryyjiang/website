@@ -84,9 +84,8 @@ the code. Adding, replacing or reordering a layer must never require touching a 
 ```
 art/background/sky/        parallax 0.10
 art/background/skyline/    parallax 0.30   (city, skyscraper, billboard)
-art/foreground/room/       parallax 1.00   (walls, window frame, furniture)
-art/foreground/near/       parallax 1.15   (foreground clutter)
-art/objects/               the three clickable objects
+art/foreground/            parallax 1.00   (the room: walls, window frame, furniture, floor)
+art/objects/               the three clickable objects (desk, art — the bed, billboard)
 art/character/             frame sequence, video, or pre-packed atlas
 ```
 

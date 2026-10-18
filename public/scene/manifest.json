@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-18T05:08:36.006Z",
+  "generatedAt": "2026-10-18T18:22:59.397Z",
   "scene": {
     "width": 2560,
     "height": 1440
@@ -52,11 +52,11 @@
       "height": 1440
     },
     {
-      "id": "near-floor",
-      "band": "near",
-      "z": 10,
-      "src": "/scene/layers/near-floor.webp",
-      "fallback": "/scene/layers/near-floor.png",
+      "id": "room-floor",
+      "band": "room",
+      "z": 30,
+      "src": "/scene/layers/room-floor.webp",
+      "fallback": "/scene/layers/room-floor.png",
       "width": 2560,
       "height": 1440
     }

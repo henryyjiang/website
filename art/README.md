@@ -11,15 +11,20 @@ file here and re-running the import is the whole workflow for changing the scene
 ```
 art/
   background/        Behind the glass — seen through the window
-    sky/             Gradient, clouds, haze          → parallax 0.10
+    sky/             Gradient, clouds, haze           → parallax 0.10
     skyline/         City, the skyscraper, billboard  → parallax 0.30
-  foreground/        The room itself
-    room/            Walls, window frame, furniture   → parallax 1.00
-    near/            Foreground clutter that pops     → parallax 1.15
+  foreground/        The room — walls, window frame, furniture, floor
+                                                      → parallax 1.00
   objects/           The three clickable objects
   character/         The animated character
   reference/         Mood boards, sketches, WIPs. Never shipped, never committed.
 ```
+
+`foreground/` is flat: everything in the room travels together at 1.00, so there is nothing to
+decide per export. There is one more band, `near` at 1.15, for clutter that should pop in front of
+the room. It has no folder — create `art/foreground/near/` and art filed there starts travelling at
+1.15. Note that a band above 1.00 travels further than the overflow that hides it, so art in it
+needs bleed past the canvas edges.
 
 ## How layers work
 
@@ -31,11 +36,11 @@ in `docs/ARCHITECTURE.md`.
 first, so they sit furthest back:
 
 ```
-art/foreground/room/
+art/foreground/
   10-back-wall.png
   20-window-frame.png
   30-floor.png
-  40-couch.png
+  40-bed.png
 ```
 
 Gaps of ten leave room to slide something in between later without renaming everything.
@@ -66,11 +71,16 @@ exactly where it belongs with transparency around it.
 | File | Is | Opens |
 | --- | --- | --- |
 | `desk.png` | Desk + computer | Software and AI research |
-| `art.png` | A drawing-related object | The drawing portfolio |
+| `art.png` | The bed | The drawing portfolio |
 | `billboard.png` | The billboard surface on the skyscraper | Recent updates |
 
 Separate files because each needs its own hover glow and its own hit area, tested against the shape
-you actually drew rather than a rectangle around it.
+you actually drew rather than a rectangle around it. The hit area is **measured from the alpha of
+the file you drop**, so an object is clickable exactly where you drew it — the rectangles in
+`lib/scene-layout.ts` only place the placeholders and the template guides.
+
+The filenames are the hotspot ids, so they are fixed even when the art is not what the name
+suggests: the bed is the drawing-portfolio object, and it is therefore `art.png`.
 
 `billboard.png` is the odd one: it lives in the **background**, behind the glass, so it parallaxes at
 the skyline's 0.30 rather than the room's 1.00. Draw the billboard's frame and lit surface, and leave

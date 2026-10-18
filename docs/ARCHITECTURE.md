@@ -73,7 +73,7 @@ scattered across sprites:
 | `sky` | 0.10 | Gradient, clouds, distant haze |
 | `skyline` | 0.30 | City, the skyscraper, the billboard |
 | `room` | 1.00 | Interior walls, window frame, furniture, hotspot objects |
-| `near` | 1.15 | Foreground clutter that should pop — a plant edge, the near corner of the desk |
+| `near` | 1.15 | Foreground clutter that should pop — a plant edge, the near corner of the desk. No inbox folder by default; `art/foreground/near/` opts in |
 
 A layer's screen offset is `cameraOffset * factor`. Near things move more than far things, which is
 the correct direction for a camera pan. The effect that sells the window is the *differential*

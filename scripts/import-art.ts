@@ -43,11 +43,18 @@ const MASK_SCALE = 8
 /** Per-layer budget from docs/ANIMATION.md. Exceeding it warns rather than fails. */
 const LAYER_BUDGET_BYTES = 400 * 1024
 
-/** Which folder maps to which parallax band. */
+/**
+ * Which folder maps to which parallax band.
+ *
+ * `foreground/` is flat and is the room plane, because that is where almost all of
+ * the room art lives and a one-file-deep folder is a decision Henry would have to
+ * make on every export for no benefit. `foreground/near/` keeps its 1.15 mapping as
+ * an opt-in: the folder does not exist, and creating it starts routing art there.
+ */
 const BAND_DIRS: Record<string, BandId> = {
   'background/sky': 'sky',
   'background/skyline': 'skyline',
-  'foreground/room': 'room',
+  'foreground': 'room',
   'foreground/near': 'near',
 }
 
