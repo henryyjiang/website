@@ -23,7 +23,7 @@ that remote. See `docs/DEPLOYMENT.md`.
 
 ---
 
-## Phase 1 — Scaffold
+## Phase 1 — Scaffold *(complete — 0ab95d9)*
 
 Next app, TypeScript strict, Tailwind, Pixi mounted and rendering. No art yet.
 

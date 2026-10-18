@@ -16,9 +16,27 @@ Do not port the old `main.js` / `style.css` approach — see `docs/ANIMATION.md`
 | Scene rendering | Pixi.js (WebGL 2D) | 8.22.0 |
 | React↔Pixi bridge | `@pixi/react` | 8.0.5 |
 | Overlay animation | Motion | 14.3.0 |
-| Language | TypeScript (strict) | 7.0.2 |
+| Language | TypeScript (strict) | 7.0.2 — see below |
 | Styles | Tailwind | 4.3.3 |
 | Host | Vercel | — |
+
+### TypeScript is installed side by side — do not "fix" it
+
+`package.json` looks wrong and is not:
+
+```json
+"@typescript/native": "npm:typescript@7.0.2",
+"typescript": "npm:@typescript/typescript6@6.0.2"
+```
+
+TypeScript 7 is the native (Go) compiler and does not expose the JS API that typescript-eslint
+needs. So `@typescript/native` provides the `tsc` binary that `npm run typecheck` actually runs —
+verify with `npx tsc --version`, which reports 7.0.2 — while the `typescript` entry provides the
+6.0.2 JS API for the linter. This is Microsoft's documented side-by-side layout, and it is the
+alternative to downgrading the compiler.
+
+**Repointing `typescript` to 7.x breaks `npm run lint`.** If a dependency change makes this
+arrangement unnecessary, confirm `typecheck`, `lint` and `build` all pass before simplifying it.
 
 **Division of labour, and it is not negotiable:** Pixi owns exactly one canvas and everything
 inside the scene — layers, parallax, the character, hover glow. React owns everything in the DOM —
