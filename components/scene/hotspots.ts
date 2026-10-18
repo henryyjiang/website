@@ -1,9 +1,10 @@
 /**
- * The three hotspots.
+ * The three hotspots: which object in the room leads where.
  *
- * This table is the shared source for both halves of the deliberate duplication: the
- * scene's pointer hit testing and the hidden DOM nav. Keeping one list is what stops
- * the two drifting apart as the art is redrawn.
+ * The DOM half of the duplication is `components/nav/TopNav.tsx`, reading
+ * `content/nav.ts` — a visible list of destinations rather than this list of
+ * objects, because that is the useful shape for a nav and because it also carries
+ * Home, which is not an object in the room.
  *
  * Note what is *not* here any more: the rectangles. Hit areas are measured from the
  * art's alpha at import time and arrive in the manifest, so a redrawn object brings
@@ -21,8 +22,6 @@ import type { BandId } from './bands'
 
 export type Hotspot = {
   id: 'desk' | 'bed' | 'billboard'
-  /** Used by the DOM nav, so it is read aloud and seen on focus. */
-  label: string
   href: string
   band: BandId
 }
@@ -30,7 +29,6 @@ export type Hotspot = {
 export const HOTSPOTS: readonly Hotspot[] = [
   {
     id: 'desk',
-    label: 'Desk — software and AI research',
     href: '/desk',
     band: 'room',
   },
@@ -39,13 +37,11 @@ export const HOTSPOTS: readonly Hotspot[] = [
     // and the route differ on purpose: ids name what is in the room, because that
     // is what the art files are named after and what the hit test matches.
     id: 'bed',
-    label: 'Bed — drawing portfolio',
     href: '/art',
     band: 'room',
   },
   {
     id: 'billboard',
-    label: 'Billboard — recent updates',
     href: '/updates',
     band: 'skyline',
   },

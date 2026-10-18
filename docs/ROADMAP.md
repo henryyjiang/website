@@ -90,7 +90,10 @@ with the sky left transparent above the roofline; nothing in the code needs to c
 - Tune parallax factors against art that actually has depth cues
 - Revisit hover glow with the room's real lighting (`docs/DESIGN.md`)
 - Verify the asset budget in `docs/ANIMATION.md`
-- Decide the narrow-viewport strategy, now that the composition is known
+- ~~Decide the narrow-viewport strategy, now that the composition is known~~ — decided and built:
+  frame a focal point with no panning below 768px, and promote the hidden nav to a visible menu
+  (`docs/ARCHITECTURE.md` § Narrow viewports). `FOCAL_POINT` is one constant and the template draws
+  the slice it produces, so the framing is tunable as the art firms up.
 
 ---
 
@@ -143,8 +146,8 @@ canvas.
 
 Tracked here so they don't get silently decided:
 
-- **Narrow viewports.** Orientation-driven pan, tighter crop, or a stacked layout? Needs real art.
-  (Phase 3)
+- ~~**Narrow viewports.**~~ Settled in Phase 3: a focal crop with the nav carrying navigation. What
+  is left is art direction, not architecture — which slice of the room `FOCAL_POINT` should frame.
 - **Tab interior design.** Entirely open. (Phase 4)
 - **Hover glow treatment.** Depends on how the room is lit. (Phase 3)
 - **Project dates.** The old markup carried none; they need reconstructing. (Phase 2)

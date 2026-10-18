@@ -66,6 +66,7 @@ app/                  Next routes. Scene mounts once in the root layout and neve
 components/
   scene/              Pixi: layers, parallax camera, character, hotspots
   overlay/            React: the three tab panels and shared chrome
+  nav/                React: the destination menu — the DOM half of the hotspots
 lib/
   scene-space.ts      Scene↔screen coordinate maths. Single source of truth.
   store.ts            Shared state between Pixi and React

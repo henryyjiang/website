@@ -36,6 +36,38 @@ export const SCENE_ASPECT = SCENE_W / SCENE_H
 export const OVERSCAN = 1.08
 
 /**
+ * The width below which the scene is framed rather than fitted.
+ *
+ * A phone is around 9:19.5 against a 16:9 canvas, so covering the whole canvas
+ * crops away about three quarters of the room's width and leaves a vertical slice
+ * of wall. Below this width the scene stops trying to be the whole room and frames
+ * one part of it instead, and navigation moves to the nav rather than the objects —
+ * which it can, because the nav was always the real one (docs/ARCHITECTURE.md).
+ */
+export const NARROW_WIDTH = 768
+
+/**
+ * The point of the canvas a narrow viewport puts in the middle of the screen.
+ *
+ * A point, not a rectangle, because the crop is not negotiable: the canvas has to
+ * cover the viewport or its edges show, and covering a 9:19.5 phone with a 16:9
+ * canvas means scaling to the canvas's *height*. That fixes how much is visible —
+ * about 665 scene units wide on a 375 x 812 phone, a quarter of the room — and
+ * leaves exactly one decision, which quarter. Framing a rectangle instead would
+ * only have been a more complicated way of writing this point down, and a way to
+ * ask for a crop that cannot be honoured.
+ *
+ * It sits right of the canvas centre, on the window and the city behind it, which
+ * says "a room above a city" in one glance. The bed and the desk are at the far
+ * edges and cannot both be in frame; the nav reaches them, so what is lost on a
+ * phone is the hover, not the destination.
+ *
+ * `art/TEMPLATE.png` draws the slice this produces, so the composition can be
+ * checked against it while it is being drawn rather than afterwards.
+ */
+export const FOCAL_POINT = { x: 1500, y: 760 } as const
+
+/**
  * How the scene is currently sitting on the screen.
  *
  * `scale` and the origin describe the scene at camera centre; the camera is applied
@@ -58,6 +90,8 @@ export type SceneTransform = {
 }
 
 export function sceneTransform(viewportW: number, viewportH: number): SceneTransform {
+  if (viewportW > 0 && viewportW < NARROW_WIDTH) return focalTransform(viewportW, viewportH)
+
   // Cover, not contain: the scene always fills the window and we pan within the
   // overflow — plus OVERSCAN, so that overflow exists even at the design aspect.
   const scale = Math.max(viewportW / SCENE_W, viewportH / SCENE_H) * OVERSCAN
@@ -73,6 +107,50 @@ export function sceneTransform(viewportW: number, viewportH: number): SceneTrans
     panRangeX: Math.max(0, overflowX / 2 / scale),
     panRangeY: Math.max(0, overflowY / 2 / scale),
   }
+}
+
+/**
+ * Frame the focal point instead of centring the canvas, and do not pan.
+ *
+ * Cover with no overscan, because overscan exists to create room to pan and there
+ * is nothing here to pan with: a phone has no pointer to follow, and a scene that
+ * drifts on its own is motion nobody asked for. Dropping it also buys back the 8%
+ * of the slice it would have spent, which is worth more here than anywhere else.
+ *
+ * The clamp is what lets the focal point sit well away from the canvas centre
+ * without the framing having to know how close to an edge it is: ask for whatever
+ * centring you want, and the scene slides back just far enough that no edge of the
+ * canvas comes into view.
+ */
+function focalTransform(viewportW: number, viewportH: number): SceneTransform {
+  const scale = Math.max(viewportW / SCENE_W, viewportH / SCENE_H)
+
+  const originX = clamp(viewportW / 2 - FOCAL_POINT.x * scale, viewportW - SCENE_W * scale, 0)
+  const originY = clamp(viewportH / 2 - FOCAL_POINT.y * scale, viewportH - SCENE_H * scale, 0)
+
+  return { scale, originX, originY, panRangeX: 0, panRangeY: 0 }
+}
+
+/**
+ * What a narrow viewport of this size actually shows, in scene units.
+ *
+ * Exported so the drawing template can mark it rather than describe it, and so the
+ * slice is a measurement both sides agree on instead of a number written twice.
+ */
+export function focalSlice(viewportW: number, viewportH: number): Rect {
+  const transform = focalTransform(viewportW, viewportH)
+  return {
+    x: -transform.originX / transform.scale,
+    y: -transform.originY / transform.scale,
+    width: viewportW / transform.scale,
+    height: viewportH / transform.scale,
+  }
+}
+
+type Rect = { x: number; y: number; width: number; height: number }
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max)
 }
 
 /**

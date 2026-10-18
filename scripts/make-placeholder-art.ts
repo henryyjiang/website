@@ -35,7 +35,7 @@ import {
   SAFE_AREA,
   WINDOW_OPENING,
 } from '../lib/scene-layout.ts'
-import { SCENE_H, SCENE_W } from '../lib/scene-space.ts'
+import { focalSlice, NARROW_WIDTH, SCENE_H, SCENE_W } from '../lib/scene-space.ts'
 
 const ART_DIR = 'art'
 
@@ -86,6 +86,20 @@ function buildPieces(): Piece[] {
 
 // --- the template ---------------------------------------------------------------
 
+/** A reference phone, for drawing the slice a narrow viewport actually gets. */
+const PHONE = { width: 375, height: 812 }
+
+/** Rounded, because it is a drawn guide and sub-pixel precision reads as noise. */
+const PHONE_SLICE = (() => {
+  const slice = focalSlice(PHONE.width, PHONE.height)
+  return {
+    x: Math.round(slice.x),
+    y: Math.round(slice.y),
+    width: Math.round(slice.width),
+    height: Math.round(slice.height),
+  }
+})()
+
 function buildTemplate(): Buffer {
   // Labels are clamped into the canvas. The background safe area starts within a few
   // pixels of the top edge — 15% bleed on a 1040px opening nearly fills the canvas —
@@ -119,6 +133,14 @@ function buildTemplate(): Buffer {
       guide(HOTSPOT_RECTS.desk, '#ffb454', '12 10', 'desk hotspot', HOTSPOT_RECTS.desk.y - 16) +
       guide(HOTSPOT_RECTS.bed, '#ffb454', '12 10', 'bed hotspot', HOTSPOT_RECTS.bed.y - 16) +
       guide(HOTSPOT_RECTS.billboard, '#ff8fb1', '12 10', 'billboard hotspot', HOTSPOT_RECTS.billboard.y - 16) +
+      guide(
+        PHONE_SLICE,
+        '#c792ea',
+        '18 12',
+        `phone framing — all a ${PHONE.width} x ${PHONE.height} screen sees ` +
+          `(anything under ${NARROW_WIDTH}px is a slice like this)`,
+        PHONE_SLICE.y + 110,
+      ) +
       `<text x="80" y="${SCENE_H - 70}" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="700" fill="rgba(255,255,255,0.8)">` +
       `${SCENE_W} x ${SCENE_H} design canvas — export every layer at this size, transparent where nothing is drawn` +
       `</text>`,

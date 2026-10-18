@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 
+import { TopNav } from '@/components/nav/TopNav'
 import { OverlaySync } from '@/components/scene/OverlaySync'
 import { SceneMount } from '@/components/scene/SceneMount'
-import { SceneNav } from '@/components/scene/SceneNav'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="relative h-full">
         <OverlaySync />
         <SceneMount />
-        <SceneNav />
+        <TopNav />
         {children}
       </body>
     </html>

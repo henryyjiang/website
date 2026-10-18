@@ -132,14 +132,34 @@ This is the right behaviour for irregular painted objects — a rectangle over a
 air above it, and a hover glow that triggers off-object feels broken.
 
 But a Pixi sprite is invisible to the accessibility tree, cannot be tabbed to, and is not a link.
-So **every hotspot also exists as a visually hidden DOM `<button>` or `<Link>`** in a nav landmark.
-Both paths dispatch the same navigation action.
+So **every destination also exists as a real `<Link>`** in a nav landmark —
+`components/nav/TopNav.tsx`, reading `content/nav.ts`. Both paths dispatch the same navigation.
+
+That nav started out visually hidden, which served assistive technology and nobody else. It is
+visible now, because the narrow-viewport framing below made it the only way in on a phone, and
+because quick access to a destination should not require finding the object that leads there. It
+lists destinations rather than objects — and four rather than three, since Home is not an object in
+the room.
 
 This is deliberate duplication, and the alternative was considered and rejected: positioning real DOM
 buttons over the art means either rectangular hit areas (wrong feel) or hand-maintained CSS clip
 paths per object (unmaintainable as art is redrawn). Keeping interaction in Pixi and access in the
-DOM costs one extra list and makes both correct. The hotspot table in `components/scene/hotspots.ts`
-is the shared source for both.
+DOM costs one extra list and makes both correct. `components/scene/hotspots.ts` says which object
+leads where; `content/nav.ts` is the list of destinations.
+
+### Narrow viewports: a frame, not a camera
+
+The design canvas is 16:9 and a phone is around 9:19.5, so covering the viewport means scaling to the
+canvas's *height* and showing roughly a quarter of the room's width. That is arithmetic, not a
+choice: scaling down to fit more width leaves the canvas failing to cover the screen.
+
+So below `NARROW_WIDTH` (768) the scene stops being a camera and becomes a frame. It covers with no
+overscan — overscan exists to create room to pan, and there is no pointer to pan with — and centres
+on `FOCAL_POINT` rather than on the canvas, clamped so no canvas edge can come into view. The pan
+range is zero, so the same transform that draws the scene also hit-tests it, with no second rule to
+keep in step. `focalSlice()` reports exactly what a given screen sees, and `art/TEMPLATE.png` draws
+that slice for a reference phone, so the composition can be checked against it while it is being
+drawn.
 
 ## Routing
 
