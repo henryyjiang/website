@@ -16,7 +16,7 @@
 
 import { useSyncExternalStore } from 'react'
 
-export type HotspotId = 'desk' | 'art' | 'billboard'
+export type HotspotId = 'desk' | 'bed' | 'billboard'
 
 export type SceneState = {
   /** Which hotspot the pointer is over, if any. Written by the scene. */

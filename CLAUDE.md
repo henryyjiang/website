@@ -82,18 +82,19 @@ docs/
 the code. Adding, replacing or reordering a layer must never require touching a component.
 
 ```
-art/background/sky/        parallax 0.10
-art/background/skyline/    parallax 0.30   (city, skyscraper, billboard)
-art/foreground/            parallax 1.00   (the room: walls, window frame, furniture, floor)
-art/objects/               the three clickable objects (desk, art — the bed, billboard)
+art/background/sky.png     parallax 0.10   (placeholder until Henry draws one)
+art/background/skyline.png parallax 0.30   (city and the skyscraper)
+art/foreground/            parallax 1.00   (the room: walls, window frame, floor)
+art/objects/               desk.png, bed.png, billboard.png — the three hotspots
 art/character/             frame sequence, video, or pre-packed atlas
 ```
 
 Rules enforced by this layout, all of them read from `art/README.md` rather than hardcoded:
 
-- **Folder determines parallax band.** Depth is a filing decision, not a code change.
+- **The band is a filing decision, not a code change.** A layer names its band — `skyline.png` —
+  or sits in a folder named after it. Either way, changing a layer's depth is a rename or a move.
 - **Filename prefix determines draw order** within a band (`10-`, `20-`, `30-`), so reordering is a
-  rename.
+  rename. Optional: a band with one layer has nothing to order.
 - **Layers export at the full 2560 × 1440 design canvas** with transparency around the content, so
   art and hit areas share one coordinate space by construction.
 

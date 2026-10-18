@@ -1,21 +1,23 @@
 /**
- * `npm run art:placeholders` — generate the Phase 2 placeholder art and the drawing
- * template.
+ * `npm run art:placeholders` — generate the art that Henry has not drawn yet, and
+ * the drawing template.
  *
  * Two outputs, from one geometry source (lib/scene-layout.ts):
  *
- *   - Placeholder layers and objects written into `art/`, so the import pipeline has
- *     real files to chew on and the scene has something to render. They are
- *     deliberately crude: placeholder art that is obviously placeholder cannot
- *     quietly harden into a design decision (docs/ROADMAP.md).
+ *   - A placeholder for every band with no real art in it. That is now just the
+ *     sky: the room, the skyline and all three objects are Henry's. Placeholders
+ *     are deliberately crude, because placeholder art that is obviously placeholder
+ *     cannot quietly harden into a design decision (docs/ROADMAP.md).
  *
  *   - `art/TEMPLATE.png`, a full-canvas guide marking the window opening, the
  *     background safe area and the three hotspot footprints, to draw on top of so
  *     real art lines up first try instead of needing a round of position-fixing.
+ *     Its rectangles come from lib/scene-layout.ts, which is kept in step with the
+ *     art by reading measurements off an import.
  *
- * Safe to re-run: it overwrites only the files it generated. Once Henry replaces a
- * file with real art, running this again would overwrite it, so it warns about any
- * file it is about to replace that it did not write itself.
+ * Safe to re-run: it overwrites only the files it generated, tracked by hash in
+ * `art/.placeholders.json`. A file it did not write is left alone and reported, so
+ * re-running this can never eat real art.
  */
 
 import { createHash } from 'node:crypto'
@@ -40,8 +42,6 @@ const ART_DIR = 'art'
 /** Marker embedded in every generated file, so we can tell ours from Henry's. */
 const MARKER = 'portfolio-placeholder'
 
-const W = WINDOW_OPENING
-
 function svg(body: string): Buffer {
   return Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${SCENE_W}" height="${SCENE_H}" ` +
@@ -51,17 +51,6 @@ function svg(body: string): Buffer {
 
 function rect(r: Rect, fill: string, extra = ''): string {
   return `<rect x="${r.x}" y="${r.y}" width="${r.width}" height="${r.height}" fill="${fill}" ${extra}/>`
-}
-
-/** Diagonal hatching, so a placeholder cannot be mistaken for finished art. */
-function hatch(id: string, colour: string): string {
-  return (
-    `<pattern id="${id}" width="48" height="48" patternTransform="rotate(45)" ` +
-    `patternUnits="userSpaceOnUse">` +
-    `<rect width="48" height="48" fill="${colour}"/>` +
-    `<line x1="0" y1="0" x2="0" y2="48" stroke="rgba(255,255,255,0.10)" stroke-width="18"/>` +
-    `</pattern>`
-  )
 }
 
 function label(text: string, x: number, y: number, size = 44): string {
@@ -80,7 +69,7 @@ function buildPieces(): Piece[] {
 
   // --- sky, 0.10 ----------------------------------------------------------------
   pieces.push({
-    path: join(ART_DIR, 'background', 'sky', '10-gradient.png'),
+    path: join(ART_DIR, 'background', 'sky.png'),
     svg: svg(
       `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">` +
         `<stop offset="0%" stop-color="#0a1230"/>` +
@@ -88,133 +77,7 @@ function buildPieces(): Piece[] {
         `<stop offset="100%" stop-color="#2d3f63"/>` +
         `</linearGradient></defs>` +
         rect({ x: 0, y: 0, width: SCENE_W, height: SCENE_H }, 'url(#g)') +
-        label('sky · 0.10', 80, 110),
-    ),
-  })
-
-  // --- skyline, 0.30 ------------------------------------------------------------
-  // Blocks at varied heights so the band's own travel is readable, not just its
-  // travel relative to the room. Drawn across the background safe area so panning
-  // cannot expose an edge through the opening.
-  const blocks: Rect[] = [
-    { x: 180, y: 640, width: 300, height: 800 },
-    { x: 520, y: 460, width: 240, height: 980 },
-    { x: 820, y: 700, width: 180, height: 740 },
-    { x: 1480, y: 580, width: 280, height: 860 },
-    { x: 1800, y: 720, width: 340, height: 720 },
-    { x: 2180, y: 620, width: 260, height: 820 },
-  ]
-
-  pieces.push({
-    path: join(ART_DIR, 'background', 'skyline', '10-far-blocks.png'),
-    svg: svg(
-      `<defs>${hatch('h', '#24395c')}</defs>` +
-        blocks.map((b) => rect(b, 'url(#h)')).join('') +
-        label('skyline · 0.30', 80, SCENE_H - 60),
-    ),
-  })
-
-  // The skyscraper carrying the billboard. A separate layer from the far blocks so
-  // the billboard object has something to sit on that moves with it.
-  pieces.push({
-    path: join(ART_DIR, 'background', 'skyline', '20-tower.png'),
-    svg: svg(
-      `<defs>${hatch('t', '#35507a')}</defs>` +
-        rect({ x: 1000, y: 240, width: 420, height: SCENE_H - 240 }, 'url(#t)') +
-        rect({ x: 1000, y: 240, width: 420, height: 8 }, 'rgba(255,255,255,0.25)'),
-    ),
-  })
-
-  // --- room, 1.00 ---------------------------------------------------------------
-  // The interior is a frame around the opening, not a filled rectangle with a hole
-  // cut out: four rects need no path operations and leave the opening genuinely
-  // transparent, so the bands behind it composite through. That transparency is the
-  // window — nothing masks the skyline to this shape.
-  pieces.push({
-    path: join(ART_DIR, 'foreground', '10-walls.png'),
-    svg: svg(
-      `<defs>${hatch('w', '#5e4433')}</defs>` +
-        rect({ x: 0, y: 0, width: SCENE_W, height: W.y }, 'url(#w)') +
-        rect(
-          { x: 0, y: W.y + W.height, width: SCENE_W, height: SCENE_H - (W.y + W.height) },
-          'url(#w)',
-        ) +
-        rect({ x: 0, y: W.y, width: W.x, height: W.height }, 'url(#w)') +
-        rect(
-          { x: W.x + W.width, y: W.y, width: SCENE_W - (W.x + W.width), height: W.height },
-          'url(#w)',
-        ) +
-        label('room · 1.00 — opening is transparent', 80, 110),
-    ),
-  })
-
-  pieces.push({
-    path: join(ART_DIR, 'foreground', '20-mullions.png'),
-    svg: svg(
-      rect({ x: 990, y: W.y, width: 26, height: W.height }, '#7a5b43') +
-        rect({ x: 1560, y: W.y, width: 26, height: W.height }, '#7a5b43') +
-        rect({ x: W.x, y: W.y, width: W.width, height: 18 }, '#7a5b43') +
-        rect({ x: W.x, y: W.y + W.height - 18, width: W.width, height: 18 }, '#7a5b43'),
-    ),
-  })
-
-  // --- floor, part of the room at 1.00 ------------------------------------------
-  // Drawn past the canvas edges anyway: it costs nothing here, and it is what a
-  // layer would need if it were ever filed under the 1.15 near band, which travels
-  // further than the overflow that hides it. bandBleed() in lib/scene-space.ts.
-  pieces.push({
-    path: join(ART_DIR, 'foreground', '30-floor.png'),
-    svg: svg(
-      `<defs>${hatch('n', '#2e211c')}</defs>` +
-        rect({ x: -200, y: 1280, width: SCENE_W + 400, height: 400 }, 'url(#n)') +
-        label('floor · room 1.00', 80, SCENE_H - 40),
-    ),
-  })
-
-  // --- objects ------------------------------------------------------------------
-  // Full canvas with transparency around the shape, like every other layer, so the
-  // object sits exactly where it belongs. Each gets a non-rectangular silhouette so
-  // that alpha-accurate hit testing has something to actually prove: a rectangle
-  // around these would catch empty air.
-  const desk = HOTSPOT_RECTS.desk
-  pieces.push({
-    path: join(ART_DIR, 'objects', 'desk.png'),
-    svg: svg(
-      `<defs>${hatch('d', '#9c6f4a')}</defs>` +
-        // Monitor on top, desktop below, legs — an L-ish silhouette, not a box.
-        rect({ x: desk.x + 120, y: desk.y, width: 360, height: 190 }, 'url(#d)', 'rx="12"') +
-        rect({ x: desk.x + 270, y: desk.y + 190, width: 60, height: 50 }, '#7d5637') +
-        rect({ x: desk.x, y: desk.y + 240, width: desk.width, height: 44 }, 'url(#d)') +
-        rect({ x: desk.x + 30, y: desk.y + 284, width: 40, height: 76 }, '#7d5637') +
-        rect({ x: desk.x + desk.width - 70, y: desk.y + 284, width: 40, height: 76 }, '#7d5637'),
-    ),
-  })
-
-  const art = HOTSPOT_RECTS.art
-  pieces.push({
-    path: join(ART_DIR, 'objects', 'art.png'),
-    svg: svg(
-      `<defs>${hatch('a', '#a8864f')}</defs>` +
-        // Easel: canvas panel plus splayed legs.
-        rect({ x: art.x + 40, y: art.y, width: 320, height: 240 }, 'url(#a)', 'rx="8"') +
-        `<polygon points="${art.x + 70},${art.y + 240} ${art.x + 110},${art.y + 240} ${art.x + 150},${art.y + 420} ${art.x + 110},${art.y + 420}" fill="#8a6b3c"/>` +
-        `<polygon points="${art.x + 290},${art.y + 240} ${art.x + 330},${art.y + 240} ${art.x + 290},${art.y + 420} ${art.x + 250},${art.y + 420}" fill="#8a6b3c"/>` +
-        rect({ x: art.x + 120, y: art.y + 330, width: 160, height: 20 }, '#8a6b3c'),
-    ),
-  })
-
-  // The billboard lives in the skyline band — seen through the glass, parallaxing
-  // with the city rather than the room (docs/DESIGN.md). The area where headlines go
-  // is left clear: the text is rendered live from content/updates.ts, not painted in.
-  const bb = HOTSPOT_RECTS.billboard
-  pieces.push({
-    path: join(ART_DIR, 'objects', 'billboard.png'),
-    svg: svg(
-      rect(bb, '#6f64b8', 'rx="6"') +
-        rect({ x: bb.x + 14, y: bb.y + 14, width: bb.width - 28, height: bb.height - 70 }, '#2b2550') +
-        // Support legs down to the tower.
-        rect({ x: bb.x + 60, y: bb.y + bb.height, width: 26, height: 120 }, '#5a5196') +
-        rect({ x: bb.x + bb.width - 86, y: bb.y + bb.height, width: 26, height: 120 }, '#5a5196'),
+        label('sky · 0.10 — placeholder', 80, 110),
     ),
   })
 
@@ -254,7 +117,7 @@ function buildTemplate(): Buffer {
       guide(BACKGROUND_SAFE, '#4ec9a0', '4 18', 'background safe area — draw sky/skyline out to here', BACKGROUND_SAFE.y + 56) +
       guide(WINDOW_OPENING, '#6cc6ff', '24 14', 'window opening — transparent in room art', WINDOW_OPENING.y + 56) +
       guide(HOTSPOT_RECTS.desk, '#ffb454', '12 10', 'desk hotspot', HOTSPOT_RECTS.desk.y - 16) +
-      guide(HOTSPOT_RECTS.art, '#ffb454', '12 10', 'art hotspot', HOTSPOT_RECTS.art.y - 16) +
+      guide(HOTSPOT_RECTS.bed, '#ffb454', '12 10', 'bed hotspot', HOTSPOT_RECTS.bed.y - 16) +
       guide(HOTSPOT_RECTS.billboard, '#ff8fb1', '12 10', 'billboard hotspot', HOTSPOT_RECTS.billboard.y - 16) +
       `<text x="80" y="${SCENE_H - 70}" font-family="Helvetica, Arial, sans-serif" font-size="38" font-weight="700" fill="rgba(255,255,255,0.8)">` +
       `${SCENE_W} x ${SCENE_H} design canvas — export every layer at this size, transparent where nothing is drawn` +

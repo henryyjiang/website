@@ -20,7 +20,7 @@
 import type { BandId } from './bands'
 
 export type Hotspot = {
-  id: 'desk' | 'art' | 'billboard'
+  id: 'desk' | 'bed' | 'billboard'
   /** Used by the DOM nav, so it is read aloud and seen on focus. */
   label: string
   href: string
@@ -35,8 +35,11 @@ export const HOTSPOTS: readonly Hotspot[] = [
     band: 'room',
   },
   {
-    id: 'art',
-    label: 'Easel — drawing portfolio',
+    // The object is a bed and the destination is the drawing portfolio, so the id
+    // and the route differ on purpose: ids name what is in the room, because that
+    // is what the art files are named after and what the hit test matches.
+    id: 'bed',
+    label: 'Bed — drawing portfolio',
     href: '/art',
     band: 'room',
   },

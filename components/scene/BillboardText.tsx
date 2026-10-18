@@ -4,7 +4,7 @@ import { extend } from '@pixi/react'
 import { Container, Text } from 'pixi.js'
 import { useEffect, useState } from 'react'
 
-import { BILLBOARD_TEXT_AREA } from '@/lib/scene-layout'
+import type { ManifestRect } from '@/lib/scene-manifest'
 import { BILLBOARD_COUNT, UPDATES } from '@/content/updates'
 import { byDateDesc } from '@/content/types'
 
@@ -13,7 +13,18 @@ extend({ Container, Text })
 /** How long each headline holds before the next one. */
 const DWELL_MS = 4500
 
-const AREA = BILLBOARD_TEXT_AREA
+/**
+ * Inset from the billboard's largest solid rectangle to the text's own box.
+ *
+ * The surface is drawn in perspective, so its inner rect touches the sloping top and
+ * bottom edges at exactly one point each. A margin keeps the headline off that
+ * pinch, and being a fraction rather than a pixel count it survives the billboard
+ * being redrawn at a different size.
+ */
+const INSET = 0.08
+
+/** Type size as a fraction of the panel height, so the headline scales with the art. */
+const TEXT_SCALE = 0.13
 
 /**
  * The billboard's live surface.
@@ -26,7 +37,14 @@ const AREA = BILLBOARD_TEXT_AREA
  * Text lives in the canvas because it has to parallax with the skyline; it is
  * decorative duplication of the /updates page, which is the accessible copy.
  */
-export function BillboardText({ reducedMotion }: { reducedMotion: boolean }) {
+export function BillboardText({
+  area,
+  reducedMotion,
+}: {
+  /** The billboard's measured inner rect, straight from the manifest. */
+  area: ManifestRect
+  reducedMotion: boolean
+}) {
   const recent = byDateDesc(UPDATES).slice(0, BILLBOARD_COUNT)
   const [index, setIndex] = useState(0)
 
@@ -44,25 +62,33 @@ export function BillboardText({ reducedMotion }: { reducedMotion: boolean }) {
   }, [reducedMotion, recent.length])
 
   const update = recent[reducedMotion ? 0 : index % recent.length]
-  if (!update) return null
+  if (!update || area.width <= 0 || area.height <= 0) return null
+
+  const panel = {
+    x: area.x + area.width * INSET,
+    y: area.y + area.height * INSET,
+    width: area.width * (1 - INSET * 2),
+    height: area.height * (1 - INSET * 2),
+  }
+  const fontSize = Math.round(panel.height * TEXT_SCALE)
 
   return (
-    <pixiContainer label="billboard-text" x={AREA.x} y={AREA.y}>
+    <pixiContainer label="billboard-text" x={panel.x} y={panel.y}>
       <pixiText
         text={update.title.toUpperCase()}
-        x={AREA.width / 2}
-        y={AREA.height / 2}
+        x={panel.width / 2}
+        y={panel.height / 2}
         anchor={0.5}
         resolution={2}
         style={{
           fontFamily: 'Helvetica, Arial, sans-serif',
-          fontSize: 38,
+          fontSize,
           fontWeight: '700',
-          fill: 0xfff4d6,
+          fill: 0x2b2118,
           align: 'center',
           wordWrap: true,
-          wordWrapWidth: AREA.width,
-          lineHeight: 44,
+          wordWrapWidth: panel.width,
+          lineHeight: Math.round(fontSize * 1.18),
           letterSpacing: 1,
         }}
       />

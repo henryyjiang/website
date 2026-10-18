@@ -22,7 +22,7 @@ import process from 'node:process'
 
 import sharp from 'sharp'
 
-import { BANDS, type BandId } from '../components/scene/bands.ts'
+import { BAND_IDS, BANDS, type BandId } from '../components/scene/bands.ts'
 import { type HotspotId } from '../lib/scene-layout.ts'
 import { MANIFEST_VERSION, type SceneManifest } from '../lib/scene-manifest.ts'
 import { SCENE_H, SCENE_W } from '../lib/scene-space.ts'
@@ -44,17 +44,24 @@ const MASK_SCALE = 8
 const LAYER_BUDGET_BYTES = 400 * 1024
 
 /**
- * Which folder maps to which parallax band.
+ * Where layer art is read from, and how each file's parallax band is decided.
  *
- * `foreground/` is flat and is the room plane, because that is where almost all of
- * the room art lives and a one-file-deep folder is a decision Henry would have to
- * make on every export for no benefit. `foreground/near/` keeps its 1.15 mapping as
- * an opt-in: the folder does not exist, and creating it starts routing art there.
+ * Two ways to say the same thing, so that one file per band needs no folders and
+ * several layers in a band still can have them:
+ *
+ *   - the folder names the band — `background/skyline/20-tower.png`
+ *   - the filename names the band — `background/skyline.png`, `background/sky.png`
+ *
+ * A directory listed here with a band uses that band for everything in it, which is
+ * why `foreground/` is flat: the room is one band, so naming each file after it
+ * would be noise. A directory listed as `null` takes the band from each filename,
+ * which is what lets `background/` hold one file per depth with no folders at all.
  */
-const BAND_DIRS: Record<string, BandId> = {
+const LAYER_DIRS: Record<string, BandId | null> = {
+  background: null,
   'background/sky': 'sky',
   'background/skyline': 'skyline',
-  'foreground': 'room',
+  foreground: 'room',
   'foreground/near': 'near',
 }
 
@@ -66,7 +73,7 @@ const BAND_DIRS: Record<string, BandId> = {
  */
 const OBJECT_BANDS: Record<HotspotId, BandId> = {
   desk: 'room',
-  art: 'room',
+  bed: 'room',
   billboard: 'skyline',
 }
 
@@ -93,19 +100,29 @@ function log(message: string): void {
  * Split `20-window-frame.png` into a draw order and an id.
  *
  * Order lives in the filename so that reordering layers is a rename rather than a
- * code edit. Without a prefix the layer still imports; it just sorts last and says so.
+ * code edit. The prefix is optional: a band holding a single layer has nothing to
+ * order, and making Henry write `10-` on a lone file would be ceremony. Unprefixed
+ * layers draw after prefixed ones, in filename order — the ambiguity only matters
+ * once a band has two of them, which is where `importLayers` warns.
  */
-function parseLayerName(file: string): { z: number; id: string } {
+function parseLayerName(file: string): { z: number; id: string; ordered: boolean } {
   const stem = basename(file, extname(file))
   const match = /^(\d+)[-_](.+)$/.exec(stem)
-  if (!match) {
-    warn(
-      `"${file}" has no NN- ordering prefix, so its draw order is undefined. ` +
-        `Rename it like "20-${stem}.png". See art/README.md.`,
-    )
-    return { z: Number.MAX_SAFE_INTEGER, id: stem }
-  }
-  return { z: Number.parseInt(match[1]!, 10), id: match[2]! }
+  if (!match) return { z: Number.MAX_SAFE_INTEGER, id: stem, ordered: false }
+  return { z: Number.parseInt(match[1]!, 10), id: match[2]!, ordered: true }
+}
+
+/**
+ * The band a filename names, if it names one.
+ *
+ * `sky.png`, `skyline.png` and `skyline-west.png` all answer; anything else does
+ * not, and the caller says so rather than guessing a depth. Guessing is the thing to
+ * avoid here: a layer silently filed in the wrong band looks almost right and
+ * parallaxes wrong, which is far harder to spot than a file that did not appear.
+ */
+function bandFromName(id: string): BandId | null {
+  const head = id.split('-')[0]!.toLowerCase()
+  return (BAND_IDS as readonly string[]).includes(head) ? (head as BandId) : null
 }
 
 async function listImages(dir: string): Promise<string[]> {
@@ -176,17 +193,35 @@ async function writeImagePair(
 
 async function importLayers(): Promise<SceneManifest['layers']> {
   const layers: SceneManifest['layers'] = []
+  const unordered = new Map<BandId, string[]>()
 
-  for (const [relative, band] of Object.entries(BAND_DIRS)) {
+  for (const [relative, dirBand] of Object.entries(LAYER_DIRS)) {
     const dir = join(ART_DIR, relative)
     const files = await listImages(dir)
 
     for (const file of files) {
-      const { z, id } = parseLayerName(file)
+      const { z, id, ordered } = parseLayerName(file)
       const label = `${relative}/${file}`
 
+      const band = dirBand ?? bandFromName(id)
+      if (!band) {
+        warn(
+          `${label} does not say which band it is in. Name it after one — ` +
+            `${BAND_IDS.join('.png, ')}.png — or move it into a folder of that ` +
+            `name. Skipped rather than guessed, since a layer at the wrong depth ` +
+            `looks nearly right and parallaxes wrong. See art/README.md.`,
+        )
+        continue
+      }
+
+      // A file named after its band or its folder is just "the layer of this band",
+      // so it takes the band's own name. Without this, `background/skyline.png` and
+      // `foreground/foreground.png` import as `skyline-skyline` and `room-foreground`.
+      const folder = relative.split('/').pop()!
+      const layerId = id === band || id === folder ? band : `${band}-${id}`
+
       const source = await normaliseToCanvas(await readFile(join(dir, file)), label)
-      const written = await writeImagePair(source, 'layers', `${band}-${id}`)
+      const written = await writeImagePair(source, 'layers', layerId)
 
       if (written.bytes > LAYER_BUDGET_BYTES) {
         warn(
@@ -195,28 +230,91 @@ async function importLayers(): Promise<SceneManifest['layers']> {
         )
       }
 
-      layers.push({ id: `${band}-${id}`, band, z, ...stripBytes(written) })
-      log(`  layer  ${band.padEnd(8)} z=${String(z).padStart(4)}  ${id}  (${kb(written.bytes)})`)
+      if (!ordered) unordered.set(band, [...(unordered.get(band) ?? []), label])
+
+      layers.push({ id: layerId, band, z, ...stripBytes(written) })
+      log(
+        `  layer  ${band.padEnd(8)} ${(ordered ? `z=${String(z).padStart(4)}` : 'unordered').padEnd(8)}  ` +
+          `${layerId}  (${kb(written.bytes)})`,
+      )
     }
   }
 
-  // Back to front: band order first, then z within the band.
-  layers.sort((a, b) => BANDS[a.band].z - BANDS[b.band].z || a.z - b.z)
+  for (const [band, files] of unordered) {
+    if (files.length < 2) continue
+    warn(
+      `${files.join(' and ')} are both in the ${band} band with no NN- prefix, so ` +
+        `their draw order is alphabetical rather than chosen. Prefix them ` +
+        `(10-, 20-) to decide which is in front.`,
+    )
+  }
+
+  // Back to front: band order first, then z within the band, then filename so that
+  // unprefixed layers still land in a stable, reproducible order.
+  layers.sort(
+    (a, b) => BANDS[a.band].z - BANDS[b.band].z || a.z - b.z || a.id.localeCompare(b.id),
+  )
   return layers
 }
 
 // --- objects --------------------------------------------------------------------
 
 /**
- * Measure a 1-bit alpha mask and the art's tight bounds.
+ * The largest axis-aligned rectangle that fits inside a grid of solid cells.
  *
- * Both are derived from the art rather than declared in code, so a redrawn object
- * brings its own hit area with it and the two can never drift apart. An alpha of 128
- * is the threshold — anti-aliased edges below half opacity are not worth clicking.
+ * Standard largest-rectangle-in-a-histogram, run once per row. It exists so that
+ * what gets drawn *on* an object — the billboard's headlines — can be placed from
+ * the art rather than from a rectangle typed into a file next to it. Henry drew the
+ * billboard as a perspective quad; a hand-written rect would have to be re-typed
+ * every time that quad moves, and would be wrong in between.
+ */
+function largestInnerRect(
+  cells: Uint8Array,
+  width: number,
+  height: number,
+): { x: number; y: number; width: number; height: number } {
+  const heights = new Int32Array(width)
+  let best = { x: 0, y: 0, width: 0, height: 0 }
+  let bestArea = 0
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      heights[x] = cells[y * width + x] ? heights[x]! + 1 : 0
+    }
+
+    const stack: number[] = []
+    for (let x = 0; x <= width; x++) {
+      const current = x === width ? 0 : heights[x]!
+      while (stack.length > 0 && heights[stack[stack.length - 1]!]! >= current) {
+        const top = stack.pop()!
+        const barHeight = heights[top]!
+        const left = stack.length > 0 ? stack[stack.length - 1]! + 1 : 0
+        const barWidth = x - left
+        const area = barWidth * barHeight
+        if (area > bestArea) {
+          bestArea = area
+          best = { x: left, y: y - barHeight + 1, width: barWidth, height: barHeight }
+        }
+      }
+      stack.push(x)
+    }
+  }
+
+  return best
+}
+
+/**
+ * Measure a 1-bit alpha mask, the art's tight bounds, and its largest solid rect.
+ *
+ * All three are derived from the art rather than declared in code, so a redrawn
+ * object brings its own hit area with it and the two can never drift apart. An alpha
+ * of 128 is the threshold — anti-aliased edges below half opacity are not worth
+ * clicking.
  */
 async function measureAlpha(buffer: Buffer): Promise<{
   mask: { scale: number; width: number; height: number; bits: string }
   bounds: { x: number; y: number; width: number; height: number }
+  inner: { x: number; y: number; width: number; height: number }
 }> {
   const width = Math.ceil(SCENE_W / MASK_SCALE)
   const height = Math.ceil(SCENE_H / MASK_SCALE)
@@ -232,6 +330,9 @@ async function measureAlpha(buffer: Buffer): Promise<{
     .toBuffer({ resolveWithObject: true })
 
   const bytes = new Uint8Array(Math.ceil((width * height) / 8))
+  // Hit testing errs generous; the inner rect must err strict, because a headline
+  // placed a few cells outside the billboard hangs in the sky.
+  const solid = new Uint8Array(width * height)
   let minX = width
   let minY = height
   let maxX = -1
@@ -240,6 +341,7 @@ async function measureAlpha(buffer: Buffer): Promise<{
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const alpha = data[(y * width + x) * 4 + 3]!
+      if (alpha >= 250) solid[y * width + x] = 1
       if (alpha < 40) continue
 
       const i = y * width + x
@@ -252,6 +354,7 @@ async function measureAlpha(buffer: Buffer): Promise<{
     }
   }
 
+  const inner = largestInnerRect(solid, width, height)
   const empty = maxX < 0
   return {
     mask: {
@@ -268,6 +371,12 @@ async function measureAlpha(buffer: Buffer): Promise<{
           width: (maxX - minX + 1) * MASK_SCALE,
           height: (maxY - minY + 1) * MASK_SCALE,
         },
+    inner: {
+      x: inner.x * MASK_SCALE,
+      y: inner.y * MASK_SCALE,
+      width: inner.width * MASK_SCALE,
+      height: inner.height * MASK_SCALE,
+    },
   }
 }
 
@@ -293,7 +402,7 @@ async function importObjects(): Promise<SceneManifest['objects']> {
 
     const source = await normaliseToCanvas(await readFile(join(dir, file)), `objects/${file}`)
     const written = await writeImagePair(source, 'objects', hotspot)
-    const { mask, bounds } = await measureAlpha(source)
+    const { mask, bounds, inner } = await measureAlpha(source)
 
     if (bounds.width === 0) {
       warn(`art/objects/${file} is fully transparent, so it can never be clicked.`)
@@ -304,6 +413,7 @@ async function importObjects(): Promise<SceneManifest['objects']> {
       band: OBJECT_BANDS[hotspot],
       z: OBJECT_Z,
       bounds,
+      inner,
       mask,
       ...stripBytes(written),
     })

@@ -39,8 +39,12 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
   mountIdRef.current ??= ++MOUNT_SEQUENCE
 
   // --- the scene tree, grouped by band ------------------------------------------
-  // Layers and objects share a band container so they parallax together; objects
-  // carry a higher z so they sit in front of that band's layer art.
+  // Layers and objects share a band container so they parallax together. Objects
+  // always draw in front of their band's layer art, which is sorted for structurally
+  // rather than by comparing their z values: a layer's z comes from a filename
+  // prefix Henry types, and a layer with no prefix sorts last within its layers, so
+  // a numeric comparison across the two kinds puts the city in front of the
+  // billboard the moment a background file is dropped in unprefixed.
   const bandGroups = useMemo(() => {
     const { manifest, layerTextures, objects } = assets
 
@@ -61,7 +65,7 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
         }
       }
 
-      items.sort((a, b) => a.z - b.z)
+      items.sort((a, b) => Number(a.isObject) - Number(b.isObject) || a.z - b.z)
       return { band, items }
     })
   }, [assets])
@@ -298,6 +302,13 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
     [],
   )
 
+  // Where the headlines go, measured from the billboard art at import rather than
+  // declared next to it. No billboard in the manifest means no text to place.
+  const billboardArea = useMemo(
+    () => assets.manifest.objects.find((object) => object.id === 'billboard')?.inner ?? null,
+    [assets],
+  )
+
   const setObjectRef = useCallback(
     (id: string) => (sprite: Sprite | null) => {
       objectSprites.current.set(id as HotspotId, sprite)
@@ -319,8 +330,8 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
               ref={item.isObject ? setObjectRef(item.id) : undefined}
             />
           ))}
-          {band.id === 'skyline' && (
-            <BillboardText reducedMotion={reducedMotion} />
+          {band.id === 'skyline' && billboardArea && (
+            <BillboardText area={billboardArea} reducedMotion={reducedMotion} />
           )}
         </pixiContainer>
       ))}

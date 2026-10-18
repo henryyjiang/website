@@ -11,26 +11,42 @@ file here and re-running the import is the whole workflow for changing the scene
 ```
 art/
   background/        Behind the glass — seen through the window
-    sky/             Gradient, clouds, haze           → parallax 0.10
-    skyline/         City, the skyscraper, billboard  → parallax 0.30
+    sky.png          Gradient, clouds, haze           → parallax 0.10
+    skyline.png      City, the skyscraper             → parallax 0.30
   foreground/        The room — walls, window frame, furniture, floor
-                                                      → parallax 1.00
+    foreground.png                                    → parallax 1.00
   objects/           The three clickable objects
+    desk.png  bed.png  billboard.png
   character/         The animated character
   reference/         Mood boards, sketches, WIPs. Never shipped, never committed.
 ```
 
-`foreground/` is flat: everything in the room travels together at 1.00, so there is nothing to
-decide per export. There is one more band, `near` at 1.15, for clutter that should pop in front of
-the room. It has no folder — create `art/foreground/near/` and art filed there starts travelling at
-1.15. Note that a band above 1.00 travels further than the overflow that hides it, so art in it
-needs bleed past the canvas edges.
+That is the whole inbox at the moment: one file per depth, which is all a rough layout needs.
 
 ## How layers work
 
-Each folder is a **parallax band**. Everything in a band moves together at that band's factor; near
-things move more than far things, which is what makes the window read as a window. The full model is
-in `docs/ARCHITECTURE.md`.
+Every layer belongs to a **parallax band**. Everything in a band moves together at that band's
+factor; near things move more than far things, which is what makes the window read as a window. The
+full model is in `docs/ARCHITECTURE.md`.
+
+**A layer says which band it is in by its name or by its folder.** Both work, so one file per band
+needs no folders at all:
+
+```
+art/background/skyline.png          one skyline layer
+art/background/skyline-west.png     a second one, same band
+art/background/skyline/20-tower.png a whole folder of them, same band
+```
+
+The band names are `sky` (0.10), `skyline` (0.30), `room` (1.00) and `near` (1.15). `foreground/` is
+the exception: it *is* the room, so anything in it is at 1.00 whatever it is called, and
+`art/foreground/near/` is there if you ever want clutter that pops in front of the room. A band
+above 1.00 travels further than the overflow that hides it, so art filed in `near/` needs bleed past
+the canvas edges.
+
+A file that names no band and sits in no band's folder is **skipped with a warning** rather than
+guessed at — a layer at the wrong depth looks nearly right and parallaxes wrong, which is much
+harder to spot than a layer that did not show up.
 
 **Order within a band comes from the filename.** Prefix with a two-digit number — low numbers draw
 first, so they sit furthest back:
@@ -40,10 +56,14 @@ art/foreground/
   10-back-wall.png
   20-window-frame.png
   30-floor.png
-  40-bed.png
 ```
 
-Gaps of ten leave room to slide something in between later without renaming everything.
+Gaps of ten leave room to slide something in between later without renaming everything. The prefix
+is optional: a band holding one layer has nothing to order. Two unprefixed files in the same band
+draw in alphabetical order and the import says so, because at that point the order is an accident
+rather than a decision.
+
+Objects always draw in front of their band's layer art, whatever the prefixes say.
 
 ## Rules that matter
 
@@ -71,7 +91,7 @@ exactly where it belongs with transparency around it.
 | File | Is | Opens |
 | --- | --- | --- |
 | `desk.png` | Desk + computer | Software and AI research |
-| `art.png` | The bed | The drawing portfolio |
+| `bed.png` | The bed | The drawing portfolio |
 | `billboard.png` | The billboard surface on the skyscraper | Recent updates |
 
 Separate files because each needs its own hover glow and its own hit area, tested against the shape
@@ -79,13 +99,15 @@ you actually drew rather than a rectangle around it. The hit area is **measured 
 the file you drop**, so an object is clickable exactly where you drew it — the rectangles in
 `lib/scene-layout.ts` only place the placeholders and the template guides.
 
-The filenames are the hotspot ids, so they are fixed even when the art is not what the name
-suggests: the bed is the drawing-portfolio object, and it is therefore `art.png`.
+These three filenames are fixed — they are the hotspot ids — but what you draw in them is not.
+`bed.png` is the drawing-portfolio object even though the route it opens is `/art`: ids name what is
+in the room, routes name the destination.
 
 `billboard.png` is the odd one: it lives in the **background**, behind the glass, so it parallaxes at
-the skyline's 0.30 rather than the room's 1.00. Draw the billboard's frame and lit surface, and leave
-the area where text goes clear — the update headlines are rendered live over it from
-`content/updates.ts`, not painted in.
+the skyline's 0.30 rather than the room's 1.00. Draw the frame and the lit surface and leave it
+blank — the update headlines are rendered live over it from `content/updates.ts`, never painted in.
+The import measures the largest rectangle that fits inside the surface you drew and the headlines go
+there, so moving or reshaping the billboard moves the text with it. Nothing to keep in step by hand.
 
 ## `character/`
 

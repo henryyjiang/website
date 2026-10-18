@@ -76,6 +76,16 @@ scene behind the tower, ordered purely by its filename, with no code touched.
 
 ## Phase 3 — Real art integration
 
+**Landed so far:** Henry's rough lineart for the skyline, the room and all three objects, at
+2560 x 1440 with the glass left transparent. The sky is still the only placeholder in the scene,
+and it is currently invisible behind an opaque skyline (see below). Positions in the sketch are
+provisional — the point of this pass is that they are *marked*, so the character, the overlays and
+the hover work can proceed against real geometry.
+
+**Known, and deliberately not fixed yet:** `skyline.png` carries an opaque white fill, so the sky
+band composites behind it and never shows. It stops mattering the moment the skyline is coloured
+with the sky left transparent above the roofline; nothing in the code needs to change for that.
+
 - Replace the placeholder files in `art/` with the real exports and re-run `npm run art`
 - Tune parallax factors against art that actually has depth cues
 - Revisit hover glow with the room's real lighting (`docs/DESIGN.md`)

@@ -16,12 +16,16 @@ import { OVERSCAN, SCENE_H, SCENE_W } from './scene-space.ts'
 export type Rect = { x: number; y: number; width: number; height: number }
 
 /**
- * The window opening — a hole in the room band that the city is seen through.
+ * The window opening — the hole in the room band that the city is seen through.
  *
  * It is a hole, not a pane: the room art carries transparency here and the sky and
- * skyline bands composite behind it. Nothing masks the skyline to this shape.
+ * skyline bands composite behind it. Nothing masks the skyline to this shape, and
+ * nothing reads this rectangle at runtime — it is the region `art/TEMPLATE.png`
+ * marks, taken from the transparent area of the room art itself. Henry's glass runs
+ * the full width of the canvas and is divided by mullions, so this is the whole
+ * glazed band rather than a single pane.
  */
-export const WINDOW_OPENING: Rect = { x: 420, y: 160, width: 1720, height: 1040 }
+export const WINDOW_OPENING: Rect = { x: 0, y: 110, width: 2560, height: 940 }
 
 /**
  * How far past the window opening the background bands must be drawn.
@@ -42,36 +46,23 @@ export const BACKGROUND_SAFE: Rect = {
 }
 
 /**
- * Hotspot footprints.
+ * Hotspot footprints — an authoring guide, not a runtime input.
  *
- * These are the *outer bounds* of each clickable object, used to place the object art
- * and to bound the hit test. Within these bounds the actual hit test is per-pixel
- * against the art's alpha, so a rectangle around an irregular object does not catch
- * the empty air near it.
+ * Nothing in the scene hit-tests against these. The real bounds and the real mask
+ * are measured from the art at import time and travel in the manifest, so a redrawn
+ * object brings its own hit area. These rectangles exist so `art/TEMPLATE.png` can
+ * draw where each object currently sits, and they are kept in step with the art by
+ * reading them off an import rather than by hand-authoring a position.
  *
- * The billboard's bounds sit inside the window opening on purpose — it is the one
- * hotspot in the background band, so it is seen through the glass and travels at the
- * skyline's parallax factor, not the room's.
+ * The billboard's footprint sits inside the window opening on purpose — it is the
+ * one hotspot in the background band, so it is seen through the glass and travels at
+ * the skyline's parallax factor, not the room's.
  */
 export const HOTSPOT_RECTS = {
-  desk: { x: 1560, y: 880, width: 760, height: 360 },
-  art: { x: 210, y: 820, width: 420, height: 420 },
-  billboard: { x: 1020, y: 340, width: 380, height: 250 },
+  desk: { x: 1810, y: 710, width: 750, height: 455 },
+  bed: { x: 0, y: 840, width: 950, height: 445 },
+  billboard: { x: 135, y: 225, width: 1260, height: 785 },
 } as const satisfies Record<string, Rect>
-
-/**
- * The clear area on the billboard where update headlines are drawn.
- *
- * Defined here so the art and the text agree: the billboard art leaves this region
- * empty and the renderer draws `content/updates.ts` into it. Painting headlines into
- * the art would mean re-exporting the billboard every time an update is posted.
- */
-export const BILLBOARD_TEXT_AREA: Rect = {
-  x: HOTSPOT_RECTS.billboard.x + 24,
-  y: HOTSPOT_RECTS.billboard.y + 24,
-  width: HOTSPOT_RECTS.billboard.width - 48,
-  height: HOTSPOT_RECTS.billboard.height - 90,
-}
 
 export type HotspotId = keyof typeof HOTSPOT_RECTS
 

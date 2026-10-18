@@ -66,6 +66,14 @@ export type ManifestObject = ManifestImage & {
    * and as the bounds for hover effects.
    */
   bounds: ManifestRect
+  /**
+   * The largest rectangle that fits inside the art's solid pixels, in scene units.
+   *
+   * What gets drawn *on* an object goes here: the billboard's live headlines sit in
+   * this rect, so they follow the billboard when it is redrawn or moved instead of
+   * needing a matching rectangle maintained by hand. Measured, like `bounds`.
+   */
+  inner: ManifestRect
   mask: AlphaMask
 }
 
