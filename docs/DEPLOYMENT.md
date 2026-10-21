@@ -42,8 +42,14 @@ This folder is a duplicate; the original working copy of the old site is separat
 accidental deploy impossible from this folder, but the old project should not be watching for
 pushes that might arrive from the original folder either.
 
-In the Vercel dashboard, on the `portfoliosite` project: Settings → Git → disconnect, or pause the
-project. Pausing keeps the existing deployment serving while ignoring new commits.
+In the Vercel dashboard, on the `portfoliosite` project: Settings → Git → **Disconnect**.
+
+**Do not pause the project instead.** An earlier version of this line offered pausing as an
+equivalent, on the belief that it keeps the existing deployment serving while ignoring new commits.
+It does not: a paused project answers visitors with `503 DEPLOYMENT_PAUSED`, so pausing is
+indistinguishable from taking the live site down. Pausing is a spend-management control, not a
+deploy freeze. Disconnecting is the operation that stops new commits from building while leaving the
+current production deployment serving the domain.
 
 This was a background precaution while the rebuild was in flight. It is the **first step of the
 cutover** now, and it should be done before a second project exists on the same account pointing at
@@ -96,8 +102,16 @@ When the rebuild is ready (Phase 6):
 - A **new Vercel project** on `henryyjiang/website`, framework preset Next.js, default build
   (`next build`). Preview deployments on branches; production on `main`.
 - Verify on the Vercel-assigned domain first, while the old site still holds the real domain.
-- **Then** move the custom domain from the old project to the new one.
+- **Then** move the custom domain from the old project to the new one — by **adding** it to the new
+  project (Settings → Domains), which raises a **Move Domain** confirmation naming both projects.
+  Confirming that is the whole move.
 - **Then** retire the old project. Keep the `portfoliosite` repository — it is the archive of the
   previous site and of this one's history.
+
+**Never remove the domain from the old project first.** It is the obvious-looking order and it is
+the one that drops traffic: between the remove and the add, the domain is attached to nothing.
+Vercel's own guidance is explicit that deleting a domain before reassigning it interrupts traffic,
+and the add-then-confirm flow above exists precisely so that the swap is one operation rather than
+two. `vercel domains move` is not this operation either — it moves ownership between teams.
 
 Until that cutover, the new project's deployments are only ever reachable at Vercel preview URLs.
