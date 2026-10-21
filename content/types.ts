@@ -96,8 +96,12 @@ export type Post = {
    */
   title: string
   /**
-   * One line. The Blog panel is a condensed feed of news links, not a page of
-   * articles — anything that wants a paragraph is a Coding entry or an Art piece.
+   * NOT SURFACED. One line, and it was the third line of a feed row until
+   * 2026-10-21, when the row's headline grew to display type and this became the
+   * small print under a poster. Kept because it is written, it is good, and it is
+   * the only prose a post has if the feed ever wants a denser shape again.
+   *
+   * The billboard never showed it — that surface is a headline at a distance.
    */
   body?: string
   target?: PostTarget

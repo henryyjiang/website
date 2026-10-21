@@ -535,10 +535,9 @@ then favourites as a dense readout. It is the one place on the site that is abou
 about work, and a blog is where a reader expects to meet the person. The skills grid stayed on
 Coding, next to the socials, because it is a credential about the work rather than a personal note.
 
-**Below it the posts are news links, not articles.** Far more condensed than Coding: a square
-thumbnail, the date, a headline, one line of body at most. The density is the point — a reader
-should take in the whole feed at a glance, and anything that wants a paragraph is a Coding entry or
-an Art piece, not a post.
+**Below it the posts are news links, not articles.** A square thumbnail, the date and a headline —
+no prose at all. A reader should take in the whole feed at a glance, and anything that wants a
+paragraph is a Coding entry or an Art piece, not a post.
 
 **The thumbnail is a fifth of the screen, where a Coding screenshot is a third** — `--post-shot`
 against `--shot` in `app/globals.css`, settled 2026-10-21. The row is exactly as tall as its
@@ -548,9 +547,15 @@ fraction of the size that thing gets, and the two tabs keep their proportion to 
 window width rather than only at the one they were judged at. A fixed pixel square was tried first
 and read as a table of contents.
 
-Note what did *not* change with the height: the body is still one truncated line at any row size.
-Height bought with a bigger picture keeps the feed scannable, where height bought with more text
-would have made it the article list this tab exists not to be.
+**The headline is display type, and it is what carries the row.** A 288px picture next to a 16px
+title read as a caption beside a photograph rather than as an entry, so the title scales with the
+breakpoints to 48px at 1440 and the date line goes up with it. That is also what retired the one
+line of body, the same day: under a headline that size it was the small print on a poster, and a
+feed of five posts does not need a summary of a headline.
+
+So the entry grew without becoming an article — which is the distinction this tab turns on. The
+height went into the picture and the headline, the two things a notice is made of, and `Post.body`
+stays written in `content/` against a denser shape wanting it back.
 
 **The thumbnail is borrowed, not exported.** A post shows the picture of whatever it points at, so
 the feed is a column of the same images the other two tabs show at full size — which is what makes

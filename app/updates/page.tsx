@@ -15,10 +15,10 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * the one part of the site that is about Henry rather than about work, and a blog is
  * where a reader expects to meet the person (docs/DESIGN.md § Panel interiors).
  *
- * **The posts are news links, not articles.** A thumbnail, a date, a headline, one
- * line — dense enough to take in at a glance, which is the whole difference between
- * this tab and the Coding one. Anything that wants a paragraph is a project or a
- * piece, and the post points at it.
+ * **The posts are news links, not articles.** A thumbnail, a date and a headline —
+ * no prose at all, which is the whole difference between this tab and the Coding
+ * one. Anything that wants a paragraph is a project or a piece, and the post points
+ * at it.
  *
  * **The thumbnail is `--post-shot`, a fifth of the screen**, where a Coding
  * screenshot is `--shot` and gets a third (app/globals.css). The row is exactly as
@@ -27,10 +27,12 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * at the one they were judged at. Henry set the ratio on 2026-10-21, after a fixed
  * 96px square turned out to read as a table of contents rather than as a feed.
  *
- * Condensed still means condensed: the body is one truncated line at any row
- * height. The picture is what grew, because a post is a notice about something
- * shown at full size one tab over — give it a paragraph and this becomes the
- * article list the tab exists not to be.
+ * **The headline carries the row.** A 288px picture beside 16px type read as a
+ * caption next to a photograph rather than as an entry, so the title is display
+ * type that scales with the breakpoints and the date is the large readout. The one
+ * line of body went at the same time (2026-10-21): with the headline at this size
+ * it was the small print under a poster, and a feed of five posts does not need a
+ * summary of a headline. `Post.body` is still written — see `content/types.ts`.
  *
  * **And they point inward.** `target` names the Coding entry or the Art piece the
  * post is about; `lib/post-target.ts` turns that into the URL the other panel
@@ -128,18 +130,24 @@ function PostRow({ post }: { post: Post }) {
         </span>
       )}
 
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="u-telemetry flex items-center gap-2 text-dim">
+      <span className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-3">
+        {/* The readout face spelled out rather than `u-telemetry`, because this is
+            the one place it has to change size with the breakpoint — and that class
+            is written outside Tailwind's layers, where it beats every utility that
+            could override it. `font-mono` is the theme's face either way. */}
+        <span className="flex items-center gap-2 font-mono text-[0.625rem] tracking-[0.08em] text-dim uppercase sm:text-sm sm:tracking-[0.1em]">
           <time dateTime={post.date}>{formatDate(post.date)}</time>
           {target ? <span aria-hidden="true">· {targetLabel(target)}</span> : null}
         </span>
-        <span className="text-base font-semibold text-active sm:text-lg">{post.title}</span>
-        {post.body ? (
-          <span className="truncate text-sm text-text/75">{post.body}</span>
-        ) : null}
+        <span className="text-xl leading-tight font-semibold text-active sm:text-3xl lg:text-4xl xl:text-5xl">
+          {post.title}
+        </span>
       </span>
 
-      <span aria-hidden="true" className="u-telemetry shrink-0 self-center text-dim">
+      <span
+        aria-hidden="true"
+        className="shrink-0 self-center text-xl text-dim sm:text-3xl lg:text-4xl"
+      >
         {target ? (isExternalTarget(target) ? '↗' : '→') : ''}
       </span>
     </>

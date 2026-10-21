@@ -83,7 +83,7 @@ type Post = {
   slug: string            // Stable join key. Never a route segment, never a filename.
   date: string            // ISO
   title: string           // Short enough to read on a billboard at a glance.
-  body?: string           // One line. Shown on the Blog panel, not the billboard.
+  body?: string           // One line. NOT SURFACED since 2026-10-21 — see below.
   target?: PostTarget     // What clicking the post goes to. See below.
   credit?: string         // If the image is not Henry's.
 }
@@ -93,6 +93,11 @@ type PostTarget =
   | { to: 'piece'; slug: string }       // An Art piece, opened in its popup.
   | { to: 'external'; href: string }    // Something that really is elsewhere.
 ```
+
+**`body` is written and not shown.** It was the third line of a feed row until the row's headline
+became display type on 2026-10-21, which left it reading as small print; the billboard never showed
+it either, since that surface is a headline at a distance. It stays in the module because the copy
+is real and a denser feed would want it back.
 
 **`target` is the blog's whole point.** A post is a notice that something happened, and the thing
 that happened is nearly always already on the site — a project on the Coding tab, a drawing in the
