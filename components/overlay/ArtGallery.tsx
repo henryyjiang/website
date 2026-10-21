@@ -169,10 +169,9 @@ function GridCell({
         <span className="block truncate text-sm font-semibold text-text transition-colors duration-150 group-hover:text-active">
           {piece.title}
         </span>
-        <span className="u-telemetry mt-1 block truncate text-dim">
-          {piece.medium ? `${piece.medium} · ` : ''}
-          {formatDate(piece.date)}
-        </span>
+        {piece.medium ? (
+          <span className="u-telemetry mt-1 block truncate text-dim">{piece.medium}</span>
+        ) : null}
       </span>
     </a>
   )
@@ -190,13 +189,17 @@ function GridCell({
  * listeners are on `window`, where capture runs before bubble regardless of which
  * was added first. Closing a popup should close the popup.
  *
- * **Everything that is not the piece is in the header.** Date beside the title,
- * medium on the telemetry line, and no footer: a caption bar under the media was a
- * band of prose where a reader is looking at a drawing, and the only thing it told
- * them that the header does not was a sentence the piece already says. The space it
- * cost goes back to the media, which is what the popup exists to show. The caption
- * is still written in `content/art.ts` — it is the image's alt text now, which is
- * the one reader it was always worth most to.
+ * **Everything that is not the piece is in the header**, which is a title and a
+ * medium and nothing else. The caption bar under the media went on 2026-10-21: it
+ * was a band of prose where a reader is looking at a drawing, and the only thing it
+ * told them was a sentence the piece already says. The space it cost goes back to
+ * the media, which is what the popup exists to show. The caption is still written in
+ * `content/art.ts` — it is the image's alt text now, which is the one reader it was
+ * always worth most to.
+ *
+ * **No date, here or in the grid.** It was beside the title for an hour. A drawing
+ * is not news and does not expire, so stamping one tells a reader nothing except
+ * which pieces are old — see docs/DESIGN.md § Art. `date` still orders the grid.
  */
 function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => void }) {
   const frame = useRef<HTMLDivElement | null>(null)
@@ -262,14 +265,9 @@ function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => v
               ◢ art.{piece.slug.slice(0, 3)} · {media?.video ? 'motion' : 'still'}
               {piece.medium ? ` · ${piece.medium}` : ''}
             </p>
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <h2 className="min-w-0 truncate text-xl tracking-[0.04em] text-active uppercase sm:text-2xl">
-                {piece.title}
-              </h2>
-              <time dateTime={piece.date} className="u-telemetry shrink-0 text-dim">
-                {formatDate(piece.date)}
-              </time>
-            </div>
+            <h2 className="truncate text-xl tracking-[0.04em] text-active uppercase sm:text-2xl">
+              {piece.title}
+            </h2>
           </div>
 
           <button
@@ -319,13 +317,4 @@ function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => v
       </div>
     </div>
   )
-}
-
-function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
 }

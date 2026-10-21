@@ -41,6 +41,12 @@ export type ArtPiece = {
   /** Stable. Joins this entry to `art/pieces/<slug>.png`. */
   slug: string
   title: string
+  /**
+   * NOT DISPLAYED, and still required. The Art tab showed this in the grid and
+   * beside the popup's title until 2026-10-21; it orders the grid now and nothing
+   * else. Newest first, so an entry with the wrong date lands in the wrong place
+   * and there is no longer anything on screen to show you that it did.
+   */
   date: string
   medium?: string
   /**

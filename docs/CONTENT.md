@@ -56,6 +56,10 @@ type ArtPiece = {
 The image is `art/pieces/<slug>.png`, resolved by slug — see **Images**. A piece with no image yet
 still lists; it renders as its text.
 
+`date` is **not displayed** anywhere on the tab as of 2026-10-21 — it orders the grid, newest
+first, and nothing shows it. It is still required, so a wrong one puts a piece in the wrong place
+with nothing on screen to give it away.
+
 **A piece can be a video**, and nothing in this file says so. Drop `art/pieces/<slug>.mp4` (or
 `.webm`, or `.mov`) instead of a PNG and the import transcodes it, pulls a poster frame out of it,
 and records both in the manifest; the grid shows the frame with a play glyph and the popup plays the

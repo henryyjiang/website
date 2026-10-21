@@ -14,8 +14,9 @@
  * lists — the import warns and the panel renders the text.
  *
  * The presentation is settled: a grid of wide 16:9 cards, each opening a popup over
- * the whole page on the glitch transition. `caption` is **not displayed** — it is
- * the image's alt text. See docs/DESIGN.md § Panel interiors and docs/CONTENT.md.
+ * the whole page on the glitch transition. Two fields here are **not displayed**:
+ * `caption` is the image's alt text, and `date` only orders the grid. See
+ * docs/DESIGN.md § Panel interiors and docs/CONTENT.md.
  */
 
 import type { ArtPiece } from './types'

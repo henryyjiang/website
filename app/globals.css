@@ -41,16 +41,18 @@
    * height of the text beside it. Two numbers here would drift apart and the
    * squares — five of the eight are square — would quietly stop filling.
    *
-   * Viewport-relative because the brief was "between a quarter and a third of the
-   * screen", and that is a fraction of the screen rather than of the panel. 29vw
-   * sits in the middle of the band and stays there from a laptop to a 1440p
-   * display; the floor keeps a tablet from showing a thumbnail, and the ceiling
-   * keeps a very wide display from handing one screenshot half the panel.
+   * Viewport-relative because the brief was a fraction of the screen rather than
+   * of the panel. It was 29vw, the middle of "between a quarter and a third", for
+   * a day; Henry asked for the top of that band on 2026-10-21, so it is 33vw and
+   * holds there from a laptop to a 1440p display. The floor keeps a tablet from
+   * showing a thumbnail, and the ceiling keeps a very wide display from handing
+   * one screenshot half the panel — it rose with the middle number, so that a
+   * display has to be past 2230px before the third stops being a third.
    *
    * It applies from `sm` up only. Below that the row stacks into one column and
    * there is nothing for the width half of it to do — see app/desk/page.tsx.
    */
-  --shot: clamp(16rem, 29vw, 40rem);
+  --shot: clamp(16rem, 33vw, 46rem);
 }
 
 html,

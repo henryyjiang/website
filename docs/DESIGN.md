@@ -489,7 +489,8 @@ it; a tall image simply sits narrower than the column, and nothing is cropped.
 
 **Both are one number, `--shot`, and it is a fraction of the screen.** Set on 2026-10-21 to the
 brief "between a quarter and a third of the screen", which is a fraction of the *viewport* rather
-than of the panel, so it is written in `vw`: `clamp(16rem, 29vw, 40rem)` in `app/globals.css`. It
+than of the panel, so it is written in `vw`: `clamp(16rem, 33vw, 46rem)` in `app/globals.css` —
+29vw for a day, then the top of the band on Henry's say-so the same evening. It
 was a flat 19rem column against a 22rem ceiling, two numbers that disagreed — a 600 x 600
 screenshot came out 304 wide and the ceiling above it went unused. One number means a square
 screenshot fills its column exactly and a portrait one is bounded by that same square. It governs
@@ -567,11 +568,17 @@ already scans video thumbnails in is the right one.
 same chrome as a panel — near-black ground, hairline border, cut corner, scanlines, telemetry
 marker — so it reads as another surface of the same machine rather than as a web lightbox.
 
-**Everything that is not the piece is in the header**, and there is no footer. Date beside the
-title, medium on the telemetry line. The caption bar under the media went on 2026-10-21: it was a
-band of prose across the bottom of something a reader is looking at, and it cost the media the
+**Everything that is not the piece is in the header**, and there is no footer: a title, and the
+medium on the telemetry line. The caption bar under the media went on 2026-10-21, because it was a
+band of prose across the bottom of something a reader is looking at and it cost the media the
 height it was using. The caption is still written in `content/art.ts` and is the image's alt text,
 which is the one reader it was always worth most to.
+
+**Nothing on this tab carries a date**, in the grid or in the popup, as of 2026-10-21. This is the
+one tab where a timestamp is noise rather than information: a project is dated because a reader is
+judging how current the work is, and a post is dated because a post is news — but a drawing does
+not expire, and stamping one only tells a reader which pieces are the old ones. `date` stays in
+`content/art.ts` and still orders the grid, newest first.
 
 **It arrives on the glitch.** Opening the popup fires one burst of the same transition a route
 change fires, from the same code (`components/theme/glitch.ts`). This is the one deliberate
