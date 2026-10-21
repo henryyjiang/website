@@ -1,34 +1,44 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
+
+import { DESTINATIONS } from '@/content/nav'
 
 /**
  * Shared chrome for the three tab panels.
  *
- * Deliberately undesigned. The direction for the interiors is "less retro, more
- * flowy and energetic" and nothing more specific has been settled, so this is a
- * neutral container that holds a title, a close affordance and whatever the route
- * puts inside it. Panel design is Phase 4 — see docs/ROADMAP.md. Do not let this
- * styling harden into a decision by default.
+ * **The frame is settled; the interiors are not.** docs/DESIGN.md § Chrome decides
+ * how a panel is bounded, lit and titled — dark ground, a hairline rule, a cut
+ * corner, display type, a telemetry marker. How a project list, an art portfolio or
+ * a blog post reads *inside* that frame is Phase 7 and still deliberately open. Do
+ * not let anything in a route's page harden into that decision by default.
  *
- * The *behaviour* here is not waiting on that, and is deliberately the behaviour of
- * a page rather than of a dialog. Each panel is a real route with its own URL, so
- * there is no focus trap and no `aria-modal`: tabbing past the end of the panel
- * reaches the rest of the document, exactly as it would on any page. What a visual
- * overlay does owe the reader is that focus follows the content when the route
- * changes, and that the obvious key closes it.
+ * **Nearly full-screen, and the nav sits on top of it.** A blog post is an image
+ * and a body of text at once, which a centred column three quarters of the way up
+ * the viewport cannot hold without one of them being cramped. So the panel takes the
+ * whole screen bar a hairline margin, and `TopNav` is drawn over its top edge rather
+ * than floating above it with a gap — the tabs read as attached to the panel, which
+ * is what they are. The header's top padding is what keeps the title out from under
+ * them; it is the one measurement here that has to agree with the nav's height.
+ *
+ * The *behaviour* is deliberately that of a page rather than of a dialog. Each panel
+ * is a real route with its own URL, so there is no focus trap and no `aria-modal`:
+ * tabbing past the end of the panel reaches the rest of the document, exactly as it
+ * would on any page. What a visual overlay does owe the reader is that focus follows
+ * the content when the route changes, and that the obvious key closes it.
  */
-export function OverlayPanel({
-  title,
-  children,
-}: {
-  title: string
-  children?: React.ReactNode
-}) {
+export function OverlayPanel({ children }: { children?: React.ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const headingRef = useRef<HTMLHeadingElement | null>(null)
+
+  // The heading is the nav's label for this route, read from content/nav.ts rather
+  // than passed in. They are the same destination, so a page that typed its own
+  // title could disagree with the tab that leads to it — and did: the tab said
+  // "Coding" while the panel said "Desk". One list, one name.
+  const title = DESTINATIONS.find((destination) => destination.href === pathname)?.label ?? ''
 
   // A client-side route change moves no focus on its own, so a keyboard or screen
   // reader user would still be back at the top of a document whose content has been
@@ -37,7 +47,7 @@ export function OverlayPanel({
   // scrolling the fixed layout would only shift the scene behind it.
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true })
-  }, [title])
+  }, [pathname])
 
   // Escape closes, which is what a panel over a scene looks like it should do. It
   // routes rather than hides, so the URL, the scene's overlay state and the back
@@ -53,25 +63,39 @@ export function OverlayPanel({
   }, [router])
 
   return (
-    <main className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center p-6">
+    <main className="pointer-events-none fixed inset-0 z-10 p-2 sm:p-3">
       <section
         aria-labelledby="overlay-title"
-        className="pointer-events-auto flex h-full max-h-[min(80vh,720px)] w-full max-w-3xl flex-col gap-4 overflow-auto rounded-lg border border-white/15 bg-black/70 p-8 backdrop-blur-sm"
+        className="u-notch u-scanlines pointer-events-auto relative flex h-full w-full flex-col overflow-hidden border border-dim/30 bg-panel/92 backdrop-blur-md"
       >
-        <header className="flex items-baseline justify-between gap-4">
-          <h1
-            id="overlay-title"
-            ref={headingRef}
-            tabIndex={-1}
-            className="text-2xl font-medium outline-none"
+        <header className="flex shrink-0 items-end justify-between gap-4 border-b border-dim/25 px-5 pt-16 pb-3 sm:px-8 sm:pt-20">
+          <div className="min-w-0">
+            {/* The reference labels its live row with a part number. It is decoration,
+                but technical decoration: it implies a machine with more going on than
+                it is showing. aria-hidden because it says nothing to a reader. */}
+            <p aria-hidden="true" className="u-telemetry mb-1 text-dim">
+              ◢ sec.{title.slice(0, 3).toLowerCase()} · 0x
+              {title.length.toString(16).padStart(2, '0')}
+            </p>
+            <h1
+              id="overlay-title"
+              ref={headingRef}
+              tabIndex={-1}
+              className="truncate text-3xl font-semibold tracking-[0.08em] text-active uppercase outline-none sm:text-4xl"
+            >
+              {title}
+            </h1>
+          </div>
+
+          <Link
+            href="/"
+            className="u-label u-notch shrink-0 border border-dim/40 px-4 py-2 text-dim transition-colors duration-150 hover:border-alert/60 hover:text-alert"
           >
-            {title}
-          </h1>
-          <Link href="/" className="text-sm underline opacity-70 hover:opacity-100">
             Close
           </Link>
         </header>
-        {children}
+
+        <div className="u-panel-body min-h-0 flex-1 overflow-auto px-5 py-6 sm:px-8">{children}</div>
       </section>
     </main>
   )

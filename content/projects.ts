@@ -11,6 +11,12 @@
  * Henry should correct these. Nothing else depends on their precision — the list
  * sorts on `date`, so fixing a date reorders the list and changes nothing else.
  *
+ * Screenshots live at `art/projects/<slug>.png` and are resolved by slug through
+ * `lib/content-images.ts`, so no entry below writes an image path. The eight carried
+ * over from the old site pointed at `/assets/`, which was never under `public/` and
+ * 404'd for every one of them. The desk panel does not render them yet — that is
+ * Phase 7 in docs/ROADMAP.md — but the pipeline carries them.
+ *
  * See docs/CONTENT.md.
  */
 
@@ -25,7 +31,6 @@ export const PROJECTS: readonly Project[] = [
       'A personal dashboard for daily use. Streams the Claude API to modify widgets and create new widgets and themes, so every visualisation tool I have made lives in one place.',
     tags: ['tooling', 'ai', 'full-stack'],
     links: [{ label: 'GitHub', href: 'https://github.com/henryyjiang/fwubbo' }],
-    image: '/assets/fwubbo.png',
   },
   {
     slug: 'pots-flareup-predictor',
@@ -35,7 +40,6 @@ export const PROJECTS: readonly Project[] = [
       'Full-stack iOS app connecting over BLE to collect 1M+ entries of live heart rate and ECG data, with a boosted tree classifier reaching 70%+ flareup detection accuracy 15 minutes in advance.',
     tags: ['ml', 'ios', 'health'],
     links: [{ label: 'GitHub', href: 'https://github.com/henryyjiang/potsmonitor' }],
-    image: '/assets/pots.png',
   },
   {
     slug: 'kinetic-hawkes-hft',
@@ -45,7 +49,6 @@ export const PROJECTS: readonly Project[] = [
       'Built on two weeks of MSFT L3 data for a kinetic queue-prediction market making strategy, achieving 49% PnL. The Hawkes process strategy was calibrated with MLE and reached a 65% win rate across 54M+ MBO events.',
     tags: ['quant', 'market-microstructure'],
     links: [{ label: 'Write-up', href: 'https://henryyjiang.github.io/kinetichawkes/' }],
-    image: '/assets/hawkes.png',
   },
   {
     slug: 'quantum-walk-bqp',
@@ -60,7 +63,6 @@ export const PROJECTS: readonly Project[] = [
         href: 'https://www.quantconnect.com/strategies/478/Quantum-Walk-BQP-Mid-Cap-Macro',
       },
     ],
-    image: '/assets/quantum.png',
   },
   {
     slug: 'mandelbrotian-volatility',
@@ -75,7 +77,6 @@ export const PROJECTS: readonly Project[] = [
         href: 'https://www.quantconnect.com/strategies/315/Mandelbrotian-Vol-Clustering-Options-Strat',
       },
     ],
-    image: '/assets/stocks.png',
   },
   {
     slug: 'darwin',
@@ -90,7 +91,6 @@ export const PROJECTS: readonly Project[] = [
       { label: 'GitHub', href: 'https://github.com/henryyjiang/DARWIN' },
       { label: 'arXiv', href: 'http://arxiv.org/abs/2602.05848' },
     ],
-    image: '/assets/darwin.png',
   },
   {
     slug: 'batstick',
@@ -101,7 +101,6 @@ export const PROJECTS: readonly Project[] = [
     detail: 'Featured on Fox News and placed Top 12 at the National Innovator Challenge.',
     tags: ['hardware', 'accessibility'],
     links: [],
-    image: '/assets/batstick.png',
   },
   {
     slug: 'automated-intersection',
@@ -116,6 +115,5 @@ export const PROJECTS: readonly Project[] = [
         href: 'https://github.com/henryyjiang/automatedintersectionmanagement',
       },
     ],
-    image: '/assets/traffic.png',
   },
 ]

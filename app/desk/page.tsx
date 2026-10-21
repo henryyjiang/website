@@ -1,100 +1,126 @@
+import { LinkRow } from '@/components/overlay/LinkRow'
 import { OverlayPanel } from '@/components/overlay/OverlayPanel'
-import { BIO, FAVOURITES, SKILLS } from '@/content/about'
-import { EMAIL, RESUME, SOCIAL_LINKS } from '@/content/links'
+import { ScrollToAnchor } from '@/components/overlay/ScrollToAnchor'
+import { CODING_LINKS } from '@/content/links'
 import { PROJECTS } from '@/content/projects'
 import { byDateDesc } from '@/content/types'
+import { imageFor } from '@/lib/content-images'
+import { projectAnchorId } from '@/lib/post-target'
 
 /**
- * Software and AI research: projects, socials, résumé, about.
+ * Software and AI research: the project list, newest first.
  *
- * Contents are real; the *design* is Phase 4 and deliberately undecided, so this
- * renders the data plainly rather than inventing a look. See docs/ROADMAP.md.
+ * **A row is an image and a text box beside it** (docs/DESIGN.md § Panel interiors).
+ * The image column has a fixed width and the image's own height, because the import
+ * deliberately does not crop — `art/projects/` holds square screenshots and 16:9 ones
+ * and both are the shape they were exported at. Forcing a ratio here would crop a
+ * screenshot whose content runs to its edges, which is most of them.
+ *
+ * **Every row is an anchor.** The blog links into this list by slug, so the id has to
+ * be derivable from the content rather than typed — `projectAnchorId` is the one
+ * place that shape is written, and `npm run art` checks that every post pointing at a
+ * project names one that exists.
+ *
+ * The about-me section used to be at the bottom of this tab and the skills grid at
+ * the top of it. Both are gone — about moved to the Blog panel on 2026-10-21 and
+ * skills were cut the same day, along with each project's tag row. A list of
+ * languages and a row of `#ml #quant` under every entry are both claims the work
+ * itself already makes, and they were crowding the thing a reader came for. The data
+ * stays in `content/`; nothing surfaces it.
  */
 export default function DeskPage() {
   const projects = byDateDesc(PROJECTS)
 
   return (
-    <OverlayPanel title="Desk">
-      <nav aria-label="Elsewhere" className="flex flex-wrap gap-3 text-sm">
-        {SOCIAL_LINKS.map((link) => (
-          <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="underline">
-            {link.label}
-          </a>
-        ))}
-        <a href={RESUME.href} target="_blank" rel="noreferrer" className="underline">
-          {RESUME.label}
-        </a>
-        <a href={`mailto:${EMAIL}`} className="underline">
-          Email
-        </a>
-      </nav>
+    <OverlayPanel>
+      <ScrollToAnchor />
 
-      <section aria-labelledby="projects-heading" className="flex flex-col gap-5">
-        <h2 id="projects-heading" className="text-lg font-medium opacity-80">
-          Projects
-        </h2>
+      <LinkRow links={CODING_LINKS} label="Elsewhere" />
 
-        <ol className="flex flex-col gap-5">
-          {projects.map((project) => (
-            <li key={project.slug} className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-baseline gap-x-3">
-                <h3 className="font-medium">{project.title}</h3>
-                <time dateTime={project.date} className="text-xs opacity-60">
-                  {formatDate(project.date)}
-                </time>
-              </div>
-              <p className="text-sm opacity-80">{project.blurb}</p>
-              {project.detail ? (
-                <p className="text-sm opacity-60">{project.detail}</p>
-              ) : null}
-              {project.links.length > 0 ? (
-                <p className="flex gap-3 text-xs">
-                  {project.links.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline opacity-80"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                </p>
-              ) : null}
+      <ol className="mt-8 flex flex-col gap-6">
+        {projects.map((project, index) => {
+          const image = imageFor('projects', project.slug)
+
+          return (
+            <li
+              key={project.slug}
+              id={projectAnchorId(project.slug)}
+              // Focusable so that arriving from the blog can put the reader *on* the
+              // row rather than merely scrolling it into view. -1 keeps it out of the
+              // tab order, where a dozen stops on non-controls would be noise.
+              tabIndex={-1}
+              className="scroll-mt-1 pl-3 outline-none"
+            >
+              <article
+                className={`grid items-start gap-4 sm:gap-6 ${
+                  image ? 'sm:grid-cols-[minmax(0,19rem)_minmax(0,1fr)]' : ''
+                }`}
+              >
+                {image ? (
+                  /*
+                   * <picture> rather than a bare <img> because the manifest carries a
+                   * pair: a browser with no WebP support takes the fallback, and every
+                   * other browser never requests it. Width and height come from the
+                   * measured image, so the row reserves its space before the image
+                   * decodes — which also keeps the scroll-to-anchor above from landing
+                   * at an offset that is about to move.
+                   *
+                   * Width-led with a ceiling on the height: a wide screenshot fills
+                   * the column, while a portrait one — the phone capture is 684x1490 —
+                   * would otherwise make its row three times the height of the text
+                   * beside it. The cap bounds the row without cropping anything; a
+                   * tall image simply sits narrower than the column.
+                   */
+                  <picture className="u-notch flex justify-center overflow-hidden border border-dim/25 bg-ground/60">
+                    <source srcSet={image.src} type="image/webp" />
+                    <img
+                      src={image.fallback}
+                      alt=""
+                      width={image.width}
+                      height={image.height}
+                      loading="lazy"
+                      decoding="async"
+                      className="block h-auto max-h-[22rem] w-auto max-w-full"
+                    />
+                  </picture>
+                ) : null}
+
+                <div className="u-notch flex flex-col gap-3 border border-dim/25 bg-ground/40 p-4 sm:p-5">
+                  <p className="u-telemetry flex flex-wrap items-center gap-x-3 text-dim">
+                    <span aria-hidden="true">
+                      ◢ prj.{String(projects.length - index).padStart(2, '0')}
+                    </span>
+                    <time dateTime={project.date}>{formatDate(project.date)}</time>
+                  </p>
+
+                  <h2 className="text-xl text-active sm:text-2xl">{project.title}</h2>
+
+                  <p className="text-sm leading-relaxed sm:text-base">{project.blurb}</p>
+                  {project.detail ? (
+                    <p className="text-sm leading-relaxed opacity-70">{project.detail}</p>
+                  ) : null}
+
+                  {project.links.length > 0 ? (
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {project.links.map((link) => (
+                        <a
+                          key={link.href}
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="u-pill u-notch u-label border border-dim/40 px-3 py-1.5 hover:border-active/60"
+                        >
+                          {link.label} ↗
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </article>
             </li>
-          ))}
-        </ol>
-      </section>
-
-      <section aria-labelledby="about-heading" className="flex flex-col gap-3">
-        <h2 id="about-heading" className="text-lg font-medium opacity-80">
-          About
-        </h2>
-        {BIO.map((line) => (
-          <p key={line} className="text-sm opacity-80">
-            {line}
-          </p>
-        ))}
-
-        <h3 className="mt-2 text-sm font-medium opacity-70">Skills</h3>
-        <ul className="flex flex-wrap gap-2 text-xs opacity-80">
-          {SKILLS.map((skill) => (
-            <li key={skill} className="rounded border border-white/15 px-2 py-1">
-              {skill}
-            </li>
-          ))}
-        </ul>
-
-        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          {FAVOURITES.map((item) => (
-            <div key={item.label} className="contents">
-              <dt className="opacity-60">{item.label}</dt>
-              <dd className="opacity-85">{item.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+          )
+        })}
+      </ol>
     </OverlayPanel>
   )
 }

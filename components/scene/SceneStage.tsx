@@ -1,7 +1,8 @@
 'use client'
 
 import { extend, useApplication, useTick } from '@pixi/react'
-import { Container, Sprite, type Texture } from 'pixi.js'
+import { Container, Rectangle, Sprite, type Texture } from 'pixi.js'
+import { GlitchFilter } from 'pixi-filters/glitch'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
@@ -9,17 +10,40 @@ import {
   CAMERA_CENTRE,
   focalCamera,
   NARROW_WIDTH,
+  SCENE_H,
+  SCENE_W,
   sceneTransform,
 } from '@/lib/scene-space'
 import { getSceneState, setHovered, type HotspotId } from '@/lib/store'
 import { BANDS_IN_DRAW_ORDER, type Band, type BandId } from './bands'
-import { BillboardText } from './BillboardText'
+import { BillboardSurface } from './BillboardSurface'
 import { CameraRig } from './camera'
-import { GLOW_SPRING, HotspotGlow } from './glow'
+import { glowSpecFor, GLOW_SPRING, HotspotGlow } from './glow'
 import { hitTest, inHitOrder, type HitTestable } from './hit-test'
+import { HOTSPOTS } from './hotspots'
 import type { SceneAssets } from './useSceneAssets'
 
 extend({ Container, Sprite })
+
+/**
+ * The scene's half of the route-change glitch.
+ *
+ * Driven from the `transition` timestamp in the store rather than from a callback,
+ * so this and the DOM overlay stay in phase without either waiting on the other
+ * (docs/ARCHITECTURE.md § The transition layer). The filter is attached when a
+ * transition starts and detached when it ends: a filter on the scene root renders
+ * the whole scene to a texture every frame it exists, and an idle room must cost
+ * nothing.
+ *
+ * `GlitchFilter` gives slice displacement and channel offsets, which is the part of
+ * the reference this half needs — the scene is behind the panel and mostly covered,
+ * so the saturated colour banding is the DOM overlay's job.
+ */
+const GLITCH_SLICES = 14
+const GLITCH_OFFSET = 180
+
+/** Generous enough to cover every band's bleed, so the filter never clips the scene. */
+const FILTER_AREA = new Rectangle(-SCENE_W, -SCENE_H, SCENE_W * 3, SCENE_H * 3)
 
 let MOUNT_SEQUENCE = 0
 
@@ -70,6 +94,12 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
   const rigRef = useRef<CameraRig | null>(null)
   rigRef.current ??= new CameraRig()
 
+  // Built once and reused. Constructing a filter allocates GPU resources, so a new
+  // one per transition would churn them for an effect that runs for a third of a
+  // second at a time.
+  const glitchRef = useRef<GlitchFilter | null>(null)
+  glitchRef.current ??= new GlitchFilter({ slices: GLITCH_SLICES, offset: 0 })
+
   const mountIdRef = useRef<number | null>(null)
   mountIdRef.current ??= ++MOUNT_SEQUENCE
 
@@ -85,7 +115,13 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
 
     return BANDS_IN_DRAW_ORDER.map((band) => {
       const layers: { id: string; texture: Texture; z: number }[] = []
-      const bandObjects: { id: string; texture: Texture; z: number }[] = []
+      const bandObjects: {
+        id: string
+        texture: Texture
+        glow: Texture
+        glowScale: number
+        z: number
+      }[] = []
 
       for (const layer of manifest.layers) {
         if (layer.band !== band.id) continue
@@ -96,7 +132,17 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
       for (const object of manifest.objects) {
         if (object.band !== band.id) continue
         const loaded = objects.get(object.id)
-        if (loaded) bandObjects.push({ id: object.id, texture: loaded.texture, z: object.z })
+        if (!loaded) continue
+        bandObjects.push({
+          id: object.id,
+          texture: loaded.texture,
+          glow: loaded.glow,
+          // The glow is baked at a fraction of the canvas and scaled back up here.
+          // Derived from the manifest rather than hardcoded, so changing
+          // GLOW_DOWNSCALE in the import needs no matching edit in the renderer.
+          glowScale: SCENE_W / object.glow.width,
+          z: object.z,
+        })
       }
 
       layers.sort((a, b) => a.z - b.z)
@@ -110,6 +156,7 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
   // Populated by the Pixi ref callbacks, which fire during commit — before the
   // effect below runs. Kept separate from the glow objects for exactly that reason.
   const objectSprites = useRef(new Map<HotspotId, Sprite | null>())
+  const glowSprites = useRef(new Map<HotspotId, Sprite | null>())
 
   // The character is one sprite whose texture changes, not a sprite per frame.
   const characterRef = useRef<Sprite | null>(null)
@@ -123,13 +170,12 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
 
     for (const object of assets.manifest.objects) {
       if (!assets.objects.has(object.id)) continue
-      views.set(object.id as HotspotId, new HotspotGlow(object))
+      views.set(object.id as HotspotId, new HotspotGlow(object, glowSpecFor(HOTSPOTS, object.id)))
     }
 
     objectViews.current = views
 
     return () => {
-      for (const view of views.values()) view.destroy()
       objectViews.current = new Map()
     }
   }, [assets])
@@ -278,7 +324,7 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
 
     const apply = () => {
       rig.reducedMotion = query.matches
-      // State rather than a ref, because BillboardText reads it during render to
+      // State rather than a ref, because BillboardSurface reads it during render to
       // decide whether to cycle. A ref read there would never trigger the re-render
       // that makes the change take effect.
       setReducedMotion(query.matches)
@@ -395,7 +441,38 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
       const t = 1 - Math.exp(-GLOW_SPRING * Math.min(0.1, dt))
 
       for (const [id, view] of objectViews.current) {
-        view.update(objectSprites.current.get(id), hovered === id ? 1 : 0, t)
+        view.update(glowSprites.current.get(id), hovered === id ? 1 : 0, t)
+      }
+
+      // --- the route-change glitch ------------------------------------------
+      // Read off the shared timestamp, so this and the DOM overlay are the same
+      // event rather than two that happen to overlap.
+      const filter = glitchRef.current
+      const { transition } = getSceneState()
+
+      if (transition && filter) {
+        const elapsed = performance.now() - transition.startedAt
+        const progress = Math.min(1, elapsed / transition.duration)
+        // Front-loaded, matching the reference: the worst of it is over in the
+        // first third and the rest is recovery.
+        const intensity = progress < 0.3 ? 1 : Math.max(0, 1 - (progress - 0.3) / 0.7)
+
+        filter.slices = GLITCH_SLICES
+        filter.offset = GLITCH_OFFSET * intensity
+        filter.red = [12 * intensity, 0]
+        filter.blue = [-12 * intensity, 0]
+        filter.green = [0, 4 * intensity]
+        // Reshuffling every frame is what makes it read as discontinuous rather
+        // than as one displacement sliding back into place.
+        filter.seed = Math.random()
+
+        if (!root.filters || (root.filters as unknown[]).length === 0) {
+          root.filterArea = FILTER_AREA
+          root.filters = [filter]
+        }
+      } else if (root.filters && (root.filters as unknown[]).length > 0) {
+        root.filters = []
+        root.filterArea = undefined
       }
     },
     [app, assets.character, hitCandidates, reducedMotion],
@@ -461,16 +538,25 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
     [],
   )
 
-  // Where the headlines go, measured from the billboard art at import rather than
-  // declared next to it. No billboard in the manifest means no text to place.
-  const billboardArea = useMemo(
-    () => assets.manifest.objects.find((object) => object.id === 'billboard')?.inner ?? null,
+  // The billboard's own measurements, taken off the art at import rather than
+  // declared next to it: `inner` is where a bare headline sits and `quad` is the four
+  // corners a post image is projected onto. No billboard in the manifest means
+  // nothing to draw on.
+  const billboard = useMemo(
+    () => assets.manifest.objects.find((object) => object.id === 'billboard') ?? null,
     [assets],
   )
 
   const setObjectRef = useCallback(
     (id: string) => (sprite: Sprite | null) => {
       objectSprites.current.set(id as HotspotId, sprite)
+    },
+    [],
+  )
+
+  const setGlowRef = useCallback(
+    (id: string) => (sprite: Sprite | null) => {
+      glowSprites.current.set(id as HotspotId, sprite)
     },
     [],
   )
@@ -495,19 +581,41 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
             />
           )}
 
+          {/*
+            Glow first, then the object on top of it. Additive, so it adds light to
+            whatever is behind rather than painting over it — the same thing the
+            painted blooms in the city art do. `visible` and `alpha` are written by
+            the ticker; the values here are only the state of the first frame.
+          */}
           {objects.map((object) => (
-            <pixiSprite
-              key={object.id}
-              label={object.id}
-              texture={object.texture}
-              x={0}
-              y={0}
-              ref={setObjectRef(object.id)}
-            />
+            <pixiContainer key={object.id}>
+              <pixiSprite
+                label={`${object.id}:glow`}
+                texture={object.glow}
+                x={0}
+                y={0}
+                scale={object.glowScale}
+                blendMode="add"
+                alpha={0}
+                visible={false}
+                ref={setGlowRef(object.id)}
+              />
+              <pixiSprite
+                label={object.id}
+                texture={object.texture}
+                x={0}
+                y={0}
+                ref={setObjectRef(object.id)}
+              />
+            </pixiContainer>
           ))}
 
-          {band.id === 'skyline' && billboardArea && (
-            <BillboardText area={billboardArea} reducedMotion={reducedMotion} />
+          {band.id === 'skyline' && billboard && (
+            <BillboardSurface
+              area={billboard.inner}
+              quad={billboard.quad}
+              reducedMotion={reducedMotion}
+            />
           )}
         </pixiContainer>
       ))}

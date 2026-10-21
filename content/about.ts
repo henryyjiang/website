@@ -33,7 +33,15 @@ export const FAVOURITES: readonly { label: string; value: string }[] = [
   { label: 'Games', value: 'Nier: Automata, Overwatch, Limbus Company' },
 ]
 
-/** Carried over from the old site's skills grid. */
+/**
+ * Carried over from the old site's skills grid.
+ *
+ * NOT SURFACED. The Coding tab showed these as a row of chips above the project list
+ * until 2026-10-21, when Henry cut them: a list of languages is a claim the eight
+ * projects underneath already make, and it was the first thing a reader met. Kept
+ * here rather than deleted because it is real content and a résumé-ish surface may
+ * want it later; delete it if that never happens.
+ */
 export const SKILLS: readonly string[] = [
   'Java',
   'Python',

@@ -15,6 +15,7 @@ Do not port the old `main.js` / `style.css` approach — see `docs/ANIMATION.md`
 | UI | React | 19.3.1 |
 | Scene rendering | Pixi.js (WebGL 2D) | 8.22.0 |
 | React↔Pixi bridge | `@pixi/react` | 8.0.5 |
+| Scene filters | `pixi-filters` (glitch, RGB split) | 6.1.5 — subpath imports only |
 | Overlay animation | Motion | 14.3.0 |
 | Language | TypeScript (strict) | 7.0.2 — see below |
 | Styles | Tailwind | 4.3.3 |
@@ -51,7 +52,7 @@ npm run build        # production build; must pass before any push
 npm run start        # serve the production build locally
 npm run typecheck    # tsc --noEmit
 npm run lint
-npm run art          # import art/ → public/scene/ (optimise layers, pack atlas, write manifest)
+npm run art          # import art/ → public/scene/ + public/images/ (optimise, pack atlas, write manifests)
 ```
 
 ## Layout
@@ -62,18 +63,23 @@ app/                  Next routes. Scene mounts once in the root layout and neve
   page.tsx            Room, no overlay open
   desk/               Software + AI research overlay
   art/                Drawing portfolio overlay
-  updates/            Changelog overlay
+  updates/            Blog overlay (route name kept; the nav labels it Blog)
 components/
-  scene/              Pixi: layers, parallax camera, character, hotspots
+  scene/              Pixi: layers, parallax camera, character, hotspots, glow
   overlay/            React: the three tab panels and shared chrome
-  nav/                React: the destination menu — the DOM half of the hotspots
+  nav/                React: the destination tabs — the DOM half of the hotspots
+  theme/              React: the route-change glitch
 lib/
   scene-space.ts      Scene↔screen coordinate maths. Single source of truth.
+  theme.ts            The palette. Every colour in the site, by role, in one table.
   store.ts            Shared state between Pixi and React
+  content-images.ts   Joins a content entry to its image by slug. Reads the manifest below.
+  post-target.ts      Where a blog post points: the Coding row, or the Art popup.
 content/              Typed content modules. All copy and project data lives here.
 art/                  ART INBOX. Henry drops exports here; see art/README.md.
 public/scene/         Build output: optimised layers, packed atlases, manifest. Generated.
-scripts/import-art.ts Converts art/ → public/scene/. Run via npm run art.
+public/images/        Build output: the images content/ refers to, + manifest. Generated.
+scripts/import-art.ts Converts art/ → public/scene/ and public/images/. Run via npm run art.
 docs/
 ```
 
@@ -86,9 +92,18 @@ the code. Adding, replacing or reordering a layer must never require touching a 
 art/background/sky.png     parallax 0.10   (placeholder until Henry draws one)
 art/background/skyline.png parallax 0.30   (city and the skyscraper)
 art/foreground/            parallax 1.00   (the room: walls, window frame, floor)
-art/objects/               desk.png, bed.png, billboard.png — the three hotspots
+art/objects/               desk.png, bed.png — plus billboard.png, which is generated
 art/character/             frame sequence, video, or pre-packed atlas
+art/projects/              one screenshot per project, named after its slug
+art/pieces/                one drawing — or video — per art piece, named after its slug
 ```
+
+The last two are **not scene art** and take none of the rules above — no canvas size, no band, no
+draw order. They are pictures belonging to something written in `content/`, joined to it by the
+filename matching the entry's `slug`, and they land in `public/images/` rather than the scene's
+tree. A piece may be a video, in which case the import also produces the thumbnail everything that
+is not playing it shows. **Blog posts have no inbox**: a post borrows the picture of whatever it
+points at. See `docs/CONTENT.md` § Images.
 
 Rules enforced by this layout, all of them read from `art/README.md` rather than hardcoded:
 
@@ -99,17 +114,27 @@ Rules enforced by this layout, all of them read from `art/README.md` rather than
 - **Layers export at the full 2560 × 1440 design canvas** with transparency around the content, so
   art and hit areas share one coordinate space by construction.
 
-`npm run art` reads `art/`, writes optimised assets and a manifest to `public/scene/`, and packs the
-character animation into an atlas regardless of which of the three input formats was supplied. The
-scene reads the manifest; it never reads `art/` at runtime.
+`npm run art` reads `art/`, writes optimised assets and a manifest to `public/scene/` (the scene) and
+`public/images/` (the content's pictures), and packs the character animation into an atlas
+regardless of which of the three input formats was supplied. The scene fetches its manifest at
+runtime and the panels import theirs at build time; neither ever reads `art/`.
 
 **Never read from `art/` in application code**, and never hand-maintain the manifest.
 
 ## Rules
 
+**No component names a colour.** Every colour is a role in `lib/theme.ts`, reaching the DOM as a CSS
+custom property and the scene as a number. Changing the whole theme is changing `DEFAULT_PALETTE`.
+A literal hex or a Tailwind palette class in a component breaks that and will be moved.
+
 **Content is data, never markup.** The old site hardcoded every project into `index.html`.
-Projects, art pieces and updates live in `content/` as typed arrays. Adding a project means editing
+Projects, art pieces and posts live in `content/` as typed arrays. Adding a project means editing
 one object, and it must not require touching a component. Projects carry timestamps.
+
+**No content entry writes an image path.** Words live in `content/`, pixels live in `art/`, and
+`slug` joins them: the import names the output after the slug and `lib/content-images.ts` resolves
+it back. A path typed into a content module is a second source of truth that goes stale silently —
+the eight project screenshots carried over from the old site all 404'd for exactly that reason.
 
 **One source of truth for position.** Every layer, hotspot and character anchor is authored in
 scene coordinates (a fixed design canvas) and mapped to the screen by `lib/scene-space.ts`. Never
@@ -132,12 +157,41 @@ atlas, and only the atlas is committed.
 **Respect the user's machine.** Honour `prefers-reduced-motion`, stop the ticker when the tab is
 hidden, cap device pixel ratio, and degrade to a static composite where WebGL is unavailable.
 
+**Expensive effects are computed at build time, not per frame.** Object glow is a pre-blurred
+texture written by `npm run art`, not a `BlurFilter` running while something is hovered. The runtime
+blurs that remain are bounded and named in `docs/ARCHITECTURE.md` § Performance policy. A filter
+attached to an idle scene costs a render target every frame it exists, so filters attach when an
+effect starts and detach when it ends.
+
+**Surfaces on an object are measured, never typed.** Where the billboard's carousel projects is the
+object's own four measured corners, the same way its hit area is its own alpha. A rectangle in a
+config file is a second source of truth that goes stale the first time the art moves, silently.
+
+**`art/objects/billboard.png` is generated, not drawn.** The billboard is painted into the skyline;
+`npm run art:placeholders` traces its lit surface out of that art and copies those pixels into the
+object, so the hotspot has a shape, a quad and an unlit screen without Henry drawing anything twice.
+Re-run it after any change to `skyline.png`. The ledger in `art/.placeholders.json` means it will
+never overwrite a file Henry made himself.
+
 ## Phase discipline
 
-Work proceeds in the order in `docs/ROADMAP.md`. We are currently building toward a **rough**
-layout — placeholder art, correct structure. Real art and the character animation arrive later, from
-Henry. Do not polish visuals or build out tab interiors ahead of their phase; the seams for swapping
-art matter more than how the placeholders look.
+Work proceeds in the order in `docs/ROADMAP.md`. The rough-layout phase is **done** and the real
+scene art landed on 2026-10-20, so the seams it was built for are now being used: glow, the billboard
+carousel and the theme all hang off the manifest rather than off components. The character
+animation is still outstanding and is **not a ship blocker** — Phase 10 can go live without Phase 9.
 
-Tab interior design is deliberately undecided. Do not invent one — the direction is
-"less retro, more flowy and energetic" and nothing more specific has been settled.
+**The visual direction is settled: cyberpunk, in the register of Cyberpunk 2077's loading screen**,
+with a glitch as the route transition and a palette measured out of Henry's own skyline art. See
+`docs/DESIGN.md`. "Away from retro" still stands and means away from pixel/CRT/VHS nostalgia — it
+does not rule out this glitch, which is the clean digital kind.
+
+**Panel interiors are settled, one shape per tab** (2026-10-21, `docs/DESIGN.md` § Panel interiors).
+Coding is chronological rows of image-plus-text box; Blog is a brief about section over condensed
+news links that point *into* the site; Art is a 3-wide grid opening a full-page popup on the glitch.
+Each tab is arranged differently on purpose — the three work areas are peers but they are not the
+same kind of thing to read.
+
+**What is in `content/` is filler in three places and real everywhere else.** One post, one art piece
+and one video piece exist only to exercise those layouts and are marked `FILLER`; the eight Coding
+projects are the real ones carried over from the old site. The video piece's file is reference
+footage, is gitignored by name, and must never ship.

@@ -1,7 +1,36 @@
 @import 'tailwindcss';
 
+/*
+ * The palette arrives as `--ground`, `--active` and friends, written onto `:root`
+ * by the root layout (lib/theme.ts). `@theme inline` maps those into Tailwind's
+ * token space *by reference* rather than by value, which is the whole point: the
+ * generated utilities compile to `var(--active)`, so changing the variable at
+ * runtime re-themes the page with no rebuild and no re-render -- and, more to the
+ * point, means no component ever names a colour. Swapping the entire theme is
+ * changing DEFAULT_PALETTE in lib/theme.ts.
+ */
+@theme inline {
+  --color-ground: var(--ground);
+  --color-panel: var(--panel);
+  --color-text: var(--text);
+  --color-dim: var(--dim);
+  --color-primary: var(--primary);
+  --color-active: var(--active);
+  --color-alert: var(--alert);
+
+  --font-display: var(--font-rajdhani), 'Rajdhani', system-ui, sans-serif;
+  --font-mono: var(--font-share-tech-mono), ui-monospace, monospace;
+}
+
 :root {
   color-scheme: dark;
+
+  /*
+   * The clipped corner, as one number. Every panel, pill and button cuts the same
+   * amount off the same corner, which is what makes them read as one system rather
+   * than as several things that happen to have a bevel.
+   */
+  --notch: 10px;
 }
 
 html,
@@ -11,9 +40,175 @@ body {
 
 body {
   /* Behind the canvas, and what shows for one frame before it mounts. */
-  background-color: #0b1020;
-  color: #f2efe9;
+  background-color: var(--ground);
+  color: var(--text);
+  font-family: var(--font-display);
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Rajdhani is a condensed, squared face drawn for interfaces. At small sizes it
+ * needs letter-spacing to stop uppercase runs closing up, and a touch more leading
+ * than a humanist sans would, because its ascenders are long.
+ */
+.u-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.u-telemetry {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/*
+ * One corner cut, not a border radius. Which corner is a per-component choice; the
+ * size is not. `--notch-corner` lets a component pick without redefining the shape.
+ */
+.u-notch {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--notch)),
+    calc(100% - var(--notch)) 100%,
+    0 100%
+  );
+}
+
+.u-notch-tl {
+  clip-path: polygon(
+    var(--notch) 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    0 var(--notch)
+  );
+}
+
+/*
+ * Scanlines. The reference has them and they are not the retro kind — no curvature,
+ * no bloom, no vignette, just a 1px line at a few percent over a panel so it reads
+ * as a lit surface. The moment they are strong enough to notice individually they
+ * have become a CRT costume, so this stays under 5% and never animates.
+ */
+.u-scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.035) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+/*
+ * Element defaults inside a panel's body.
+ *
+ * Theme application, not layout: a link should be the interactive colour and a date
+ * should read as a readout, whatever a panel decides to do with them. Nothing here
+ * positions or sizes a block.
+ *
+ * **Written at zero specificity, on purpose.** `:where()` contributes nothing, so
+ * each of these is as weak as a bare element selector and any single class beats it
+ * — which is what a *default* has to be. Written as `.u-panel-body a` instead, a
+ * descendant selector at (0,1,1) would outrank every utility on the element: a
+ * `no-underline` or a tracking class would lose silently, and the next person would
+ * reach for `!important` rather than notice why.
+ */
+:where(.u-panel-body) a {
+  color: var(--active);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+  transition: color 150ms;
+}
+
+:where(.u-panel-body) a:hover {
+  color: var(--primary);
+}
+
+:where(.u-panel-body) h2 {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:where(.u-panel-body) time {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+/*
+ * A link that reads as a control rather than as prose: the socials row at the top of
+ * a tab, a project's links, the popup's close. One class is enough to override the
+ * panel's link default because that default is written at zero specificity above.
+ */
+.u-pill {
+  color: var(--dim);
+  text-decoration: none;
+  transition:
+    color 150ms,
+    border-color 150ms;
+}
+
+.u-pill:hover {
+  color: var(--active);
+}
+
+/*
+ * The row a blog post just linked to.
+ *
+ * A rule down its left edge in the brand colour, set for about two seconds and then
+ * switched off by the script that set it — the fade out is this transition running
+ * on the way back to `transparent`. It says "this one" and then stops saying it,
+ * because a marker that stays becomes part of the layout and the next reader has no
+ * idea why one project is special.
+ *
+ * The attribute is set to `false` rather than removed, so the element still matches
+ * the transition rule below on its way out. Removing it would match nothing and the
+ * marker would vanish in one frame.
+ *
+ * Not an `animation`, deliberately: the reduced-motion block below collapses every
+ * animation to nothing, which would make the marker invisible exactly for the
+ * readers most likely to need telling where they landed. A transition that collapses
+ * leaves the marker itself intact and only removes the fade.
+ */
+[data-arrived='true'] {
+  box-shadow: inset 3px 0 0 0 var(--primary);
+}
+
+[data-arrived] {
+  transition: box-shadow 500ms ease-out;
+}
+
+/*
+ * Focus is never removed, only replaced — and the replacement is louder than the
+ * default, not quieter. `--primary` rather than `--active` so that a focused item
+ * and the current item are still distinguishable from each other.
+ *
+ * `tabindex="-1"` is excluded, and that exclusion matters. A panel's heading carries
+ * it so the route change can move focus there — that is a reading position, not a
+ * control, and drawing a box around a heading nobody can activate reads as a
+ * rendering fault rather than as focus. Everything a visitor can actually operate
+ * has a positive tabindex or is natively focusable, and still gets the ring.
+ */
+:where(a, button, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--active);
+  color: var(--ground);
 }
 
 /*

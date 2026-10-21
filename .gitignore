@@ -29,6 +29,16 @@ art/character/video/*
 art/reference/*
 !art/reference/.gitkeep
 
+# FILLER, and it must never ship. art/pieces/motion-test.mp4 is a clip of the
+# Cyberpunk 2077 reference footage, standing in for a real animation so that the
+# video path through `npm run art` and the Art popup can be exercised before Henry
+# has one. The reference is a style register, not an asset source (docs/DESIGN.md
+# § Visual direction), so neither the input nor what the import makes of it is
+# tracked. Deleting both, dropping the entry from content/art.ts and re-running
+# `npm run art` is the whole clean-up. Real video pieces ARE committed.
+art/pieces/motion-test.*
+public/images/pieces/motion-test.*
+
 # Source art files, wherever they land
 *.psd
 *.psb

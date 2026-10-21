@@ -2,12 +2,19 @@
  * `npm run art:placeholders` — generate the art that Henry has not drawn yet, and
  * the drawing template.
  *
- * Two outputs, from one geometry source (lib/scene-layout.ts):
+ * Three outputs, from one geometry source (lib/scene-layout.ts):
  *
  *   - A placeholder for every band with no real art in it. That is now just the
  *     sky: the room, the skyline and all three objects are Henry's. Placeholders
  *     are deliberately crude, because placeholder art that is obviously placeholder
  *     cannot quietly harden into a design decision (docs/ROADMAP.md).
+ *
+ *   - `art/objects/billboard.png`, traced out of the skyline rather than drawn.
+ *     The billboard is painted into `art/background/skyline.png`, which is fine to
+ *     leave there — but a hotspot needs an alpha of its own for its hit area and
+ *     its carousel surface, and a flattened city has none. So this reads the lit
+ *     surface straight out of the skyline and writes it as the object. Derived, not
+ *     hand-maintained: redraw the billboard, re-run this, and it follows.
  *
  *   - `art/TEMPLATE.png`, a full-canvas guide marking the window opening, the
  *     background safe area and the three hotspot footprints, to draw on top of so
@@ -89,6 +96,117 @@ function buildPieces(): Piece[] {
   })
 
   return pieces
+}
+
+// --- the billboard surface ------------------------------------------------------
+
+/**
+ * The billboard's unlit surface colour, as drawn in `art/background/skyline.png`.
+ *
+ * Hardcoded, and it fails loudly rather than guessing: if the screen is ever
+ * repainted a different colour this script stops and says so, which is a far better
+ * failure than silently tracing the wrong shape and moving the carousel somewhere
+ * nobody asked for. The fix in that case is either this constant or an exported
+ * mask — see art/README.md § The billboard.
+ */
+const SURFACE_RGB = { r: 255, g: 229, b: 194 }
+const SURFACE_TOLERANCE = 14
+
+/** Ignore runs shorter than this, so antialiasing and stray pixels cannot seed a region. */
+const MIN_RUN = 24
+
+type Run = { y: number; x0: number; x1: number }
+
+/**
+ * Trace the billboard's lit surface out of the skyline art.
+ *
+ * Row runs rather than a flood fill: the surface is a convex quad drawn in
+ * perspective, so every row of it is one contiguous horizontal run, and grouping
+ * vertically-adjacent runs that overlap gives the region without a pixel stack. The
+ * largest group wins, which is what stops a similarly-coloured sign elsewhere in the
+ * city from being mistaken for the billboard.
+ */
+async function traceBillboardSurface(): Promise<Buffer | null> {
+  const source = join(ART_DIR, 'background', 'skyline.png')
+  if (!existsSync(source)) return null
+
+  const { data, info } = await sharp(source)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const { width, height, channels } = info
+
+  const matches = (i: number): boolean =>
+    data[i + 3]! > 200 &&
+    Math.abs(data[i]! - SURFACE_RGB.r) <= SURFACE_TOLERANCE &&
+    Math.abs(data[i + 1]! - SURFACE_RGB.g) <= SURFACE_TOLERANCE &&
+    Math.abs(data[i + 2]! - SURFACE_RGB.b) <= SURFACE_TOLERANCE
+
+  // Longest qualifying run per row.
+  const runs: Run[] = []
+  for (let y = 0; y < height; y++) {
+    let best: Run | null = null
+    let start = -1
+    for (let x = 0; x <= width; x++) {
+      const on = x < width && matches((y * width + x) * channels)
+      if (on && start < 0) start = x
+      if (!on && start >= 0) {
+        if (x - start >= MIN_RUN && (!best || x - start > best.x1 - best.x0)) {
+          best = { y, x0: start, x1: x - 1 }
+        }
+        start = -1
+      }
+    }
+    if (best) runs.push(best)
+  }
+
+  // Group vertically-adjacent runs that overlap horizontally; keep the biggest.
+  let group: Run[] = []
+  let current: Run[] = []
+  const area = (g: Run[]) => g.reduce((n, r) => n + (r.x1 - r.x0 + 1), 0)
+
+  for (const run of runs) {
+    const last = current[current.length - 1]
+    const joins = last && run.y === last.y + 1 && run.x1 >= last.x0 && run.x0 <= last.x1
+    if (joins) {
+      current.push(run)
+    } else {
+      if (area(current) > area(group)) group = current
+      current = [run]
+    }
+  }
+  if (area(current) > area(group)) group = current
+
+  if (group.length < 64) return null
+
+  // The source pixels, not a flat fill of SURFACE_RGB. The object draws directly over
+  // the copy still in the skyline, so copying makes the two bit-identical and the
+  // object provably invisible — a constant leaves a few levels of tint difference
+  // across a large flat field, which is exactly where banding shows up. It also means
+  // any texture or gradient Henry adds to the surface comes along for free.
+  const out = Buffer.alloc(SCENE_W * SCENE_H * 4, 0)
+  for (const run of group) {
+    for (let x = run.x0; x <= run.x1; x++) {
+      const from = (run.y * width + x) * channels
+      const to = (run.y * SCENE_W + x) * 4
+      out[to] = data[from]!
+      out[to + 1] = data[from + 1]!
+      out[to + 2] = data[from + 2]!
+      out[to + 3] = 255
+    }
+  }
+
+  const top = group[0]!
+  const bottom = group[group.length - 1]!
+  process.stdout.write(
+    `  trace  billboard surface: ${group.length} rows, ` +
+      `y ${top.y}–${bottom.y}, top edge ${top.x0}–${top.x1}\n`,
+  )
+
+  return sharp(out, { raw: { width: SCENE_W, height: SCENE_H, channels: 4 } })
+    .png({ compressionLevel: 9 })
+    .toBuffer()
 }
 
 // --- the template ---------------------------------------------------------------
@@ -230,6 +348,21 @@ async function main(): Promise<void> {
     const result = await write(piece.path, piece.svg, ledger)
     if (result === 'written') written++
     else skipped++
+  }
+
+  // The billboard's object art is traced out of the skyline rather than drawn, so
+  // it is generated here alongside the placeholders and protected by the same
+  // ledger — if Henry ever exports his own, this leaves it alone.
+  const surface = await traceBillboardSurface()
+  if (surface) {
+    const result = await write(join(ART_DIR, 'objects', 'billboard.png'), surface, ledger)
+    if (result === 'written') written++
+    else skipped++
+  } else {
+    process.stdout.write(
+      '  warn   could not find the billboard surface in art/background/skyline.png\n' +
+        '         (looking for the flat fill at rgb(255,229,194)) — left as it was\n',
+    )
   }
 
   // The template is always regenerated: it is a guide, not art, and it must track

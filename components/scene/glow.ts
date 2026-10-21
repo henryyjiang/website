@@ -1,34 +1,46 @@
 'use client'
 
-import { ColorMatrixFilter, type Sprite } from 'pixi.js'
+import type { Sprite } from 'pixi.js'
 
 import type { ManifestObject } from '@/lib/scene-manifest'
-
-/** Brightness at full hover. Restrained on purpose — see the note below. */
-export const GLOW_BRIGHTNESS = 1.35
+import type { GlowSpec, Hotspot } from './hotspots'
 
 /** Easing rate per second, matching the camera's damping so the glow cannot pop. */
 export const GLOW_SPRING = 14
 
 /**
- * Hover feedback for one object.
+ * Hover feedback for one object: light, not exposure.
  *
- * A class, like `CameraRig`, because the glow value is mutated every frame from
- * inside the ticker. Per-frame state belongs in an object that owns its own
- * mutation rather than in a plain record reached through a ref.
+ * The city behind the glass is painted with glow around every lit sign — Henry makes
+ * them by duplicating a layer, dropping the copy underneath and blurring it. The
+ * brightness lift this used to do raised an object's *exposure*, which read as a UI
+ * effect pasted onto a scene where everything else emits. So hovering emits instead,
+ * by the same recipe: `npm run art` bakes the blurred copy, and this fades it in
+ * behind the object.
  *
- * The treatment is deliberately restrained — a brightness lift, nothing more. The
- * old site used a stacked blue `drop-shadow`, which read as a UI effect pasted onto
- * the art rather than light in the room. What should replace it depends entirely on
- * how the real room is lit, so docs/DESIGN.md defers that to Phase 3 and this stands
- * in until then without pre-deciding the look.
+ * Because the glow texture is the object's own pixels, it is the object's own
+ * colours. Nothing here picks a tint, and a redrawn object brings its new one along.
+ *
+ * A class, like `CameraRig`, because the value is mutated every frame from inside
+ * the ticker. Per-frame state belongs in an object that owns its own mutation rather
+ * than in a plain record reached through a ref.
  */
 export class HotspotGlow {
-  private glow = 0
-  private readonly filter = new ColorMatrixFilter()
+  private level: number
 
-  constructor(readonly object: ManifestObject) {
-    this.filter.brightness(1, false)
+  constructor(
+    readonly object: ManifestObject,
+    /**
+     * This object's glow, straight off the hotspot table.
+     *
+     * Only `standing` and `peak` are used here — `blur`, `boost` and `saturation`
+     * shaped the texture at import and are nothing the runtime can change.
+     */
+    private readonly spec: GlowSpec,
+  ) {
+    // Start at rest rather than at zero, so the billboard is already lit on the
+    // first frame instead of easing up from dark while the scene fades in.
+    this.level = spec.standing
   }
 
   /**
@@ -39,31 +51,37 @@ export class HotspotGlow {
    * the effect that builds these objects runs after it. Storing the sprite here
    * meant the ref arrived before the object existed and the glow silently never
    * attached — correct hover state, no visible effect.
-   *
-   * The filter is detached entirely once the glow reaches zero: an attached filter
-   * costs a render target every frame it is present, and three idle objects should
-   * cost nothing at all.
    */
   update(sprite: Sprite | null | undefined, target: number, t: number): void {
-    this.glow += (target - this.glow) * t
+    const want = this.spec.standing + (this.spec.peak - this.spec.standing) * target
+    this.level += (want - this.level) * t
 
     if (!sprite) return
 
-    if (this.glow < 0.01) {
-      this.glow = 0
-      if (sprite.filters && (sprite.filters as unknown[]).length > 0) {
-        sprite.filters = []
-      }
+    // Below this the sprite is contributing nothing an eye could see, so stop
+    // drawing it. An additive quad is cheap, but three of them over the whole canvas
+    // every frame for nothing is not free either.
+    if (this.level < 0.004) {
+      this.level = 0
+      sprite.visible = false
       return
     }
 
-    this.filter.brightness(1 + (GLOW_BRIGHTNESS - 1) * this.glow, false)
-    if (!sprite.filters || (sprite.filters as unknown[]).length === 0) {
-      sprite.filters = [this.filter]
-    }
+    sprite.visible = true
+    sprite.alpha = this.level
   }
+}
 
-  destroy(): void {
-    this.filter.destroy()
-  }
+/** This object's glow spec, or a dark one if it is not a hotspot. */
+export function glowSpecFor(hotspots: readonly Hotspot[], id: string): GlowSpec {
+  return (
+    hotspots.find((hotspot) => hotspot.id === id)?.glow ?? {
+      blur: 0,
+      boost: 1,
+      saturation: 1,
+      gain: 1,
+      standing: 0,
+      peak: 0,
+    }
+  )
 }

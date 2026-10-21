@@ -1,0 +1,99 @@
+{
+  "generatedAt": "2026-10-21T13:18:39.700Z",
+  "images": {
+    "projects": {
+      "automated-intersection": {
+        "src": "/images/projects/automated-intersection.webp",
+        "fallback": "/images/projects/automated-intersection.png",
+        "width": 600,
+        "height": 600
+      },
+      "batstick": {
+        "src": "/images/projects/batstick.webp",
+        "fallback": "/images/projects/batstick.png",
+        "width": 600,
+        "height": 600
+      },
+      "darwin": {
+        "src": "/images/projects/darwin.webp",
+        "fallback": "/images/projects/darwin.png",
+        "width": 1130,
+        "height": 1078,
+        "lit": {
+          "src": "/images/projects/darwin--lit.webp",
+          "fallback": "/images/projects/darwin--lit.png",
+          "width": 1130,
+          "height": 1078
+        }
+      },
+      "fwubbo": {
+        "src": "/images/projects/fwubbo.webp",
+        "fallback": "/images/projects/fwubbo.png",
+        "width": 1600,
+        "height": 950,
+        "lit": {
+          "src": "/images/projects/fwubbo--lit.webp",
+          "fallback": "/images/projects/fwubbo--lit.png",
+          "width": 1600,
+          "height": 950
+        }
+      },
+      "kinetic-hawkes-hft": {
+        "src": "/images/projects/kinetic-hawkes-hft.webp",
+        "fallback": "/images/projects/kinetic-hawkes-hft.png",
+        "width": 1600,
+        "height": 839,
+        "lit": {
+          "src": "/images/projects/kinetic-hawkes-hft--lit.webp",
+          "fallback": "/images/projects/kinetic-hawkes-hft--lit.png",
+          "width": 1600,
+          "height": 839
+        }
+      },
+      "mandelbrotian-volatility": {
+        "src": "/images/projects/mandelbrotian-volatility.webp",
+        "fallback": "/images/projects/mandelbrotian-volatility.png",
+        "width": 1596,
+        "height": 660
+      },
+      "pots-flareup-predictor": {
+        "src": "/images/projects/pots-flareup-predictor.webp",
+        "fallback": "/images/projects/pots-flareup-predictor.png",
+        "width": 684,
+        "height": 1490
+      },
+      "quantum-walk-bqp": {
+        "src": "/images/projects/quantum-walk-bqp.webp",
+        "fallback": "/images/projects/quantum-walk-bqp.png",
+        "width": 1600,
+        "height": 763
+      }
+    },
+    "pieces": {
+      "motion-test": {
+        "src": "/images/pieces/motion-test.webp",
+        "fallback": "/images/pieces/motion-test.png",
+        "width": 1600,
+        "height": 900,
+        "video": {
+          "src": "/images/pieces/motion-test.mp4",
+          "type": "video/mp4",
+          "width": 1600,
+          "height": 900
+        }
+      },
+      "night-window": {
+        "src": "/images/pieces/night-window.webp",
+        "fallback": "/images/pieces/night-window.png",
+        "width": 1000,
+        "height": 1000,
+        "lit": {
+          "src": "/images/pieces/night-window--lit.webp",
+          "fallback": "/images/pieces/night-window--lit.png",
+          "width": 1000,
+          "height": 1000
+        }
+      }
+    }
+  }
+}

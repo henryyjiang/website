@@ -13,6 +13,14 @@ import {
 export type LoadedObject = {
   id: string
   texture: Texture
+  /**
+   * The pre-blurred copy that lights up on hover, at a quarter of the canvas.
+   *
+   * Drawn behind the object with additive blending, scaled back to full size. The
+   * GPU's bilinear upscale costs nothing and is itself a blur, so a quarter-size
+   * texture is indistinguishable from a full-size one once it has been blurred.
+   */
+  glow: Texture
   /** Decoded alpha mask cells, one byte per cell. */
   cells: Uint8Array
 }
@@ -74,6 +82,7 @@ export function useSceneAssets(): SceneAssetsState {
         const sources = [
           ...manifest.layers.map(pick),
           ...manifest.objects.map(pick),
+          ...manifest.objects.map((object) => pick(object.glow)),
           ...(manifest.character?.sheets ?? []).map(pick),
         ]
 
@@ -93,10 +102,12 @@ export function useSceneAssets(): SceneAssetsState {
         const objects = new Map<string, LoadedObject>()
         for (const object of manifest.objects) {
           const texture = loaded[pick(object)]
-          if (!texture) continue
+          const glow = loaded[pick(object.glow)]
+          if (!texture || !glow) continue
           objects.set(object.id, {
             id: object.id,
             texture,
+            glow,
             cells: decodeMask(object.mask),
           })
         }
@@ -169,8 +180,14 @@ function buildCharacter(
 
 let webpSupport: Promise<boolean> | null = null
 
-/** Decode a 1x1 WebP once per session and cache the answer. */
-function supportsWebP(): Promise<boolean> {
+/**
+ * Decode a 1x1 WebP once per session and cache the answer.
+ *
+ * Exported because the billboard loads its own textures — the post images are
+ * content, not scene art, and arrive from a different manifest — and a second copy
+ * of this test would be a second answer to the same question.
+ */
+export function supportsWebP(): Promise<boolean> {
   webpSupport ??= new Promise<boolean>((resolve) => {
     const image = new Image()
     image.onload = () => resolve(image.width === 1)

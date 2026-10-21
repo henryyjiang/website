@@ -16,26 +16,65 @@
 import { Buffer } from 'node:buffer'
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import process from 'node:process'
 
-import sharp from 'sharp'
+import sharp, { type PngOptions } from 'sharp'
 
 import { BAND_IDS, BANDS, type BandId } from '../components/scene/bands.ts'
+import { HOTSPOTS } from '../components/scene/hotspots.ts'
+import { ART_PIECES } from '../content/art.ts'
+import { POSTS } from '../content/posts.ts'
+import { PROJECTS } from '../content/projects.ts'
+import type { ContentImage, ContentImageManifest, ImageCollection } from '../lib/content-images.ts'
 import { type HotspotId } from '../lib/scene-layout.ts'
-import { MANIFEST_VERSION, type SceneManifest } from '../lib/scene-manifest.ts'
+import {
+  MANIFEST_VERSION,
+  type ManifestImage,
+  type ManifestQuad,
+  type SceneManifest,
+} from '../lib/scene-manifest.ts'
 import { SCENE_H, SCENE_W } from '../lib/scene-space.ts'
 import { packFrames } from './lib/pack.ts'
 
 // --- configuration --------------------------------------------------------------
 
 const ART_DIR = 'art'
-const OUT_DIR = join('public', 'scene')
+const PUBLIC_DIR = 'public'
+
+/** Generated scene tree: layers, objects, glow, the character atlas, the manifest. */
+const SCENE_OUT = 'scene'
+
+/**
+ * Generated content-image tree: the images `content/` refers to by slug.
+ *
+ * Separate from the scene's because they are a different kind of asset with a
+ * different manifest — see `lib/content-images.ts` for why they are not layers.
+ */
+const IMAGES_OUT = 'images'
+
+const OUT_DIR = join(PUBLIC_DIR, SCENE_OUT)
+const IMAGES_DIR = join(PUBLIC_DIR, IMAGES_OUT)
 
 /** Lossy WebP with alpha. Painted art tolerates this well and it is far smaller. */
 const WEBP = { quality: 82, effort: 5, alphaQuality: 90 } as const
 const PNG = { compressionLevel: 9 } as const
+
+/**
+ * PNG settings for content images: quantised to a palette, unlike the scene's.
+ *
+ * The fallback exists for a browser with no WebP support, which in practice is none,
+ * so what it really costs is repository weight — and that cost grows with every
+ * drawing added to the art portfolio, which is exactly the direction this repository
+ * has been burned in before (docs/ANIMATION.md). Full-colour PNG fallbacks for the
+ * eight project screenshots came to 2.4 MB against 320 KB of WebP; palette encoding
+ * brings them to roughly 600 KB and inside the per-image budget, measured.
+ *
+ * Scene layers keep the full-colour encoding. They are flat painted art composited
+ * in WebGL, where a quantised gradient bands visibly, and there are three of them.
+ */
+const CONTENT_PNG = { compressionLevel: 9, palette: true, quality: 90, effort: 8 } as const
 
 /** Mask cell size in scene units. 8 gives 320 x 180 cells over the canvas. */
 const MASK_SCALE = 8
@@ -71,16 +110,144 @@ const LAYER_DIRS: Record<string, BandId | null> = {
  * The billboard is the odd one: it is seen through the glass, so it travels at the
  * skyline's parallax factor rather than the room's (docs/DESIGN.md).
  */
-const OBJECT_BANDS: Record<HotspotId, BandId> = {
-  desk: 'room',
-  bed: 'room',
-  billboard: 'skyline',
-}
+const OBJECT_BANDS = Object.fromEntries(
+  HOTSPOTS.map((hotspot) => [hotspot.id, hotspot.band]),
+) as Record<HotspotId, BandId>
 
 /** Objects draw in front of their band's layer art. */
 const OBJECT_Z = 1000
 
+/**
+ * The hover glow, baked here rather than filtered at runtime.
+ *
+ * It is Henry's Clip Studio recipe — duplicate the layer, drop the copy underneath,
+ * gaussian blur it — moved into the build, which is what makes hovering cost one
+ * extra quad instead of a multi-pass blur on every frame something is lit
+ * (docs/DESIGN.md § Lighting and glow).
+ *
+ * Rendered at a quarter of the canvas and scaled back up at draw time. A blur is a
+ * low-pass filter, so there is nothing above a quarter resolution left to keep: the
+ * texture is sixteen times smaller, the blur is sixteen times cheaper to compute,
+ * and the result is indistinguishable because the GPU's bilinear upscale is itself a
+ * blur.
+ *
+ * How much blur, brightness and saturation each object gets is *not* here — it is a
+ * design decision per object and lives with the rest of them in
+ * `components/scene/hotspots.ts`. A floodlit billboard and a bedside table should
+ * not share a constant.
+ */
+const GLOW_DOWNSCALE = 4
+
 const IMAGE_EXT = new Set(['.png', '.webp', '.jpg', '.jpeg'])
+
+/**
+ * Video formats accepted in `art/pieces/`.
+ *
+ * Henry's animation software exports whichever of these is convenient, and the
+ * inbox's job is to take what the software gives rather than to make him convert
+ * (art/README.md). They are all transcoded to one MP4, so what is listed here is an
+ * input format and never an output one.
+ */
+const VIDEO_EXT = new Set(['.mp4', '.webm', '.mov', '.m4v'])
+
+/**
+ * The collections in `content/` that have images, and where their slugs come from.
+ *
+ * The import reads `content/` so the slug join can be checked from both ends. A
+ * one-way check would miss the mistake that actually happens, which is not a missing
+ * file but a mistyped name: `art/posts/rebuiling-the-site.png` imports perfectly and
+ * then appears nowhere, with nothing anywhere saying why.
+ *
+ * Reading content from a build script is safe in exactly one direction — these
+ * modules import types and nothing else, so nothing in `components/` or Pixi comes
+ * with them. Keep it that way.
+ */
+const IMAGE_COLLECTIONS: readonly {
+  id: ImageCollection
+  /** Named in warnings, because that is the file where a slug gets fixed. */
+  source: string
+  slugs: readonly string[]
+  /** Accepts video as well as stills. Pieces only — see `importContentImages`. */
+  videos?: boolean
+}[] = [
+  {
+    id: 'projects',
+    source: 'content/projects.ts',
+    slugs: PROJECTS.map((project) => project.slug),
+  },
+  {
+    id: 'pieces',
+    source: 'content/art.ts',
+    slugs: ART_PIECES.map((piece) => piece.slug),
+    videos: true,
+  },
+]
+
+/**
+ * The images a post points at, as `<collection>:<slug>`.
+ *
+ * **Posts have no inbox.** A post is a notice about something already on the site, so
+ * its picture is that thing's picture (`lib/content-images.ts`). What that means
+ * here is that the billboard's saturated variant cannot be baked per post — it is
+ * baked on whichever project screenshots and art pieces posts happen to reference,
+ * and on nothing else, because every one of them is a second encoding of an image
+ * this repository is already carrying.
+ *
+ * A video piece referenced by a post contributes its thumbnail, which is the still
+ * of it that already exists.
+ */
+const BILLBOARD_IMAGES = new Set(
+  POSTS.flatMap((post) => {
+    if (post.target?.to === 'project') return [`projects:${post.target.slug}`]
+    if (post.target?.to === 'piece') return [`pieces:${post.target.slug}`]
+    return []
+  }),
+)
+
+/**
+ * Longest side of a content image, in pixels.
+ *
+ * Unlike a layer there is no canvas to match — these are photographs, screenshots
+ * and drawings in whatever shape they were exported, and they are shown in a panel
+ * or pasted onto the billboard's quad. So the only rule is a ceiling: enough for a
+ * near-full-screen panel on a 2x display, and small enough to stay inside the
+ * budget. Exports below it are left alone rather than upscaled.
+ */
+const CONTENT_MAX_PX = 1600
+
+/** Per-image budget from docs/ANIMATION.md, measured on the WebP. Warns, never fails. */
+const CONTENT_BUDGET_BYTES = 250 * 1024
+
+/**
+ * Per-video budget. Far larger than an image's, and still a budget.
+ *
+ * An animation is the one asset here that can reasonably run to megabytes, and this
+ * repository has been burned by video weight before — the old site shipped a 4 MB
+ * glitch intro and committed a 34 MB frame sequence (docs/ANIMATION.md). A piece over
+ * this is usually one that wants trimming or a lower bitrate rather than one that
+ * needs the bytes.
+ */
+const VIDEO_BUDGET_BYTES = 6 * 1024 * 1024
+
+/**
+ * How a post image is treated for the billboard.
+ *
+ * The carousel projects a screen in a neon city, not a picture on a wall, and the
+ * skyline it sits in is painted entirely in full-strength coral, acid yellow and
+ * cyan — an unmodified photograph or screenshot beside that reads as a dull grey
+ * rectangle. So the import bakes a second, hard-saturated encoding and the carousel
+ * uses it; the panel keeps the original, because the blog is a document.
+ *
+ * Baked rather than filtered for the reason in CLAUDE.md: a `ColorMatrixFilter` on
+ * the mesh would cost a render target for as long as the carousel exists, which is
+ * always. Brightness stays near 1 on purpose — the lesson from the glow bake is that
+ * pushing brightness clips every channel and the result comes out *less* colourful,
+ * so the punch has to come from saturation (docs/DESIGN.md § Lighting and glow).
+ */
+const BILLBOARD_LOOK = { saturation: 1.9, brightness: 1.06 } as const
+
+/** Where the poster frame is pulled from, in seconds. Past any fade-in, before much happens. */
+const POSTER_AT_SECONDS = 1
 
 // --- reporting ------------------------------------------------------------------
 
@@ -134,6 +301,20 @@ async function listImages(dir: string): Promise<string[]> {
     .sort()
 }
 
+/** Stills and, where the collection takes them, videos. One sorted list either way. */
+async function listMedia(dir: string, videos: boolean): Promise<string[]> {
+  if (!videos) return listImages(dir)
+  if (!existsSync(dir)) return []
+  const entries = await readdir(dir, { withFileTypes: true })
+  return entries
+    .filter((e) => {
+      const ext = extname(e.name).toLowerCase()
+      return e.isFile() && (IMAGE_EXT.has(ext) || VIDEO_EXT.has(ext))
+    })
+    .map((e) => e.name)
+    .sort()
+}
+
 /**
  * Normalise a layer to the design canvas.
  *
@@ -164,27 +345,38 @@ async function normaliseToCanvas(buffer: Buffer, label: string): Promise<Buffer>
     .toBuffer()
 }
 
-/** Write both encodings and report the pair. */
+/**
+ * Write both encodings into `public/<dir>/` and report the pair.
+ *
+ * `dir` is the served path rather than a filesystem one, because that is what ends
+ * up in a manifest and the two must agree: `scene/layers` writes
+ * `public/scene/layers/sky.webp` and reports `/scene/layers/sky.webp`. One encoder
+ * for scene art and for content images — they want the same WebP-with-a-fallback
+ * pair, and a second copy of this would be a second place for the quality settings
+ * to drift.
+ */
 async function writeImagePair(
   buffer: Buffer,
-  outSubdir: string,
+  dir: string,
   id: string,
+  pngEncoding: PngOptions = PNG,
 ): Promise<{ src: string; fallback: string; width: number; height: number; bytes: number }> {
-  const dir = join(OUT_DIR, outSubdir)
-  await mkdir(dir, { recursive: true })
+  await mkdir(join(PUBLIC_DIR, dir), { recursive: true })
 
   const webp = await sharp(buffer).webp(WEBP).toBuffer()
-  const png = await sharp(buffer).png(PNG).toBuffer()
+  const png = await sharp(buffer).png(pngEncoding).toBuffer()
   const meta = await sharp(buffer).metadata()
 
-  await writeFile(join(dir, `${id}.webp`), webp)
-  await writeFile(join(dir, `${id}.png`), png)
+  await writeFile(join(PUBLIC_DIR, dir, `${id}.webp`), webp)
+  await writeFile(join(PUBLIC_DIR, dir, `${id}.png`), png)
 
   return {
-    src: `/scene/${outSubdir}/${id}.webp`,
-    fallback: `/scene/${outSubdir}/${id}.png`,
-    width: meta.width ?? SCENE_W,
-    height: meta.height ?? SCENE_H,
+    src: `/${dir}/${id}.webp`,
+    fallback: `/${dir}/${id}.png`,
+    // sharp reports both for anything it could decode, and throws above for anything
+    // it could not, so these fallbacks are unreachable; the types allow undefined.
+    width: meta.width ?? 0,
+    height: meta.height ?? 0,
     bytes: webp.length,
   }
 }
@@ -221,7 +413,7 @@ async function importLayers(): Promise<SceneManifest['layers']> {
       const layerId = id === band || id === folder ? band : `${band}-${id}`
 
       const source = await normaliseToCanvas(await readFile(join(dir, file)), label)
-      const written = await writeImagePair(source, 'layers', layerId)
+      const written = await writeImagePair(source, `${SCENE_OUT}/layers`, layerId)
 
       if (written.bytes > LAYER_BUDGET_BYTES) {
         warn(
@@ -315,6 +507,7 @@ async function measureAlpha(buffer: Buffer): Promise<{
   mask: { scale: number; width: number; height: number; bits: string }
   bounds: { x: number; y: number; width: number; height: number }
   inner: { x: number; y: number; width: number; height: number }
+  quad: ManifestQuad
 }> {
   const width = Math.ceil(SCENE_W / MASK_SCALE)
   const height = Math.ceil(SCENE_H / MASK_SCALE)
@@ -338,6 +531,18 @@ async function measureAlpha(buffer: Buffer): Promise<{
   let maxX = -1
   let maxY = -1
 
+  // The four corners, found as the extremes along the two diagonals. For a convex
+  // quad — which a screen, a sign or any flat panel is — min(x+y) is the top-left,
+  // max(x+y) the bottom-right, max(x-y) the top-right and min(x-y) the bottom-left,
+  // whatever angle it is drawn at. A concave shape would return a quad that encloses
+  // it rather than follows it, which is why surfaces are documented as quads.
+  const corner = {
+    tl: { x: 0, y: 0, key: Number.POSITIVE_INFINITY },
+    br: { x: 0, y: 0, key: Number.NEGATIVE_INFINITY },
+    tr: { x: 0, y: 0, key: Number.NEGATIVE_INFINITY },
+    bl: { x: 0, y: 0, key: Number.POSITIVE_INFINITY },
+  }
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const alpha = data[(y * width + x) * 4 + 3]!
@@ -351,6 +556,13 @@ async function measureAlpha(buffer: Buffer): Promise<{
       if (y < minY) minY = y
       if (x > maxX) maxX = x
       if (y > maxY) maxY = y
+
+      const sum = x + y
+      const diff = x - y
+      if (sum < corner.tl.key) corner.tl = { x, y, key: sum }
+      if (sum > corner.br.key) corner.br = { x, y, key: sum }
+      if (diff > corner.tr.key) corner.tr = { x, y, key: diff }
+      if (diff < corner.bl.key) corner.bl = { x, y, key: diff }
     }
   }
 
@@ -377,7 +589,72 @@ async function measureAlpha(buffer: Buffer): Promise<{
       width: inner.width * MASK_SCALE,
       height: inner.height * MASK_SCALE,
     },
+    quad: empty
+      ? { x0: 0, y0: 0, x1: 0, y1: 0, x2: 0, y2: 0, x3: 0, y3: 0 }
+      : {
+          x0: corner.tl.x * MASK_SCALE,
+          y0: corner.tl.y * MASK_SCALE,
+          x1: corner.tr.x * MASK_SCALE,
+          y1: corner.tr.y * MASK_SCALE,
+          x2: corner.br.x * MASK_SCALE,
+          y2: corner.br.y * MASK_SCALE,
+          x3: corner.bl.x * MASK_SCALE,
+          y3: corner.bl.y * MASK_SCALE,
+        },
   }
+}
+
+/**
+ * A pre-blurred, saturation-boosted copy of an object's own art.
+ *
+ * Its colour comes from the object's pixels, which is the entire point: a warm desk
+ * glows warm and the bed's grey-blue glows cool, with nothing to keep in step by
+ * hand. Redraw the object in a new colour and the glow follows on the next import.
+ *
+ * The alpha is blurred along with the colour, so what comes out is a soft falloff
+ * around the silhouette rather than a hard-edged smear — which is why this blurs the
+ * composited RGBA rather than blurring a tinted silhouette.
+ */
+async function buildGlow(
+  source: Buffer,
+  id: HotspotId,
+): Promise<ManifestImage & { bytes: number }> {
+  const width = Math.round(SCENE_W / GLOW_DOWNSCALE)
+  const height = Math.round(SCENE_H / GLOW_DOWNSCALE)
+  const spec = HOTSPOTS.find((hotspot) => hotspot.id === id)!.glow
+
+  const blurred = await sharp(source)
+    .resize(width, height, { fit: 'fill' })
+    // Brightness and saturation before the blur, so the lift spreads with the light
+    // instead of only intensifying the silhouette it came from.
+    .modulate({ brightness: spec.boost, saturation: spec.saturation })
+    .blur(spec.blur)
+    .ensureAlpha()
+    .raw()
+    .toBuffer()
+
+  // Re-amplify alpha after the blur. Blurring spreads a fixed amount of opacity over
+  // a larger area, so it buys reach at the cost of intensity everywhere; without
+  // this, turning `blur` up makes a glow fainter rather than bigger. Done on the raw
+  // buffer because sharp's channel operations work on colour, and this is alpha.
+  //
+  // The curve is `1 - (1 - a)^gain`, not `a * gain`, and that is the whole
+  // difference between a glow and a blob. A multiply clips: everything above
+  // `255 / gain` lands on opaque, so a large part of the halo goes perfectly flat and
+  // the boundary where it stops clipping reads as a hard edge drawn around the
+  // object. This curve approaches opaque without reaching it, so it lifts the faint
+  // outer falloff hard, barely touches the already-bright core, and stays smooth
+  // everywhere — which is what a falloff has to be to look like light.
+  for (let i = 3; i < blurred.length; i += 4) {
+    const a = blurred[i]! / 255
+    blurred[i] = Math.round(255 * (1 - Math.pow(1 - a, spec.gain)))
+  }
+
+  const glow = await sharp(blurred, { raw: { width, height, channels: 4 } })
+    .png()
+    .toBuffer()
+
+  return writeImagePair(glow, `${SCENE_OUT}/glow`, id)
 }
 
 async function importObjects(): Promise<SceneManifest['objects']> {
@@ -401,8 +678,9 @@ async function importObjects(): Promise<SceneManifest['objects']> {
     seen.add(hotspot)
 
     const source = await normaliseToCanvas(await readFile(join(dir, file)), `objects/${file}`)
-    const written = await writeImagePair(source, 'objects', hotspot)
-    const { mask, bounds, inner } = await measureAlpha(source)
+    const written = await writeImagePair(source, `${SCENE_OUT}/objects`, hotspot)
+    const glow = await buildGlow(source, hotspot)
+    const { mask, bounds, inner, quad } = await measureAlpha(source)
 
     if (bounds.width === 0) {
       warn(`art/objects/${file} is fully transparent, so it can never be clicked.`)
@@ -414,13 +692,15 @@ async function importObjects(): Promise<SceneManifest['objects']> {
       z: OBJECT_Z,
       bounds,
       inner,
+      quad,
       mask,
+      glow: stripBytes(glow),
       ...stripBytes(written),
     })
 
     log(
       `  object ${OBJECT_BANDS[hotspot].padEnd(8)}        ${hotspot}  ` +
-        `(${kb(written.bytes)}, hit area ${bounds.width}x${bounds.height})`,
+        `(${kb(written.bytes)} + ${kb(glow.bytes)} glow, hit area ${bounds.width}x${bounds.height})`,
     )
   }
 
@@ -431,6 +711,440 @@ async function importObjects(): Promise<SceneManifest['objects']> {
   }
 
   return objects
+}
+
+// --- content images -------------------------------------------------------------
+
+/**
+ * Optimise the images `content/` refers to by slug.
+ *
+ * Every image in the folder is imported, including one no entry claims yet, so that
+ * dropping in a picture and *then* writing the entry works — that is the order the
+ * writing actually happens in, and making it need a second import run would be a
+ * trap. The unclaimed ones are reported instead, which is the only way a mistyped
+ * filename ever surfaces.
+ *
+ * Nothing is measured here and nothing is normalised to a canvas. A content image
+ * has no band, no hit area and no glow; it is resized under a ceiling, encoded, and
+ * named after its slug. See `lib/content-images.ts`.
+ */
+/**
+ * Check that every post points at something that exists.
+ *
+ * A post's `target` is a slug join like every other one in `content/`, and it is the
+ * only one whose failure a *reader* experiences: a mistyped project slug links to an
+ * anchor that is not on the page, so the Coding tab opens and simply does not scroll,
+ * which looks like the site is broken rather than like a picture is missing. Cheap to
+ * check here, impossible to see anywhere else.
+ *
+ * Checked in this script because this is already the one command that verifies the
+ * slug joins in `content/` from both ends (`IMAGE_COLLECTIONS`), and because it runs
+ * before a build rather than during one.
+ */
+function checkPostTargets(): void {
+  const projects = new Set(PROJECTS.map((project) => project.slug))
+  const pieces = new Set(ART_PIECES.map((piece) => piece.slug))
+
+  for (const post of POSTS) {
+    const target = post.target
+    if (!target) continue
+
+    if (target.to === 'project' && !projects.has(target.slug)) {
+      warn(
+        `Post "${post.slug}" targets project "${target.slug}", which is not in ` +
+          `content/projects.ts. The Blog link would land on an anchor that does not ` +
+          `exist.`,
+      )
+    }
+
+    if (target.to === 'piece' && !pieces.has(target.slug)) {
+      warn(
+        `Post "${post.slug}" targets art piece "${target.slug}", which is not in ` +
+          `content/art.ts. The Blog link would open the Art tab with nothing in the ` +
+          `popup.`,
+      )
+    }
+  }
+}
+
+/**
+ * Transcode a video piece to one MP4 every browser can play.
+ *
+ * Always transcoded, never copied, even when the input is already an MP4. The point
+ * of the inbox is that Henry exports whatever his software exports most easily, and
+ * "whatever it exports" includes a ProRes `.mov`, a VP9 `.webm` and an H.265 MP4 that
+ * Safari plays and Chrome does not. One output format means the popup needs one
+ * `<source>` and no fallback chain.
+ *
+ * `faststart` moves the index to the front of the file so playback can begin before
+ * the whole thing has arrived, which for a piece opened in a popup is the difference
+ * between a click and a wait. The scale filter caps the long side at the same ceiling
+ * stills get and then rounds to even dimensions, which `yuv420p` requires.
+ *
+ * Audio is kept if there is any, and the popup plays muted — the reader can unmute,
+ * but nothing on this site makes a sound unasked (docs/DESIGN.md § Accessibility).
+ */
+function transcodeVideo(input: string, output: string): void {
+  execFileSync(
+    'ffmpeg',
+    [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-y',
+      '-i',
+      input,
+      '-vf',
+      `scale='min(${CONTENT_MAX_PX},iw)':'min(${CONTENT_MAX_PX},ih)':force_original_aspect_ratio=decrease,` +
+        'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'slow',
+      '-crf',
+      '24',
+      '-pix_fmt',
+      'yuv420p',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '128k',
+      '-movflags',
+      '+faststart',
+      output,
+    ],
+    { stdio: 'inherit' },
+  )
+}
+
+/**
+ * One frame out of a video, for the grid thumbnail and the popup's poster.
+ *
+ * Taken from the *transcoded* file rather than the source, so the frame's dimensions
+ * are the video's dimensions and the grid cannot be laid out against a size the
+ * player does not have.
+ *
+ * `-ss` ahead of `-i` seeks before decoding, which is fast but lands on the nearest
+ * keyframe — exactly what is wanted for a thumbnail. A clip shorter than the seek
+ * produces no frame at all rather than an error, so that falls back to the first.
+ */
+function extractPosterFrame(input: string, output: string): void {
+  const run = (seconds: number) =>
+    execFileSync(
+      'ffmpeg',
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-y',
+        '-ss',
+        String(seconds),
+        '-i',
+        input,
+        '-frames:v',
+        '1',
+        output,
+      ],
+      { stdio: 'inherit' },
+    )
+
+  run(POSTER_AT_SECONDS)
+  if (!existsSync(output)) run(0)
+}
+
+/**
+ * The saturated copy of a post image that the billboard projects.
+ *
+ * Written beside the original as `<slug>--lit`, with the two dashes marking it as a
+ * generated variant of the file next to it rather than a slug of its own — nothing
+ * in `content/` can name it, which is the intent. See `BILLBOARD_LOOK`.
+ */
+async function writeLitVariant(
+  source: Buffer,
+  dir: string,
+  slug: string,
+): Promise<ManifestImage> {
+  const lit = await sharp(source).modulate(BILLBOARD_LOOK).toBuffer()
+  return stripBytes(await writeImagePair(lit, dir, `${slug}--lit`, CONTENT_PNG))
+}
+
+async function importContentImages(): Promise<ContentImageManifest['images']> {
+  const images: ContentImageManifest['images'] = { projects: {}, pieces: {} }
+
+  for (const collection of IMAGE_COLLECTIONS) {
+    const dir = join(ART_DIR, collection.id)
+    const files = await listMedia(dir, collection.videos === true)
+    const outDir = `${IMAGES_OUT}/${collection.id}`
+    const slugs = new Set(collection.slugs)
+    const claimed = new Set<string>()
+    const orphans: string[] = []
+
+    for (const [slug, found] of groupBySlug(files, collection.id)) {
+      const still = found.stills[0]
+      const video = found.videos[0]
+      const label = `art/${collection.id}/${video ?? still}`
+
+      if (slugs.has(slug)) claimed.add(slug)
+      else orphans.push(video ?? still!)
+
+      const entry = video
+        ? await importVideo({
+            dir,
+            file: video,
+            slug,
+            outDir,
+            label,
+            collection: collection.id,
+            // A still beside a video is its thumbnail rather than a competing
+            // entry — see `groupBySlug`.
+            thumbnail: still,
+            lit: BILLBOARD_IMAGES.has(`${collection.id}:${slug}`),
+          })
+        : await importStill({
+            dir,
+            file: still!,
+            slug,
+            outDir,
+            label,
+            collection: collection.id,
+            lit: BILLBOARD_IMAGES.has(`${collection.id}:${slug}`),
+          })
+
+      if (entry) images[collection.id][slug] = entry
+    }
+
+    const missing = collection.slugs.filter((slug) => !claimed.has(slug))
+    if (missing.length > 0) {
+      warn(
+        `No image in art/${collection.id}/ for ${missing.join(', ')} ` +
+          `(from ${collection.source}). Those entries render without one — drop in ` +
+          `art/${collection.id}/<slug>.png to give them a picture.`,
+      )
+    }
+
+    if (orphans.length > 0) {
+      warn(
+        `art/${collection.id}/ holds ${orphans.join(', ')}, which no entry in ` +
+          `${collection.source} claims. Mistyped slug? Imported anyway, so adding ` +
+          `the entry is all it takes to show it.`,
+      )
+    }
+  }
+
+  return images
+}
+
+/**
+ * Collect an inbox folder's files under the slug each one claims.
+ *
+ * **A still beside a video of the same name is its thumbnail, not a rival.** That
+ * pairing is the only way to choose what a video piece looks like at rest: the grid
+ * needs a square cell, the feed needs a 64px square and the billboard needs
+ * something to project, and the frame a machine picks one second in is a guess. Drop
+ * `motion-test.png` next to `motion-test.mp4` and it wins; drop nothing and the
+ * import keeps guessing, which is what makes the thumbnail optional rather than a
+ * chore attached to every animation.
+ *
+ * Two files of the *same kind* under one slug are still a collision — `fwubbo.png`
+ * left behind beside a new `fwubbo.jpg` would both write `fwubbo.webp`, and the
+ * alphabetically later one would win with nothing said. That reads as "I replaced
+ * the image and the site did not change", which is the one failure this inbox exists
+ * to make impossible. Keep the first, deterministically, and report both.
+ */
+function groupBySlug(
+  files: readonly string[],
+  collection: ImageCollection,
+): Map<string, { stills: string[]; videos: string[] }> {
+  const bySlug = new Map<string, { stills: string[]; videos: string[] }>()
+
+  for (const file of files) {
+    const slug = basename(file, extname(file))
+    const group = bySlug.get(slug) ?? { stills: [], videos: [] }
+    if (VIDEO_EXT.has(extname(file).toLowerCase())) group.videos.push(file)
+    else group.stills.push(file)
+    bySlug.set(slug, group)
+  }
+
+  for (const [slug, group] of bySlug) {
+    for (const kind of ['stills', 'videos'] as const) {
+      if (group[kind].length < 2) continue
+      const [kept, ...rest] = group[kind]
+      warn(
+        `art/${collection}/ holds ${group[kind].join(' and ')}, which all claim ` +
+          `${slug}. Kept ${kept}; delete ${rest.join(' and ')}, since which one wins ` +
+          `is alphabetical rather than chosen.`,
+      )
+    }
+  }
+
+  return bySlug
+}
+
+type MediaImport = {
+  dir: string
+  file: string
+  slug: string
+  /** Served path, which is also the manifest's. `images/pieces`, not a filesystem path. */
+  outDir: string
+  /** `art/pieces/x.mp4` — named in warnings, because that is the file to fix. */
+  label: string
+  collection: ImageCollection
+  /** Bake the billboard's saturated copy: this image is one a post points at. */
+  lit: boolean
+}
+
+/**
+ * One still: resized under the ceiling, encoded, and named after its slug.
+ *
+ * Nothing is measured and nothing is normalised to a canvas. A content image has no
+ * band, no hit area and no glow. See `lib/content-images.ts`.
+ */
+async function importStill({
+  dir,
+  file,
+  slug,
+  outDir,
+  label,
+  collection,
+  lit,
+}: MediaImport): Promise<ContentImage> {
+  const written = await writeStill(join(dir, file), outDir, slug, label, lit)
+
+  log(
+    `  image  ${collection.padEnd(8)}        ${slug}  ` +
+      `(${kb(written.bytes)}, ${written.image.width}x${written.image.height}` +
+      `${written.image.lit ? ' + lit' : ''})`,
+  )
+
+  return written.image
+}
+
+/**
+ * Encode one still into the pair the manifest names, plus the billboard's copy.
+ *
+ * Shared by a drawing and by a video's thumbnail, because they are the same thing
+ * once the file is on disk — which is the point of letting a video carry a chosen
+ * thumbnail at all.
+ */
+async function writeStill(
+  path: string,
+  outDir: string,
+  slug: string,
+  label: string,
+  lit: boolean,
+): Promise<{ image: ContentImage; bytes: number }> {
+  // `fit: 'inside'` keeps the aspect it was given: the billboard mesh crops to
+  // fill at draw time and a panel lays out to whatever shape arrives, so
+  // cropping here would throw away pixels on a guess about a layout that has
+  // not been designed yet. `withoutEnlargement` keeps a small export sharp
+  // rather than inventing resolution for it.
+  //
+  // sharp drops EXIF unless asked to keep it, which is the behaviour to want
+  // here — a phone photo of a sketchbook carries the place it was taken.
+  const source = await sharp(await readFile(path))
+    .resize(CONTENT_MAX_PX, CONTENT_MAX_PX, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .toBuffer()
+
+  const written = await writeImagePair(source, outDir, slug, CONTENT_PNG)
+
+  if (written.bytes > CONTENT_BUDGET_BYTES) {
+    warn(
+      `${label} is ${kb(written.bytes)} as WebP, over the ${kb(CONTENT_BUDGET_BYTES)} ` +
+        `per-image budget in docs/ANIMATION.md.`,
+    )
+  }
+
+  const image: ContentImage = stripBytes(written)
+  if (lit) image.lit = await writeLitVariant(source, outDir, slug)
+
+  return { image, bytes: written.bytes }
+}
+
+/**
+ * One video piece: transcoded, and given the thumbnail everything else shows.
+ *
+ * **A video needs a still of itself**, in three places that never play it — the
+ * grid's square cell, the blog feed's 64px square, and the billboard, which projects
+ * whatever a post points at. So one is always produced: a frame pulled a second in,
+ * or the file Henry dropped beside the video if he wanted to choose it.
+ *
+ * The frame is extracted either way, because it is also how the video's own
+ * dimensions are measured — a chosen thumbnail may be any shape, and the player
+ * needs the shape of the thing it is going to play.
+ *
+ * A missing or broken ffmpeg warns and drops the piece rather than failing the
+ * import. Everything else in the inbox is independent of it, and an import that
+ * refuses to run because one animation could not be encoded would block work on the
+ * scene for a reason that has nothing to do with the scene.
+ */
+async function importVideo({
+  dir,
+  file,
+  slug,
+  outDir,
+  label,
+  collection,
+  thumbnail,
+  lit,
+}: MediaImport & { thumbnail?: string }): Promise<ContentImage | null> {
+  const input = join(dir, file)
+  const absOutDir = join(PUBLIC_DIR, outDir)
+  await mkdir(absOutDir, { recursive: true })
+
+  const videoPath = join(absOutDir, `${slug}.mp4`)
+  const framePath = join(absOutDir, `${slug}.frame.png`)
+
+  try {
+    transcodeVideo(input, videoPath)
+    extractPosterFrame(videoPath, framePath)
+  } catch (error: unknown) {
+    warn(
+      `${label} could not be transcoded (${
+        error instanceof Error ? error.message.split('\n')[0] : String(error)
+      }). ffmpeg is required for video pieces; the entry renders without media.`,
+    )
+    return null
+  }
+
+  if (!existsSync(framePath)) {
+    warn(`${label} transcoded but produced no frame, so it has no thumbnail.`)
+    return null
+  }
+
+  const frame = await sharp(await readFile(framePath)).metadata()
+  const poster = thumbnail ? join(dir, thumbnail) : framePath
+  const written = await writeStill(poster, outDir, slug, label, lit)
+  await rm(framePath, { force: true })
+
+  const bytes = (await stat(videoPath)).size
+  if (bytes > VIDEO_BUDGET_BYTES) {
+    warn(
+      `${label} is ${kb(bytes)} as MP4, over the ${kb(VIDEO_BUDGET_BYTES)} per-video ` +
+        `budget. Trim it or lower the bitrate rather than shipping it.`,
+    )
+  }
+
+  log(
+    `  video  ${collection.padEnd(8)}        ${slug}  ` +
+      `(${kb(bytes)} mp4 ${frame.width}x${frame.height}, ` +
+      `${thumbnail ? `thumbnail ${thumbnail}` : 'thumbnail from 1s in'}` +
+      `${written.image.lit ? ' + lit' : ''})`,
+  )
+
+  return {
+    ...written.image,
+    video: {
+      src: `/${outDir}/${slug}.mp4`,
+      type: 'video/mp4',
+      // The video's own size, not the thumbnail's: a chosen thumbnail may be any
+      // shape, and these size the player.
+      width: frame.width ?? written.image.width,
+      height: frame.height ?? written.image.height,
+    },
+  }
 }
 
 // --- character ------------------------------------------------------------------
@@ -603,7 +1317,7 @@ async function importCharacter(tmpDir: string): Promise<SceneManifest['character
       .png()
       .toBuffer()
 
-    const written = await writeImagePair(composite, 'character', `sheet-${sheetIndex}`)
+    const written = await writeImagePair(composite, `${SCENE_OUT}/character`, `sheet-${sheetIndex}`)
     sheets.push(stripBytes(written))
     log(
       `  sheet  ${sheetIndex}  ${size.width}x${size.height}  ` +
@@ -654,36 +1368,62 @@ async function main(): Promise<void> {
     throw new Error(`No ${ART_DIR}/ directory. See art/README.md.`)
   }
 
-  log(`Importing ${ART_DIR}/ -> ${OUT_DIR}/`)
+  log(`Importing ${ART_DIR}/ -> ${OUT_DIR}/ and ${IMAGES_DIR}/`)
 
   // Clear generated output so a deleted source file cannot leave a stale asset behind
-  // that the manifest no longer references but the repository still carries.
+  // that the manifest no longer references but the repository still carries. Both
+  // trees are generated in full by this script; nothing else may be filed in them.
   await rm(OUT_DIR, { recursive: true, force: true })
   await mkdir(OUT_DIR, { recursive: true })
+  await rm(IMAGES_DIR, { recursive: true, force: true })
+  await mkdir(IMAGES_DIR, { recursive: true })
 
   const tmpDir = join(OUT_DIR, '.tmp')
   await mkdir(tmpDir, { recursive: true })
 
   const layers = await importLayers()
   const objects = await importObjects()
+  const contentImages = await importContentImages()
+  checkPostTargets()
   const character = await importCharacter(tmpDir)
 
   await rm(tmpDir, { recursive: true, force: true })
 
+  const generatedAt = new Date().toISOString()
+
   const manifest: SceneManifest = {
     version: MANIFEST_VERSION,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     scene: { width: SCENE_W, height: SCENE_H },
     layers,
     objects,
     character,
   }
 
+  // Two manifests, because they are read by different halves of the site at
+  // different times: the scene fetches its own at runtime, and the panels import
+  // this one at build time (lib/content-images.ts). Keeping the content images out
+  // of the scene manifest also keeps base64 alpha masks out of the panels' bundle.
+  const contentImageManifest: ContentImageManifest = {
+    generatedAt,
+    images: contentImages,
+  }
+
   await writeFile(join(OUT_DIR, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+  await writeFile(
+    join(IMAGES_DIR, 'manifest.json'),
+    `${JSON.stringify(contentImageManifest, null, 2)}\n`,
+  )
+
+  const imageCount = Object.values(contentImages).reduce(
+    (total, collection) => total + Object.keys(collection).length,
+    0,
+  )
 
   log('')
   log(
     `Wrote ${layers.length} layer(s), ${objects.length} object(s), ` +
+      `${imageCount} content image(s), ` +
       `${character ? `${character.frames.length} character frame(s)` : 'no character'}.`,
   )
 

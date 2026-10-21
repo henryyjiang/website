@@ -18,14 +18,32 @@ import { useSyncExternalStore } from 'react'
 
 export type HotspotId = 'desk' | 'bed' | 'billboard'
 
+/**
+ * A route change in flight.
+ *
+ * A timestamp rather than a progress number, because both halves of the glitch run
+ * off it independently: React animates the DOM overlay with Motion, the scene drives
+ * its filter in the ticker, and neither waits on the other. Two clocks would drift
+ * apart within a frame of each other and the effect only reads as one event if they
+ * do not. See docs/ARCHITECTURE.md § The transition layer.
+ */
+export type Transition = {
+  /** `performance.now()` at the moment the route changed. */
+  startedAt: number
+  /** Milliseconds. Both sides read this rather than each knowing the duration. */
+  duration: number
+}
+
 export type SceneState = {
   /** Which hotspot the pointer is over, if any. Written by the scene. */
   hovered: HotspotId | null
   /** Which overlay panel is open, if any. Written by React, from the route. */
   overlay: HotspotId | null
+  /** Non-null while a route change is glitching. Written by React. */
+  transition: Transition | null
 }
 
-let state: SceneState = { hovered: null, overlay: null }
+let state: SceneState = { hovered: null, overlay: null, transition: null }
 
 const listeners = new Set<() => void>()
 
@@ -49,13 +67,20 @@ export function setOverlay(overlay: HotspotId | null): void {
   emit()
 }
 
+export function setTransition(transition: Transition | null): void {
+  if (state.transition === transition) return
+  state = { ...state, transition }
+  emit()
+}
+
+
 function subscribe(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
 
-/** Server snapshot is the initial state: nothing hovered, nothing open. */
-const SERVER_STATE: SceneState = { hovered: null, overlay: null }
+/** Server snapshot is the initial state: nothing hovered, nothing open, nothing moving. */
+const SERVER_STATE: SceneState = { hovered: null, overlay: null, transition: null }
 
 export function useSceneState(): SceneState {
   return useSyncExternalStore(subscribe, getSceneState, () => SERVER_STATE)

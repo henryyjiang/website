@@ -65,6 +65,12 @@ it between folders. No component changes, no hand-maintained list. See `art/READ
 
 The scene reads the manifest at runtime and never looks at `art/`.
 
+The same command writes a second manifest, `public/images/manifest.json`, for the images the
+*content* refers to — project screenshots, art pieces, blog post images. Those are not layers and
+are deliberately not in this one: they have no band, no hit area and no place in the draw order, and
+the panels that show them import their manifest at build time rather than fetching it. The split
+also keeps the layers' base64 alpha masks out of the panels' bundle. See `docs/CONTENT.md` § Images.
+
 Parallax factor comes from the band, so depth is a design decision made in one table rather than
 scattered across sprites:
 
@@ -82,8 +88,65 @@ window opening the way a real view does.
 
 The window glass itself is part of `room` — the opening is transparency in the room art, with the
 `skyline` and `sky` bands composited behind it. Do not try to mask the skyline to the window shape;
-let the room art's alpha do the work, and give the skyline bands enough bleed past the opening that
-panning never exposes their edges.
+let the room art's alpha do the work, and paint the background bands to all four edges of the canvas
+so that sliding behind the opening never runs out of city. Bands at or below 1.00 need no bleed past
+the canvas: a band travels `panRange * factor` while the overflow hiding it is `panRange`, so only
+`near` can overshoot. `bandBleed()` in `lib/scene-space.ts` is the arithmetic.
+
+## Objects and surfaces
+
+An **object** is a hotspot: `desk`, `bed`, `billboard`. One file each in `art/objects/`, full canvas
+with transparency around it. The import measures everything it needs out of that alpha, and nothing
+is typed by hand:
+
+- **`bounds`** — tight box around the drawn pixels. A cheap reject before the mask.
+- **`mask`** — a 1-bit alpha mask at 1/8 scale, so hit testing matches the shape that was drawn
+  rather than a rectangle around it.
+- **`inner`** — the largest axis-aligned rectangle that fits inside it, for anything laid out in a
+  box.
+- **`quad`** — the four extreme corners, clockwise from top-left. Meaningful for a flat surface seen
+  in perspective, ignored by everything else.
+- **`glow`** — a pre-blurred, saturation-boosted copy of the object's own art, written as its own
+  texture, shaped by that object's `GlowSpec` in `components/scene/hotspots.ts`. See
+  `docs/DESIGN.md` § Lighting and glow for why the blur happens here and not at runtime, and why
+  `gain` rather than `blur` is the knob that makes a glow stronger.
+
+**`quad` is what the billboard carousel needs.** Henry drew the billboard in perspective — a taller
+left edge than right, sloping top and bottom — so a post image dropped into `inner` would sit visibly
+flat against art that is not. The carousel is a `PerspectiveMesh`, which takes exactly four corners,
+and those corners are the object's own. Move the billboard, re-run the import, and the carousel
+follows.
+
+The corners are the extreme points of the mask's outline, which is right for the quads a screen is
+made of and would be wrong for a region with a concave notch. Surfaces are quads; if one ever needs
+to be a polygon, that is a new kind of thing, not a looser version of this one.
+
+### The billboard object is the surface, not the billboard
+
+Worth stating because it looks like an inconsistency. The billboard — frame, neon bars, lettering,
+the strip underneath — is painted into `art/background/skyline.png` and stays there.
+`art/objects/billboard.png` holds only the **lit screen**, and it is *traced out of the skyline* by
+`npm run art:placeholders` rather than drawn: the script finds the flat fill of the surface, copies
+those exact pixels, and writes them as the object.
+
+That is enough, because what a hotspot actually needs from the art is a shape, not pixels:
+
+| Needs | Comes from |
+| --- | --- |
+| Where you click to open the blog | the object's mask — the screen, which is the natural target |
+| Where the carousel projects | the object's `quad` |
+| The glow behind the carousel | the post image, blurred — not static art |
+| What shows before a post loads | the object's own pixels, which are the unlit screen |
+
+Because the traced pixels are copied from the skyline, the object draws over an identical copy of
+itself and is provably invisible — verified at import by differencing the composite with and without
+it. Nothing is doubled, nothing is drawn twice, and there is no second mask file to keep in step.
+
+**Why trace rather than ask for an export:** it is derived art, and derived art that a script
+regenerates cannot go stale. An exported mask would be exact too, but it would be a second copy of a
+shape that already exists in the skyline, and the first time the billboard moved the two would
+disagree with nothing to notice. The tracer is pinned to the surface colour and fails loudly if it
+stops matching, which is the failure mode worth having.
 
 ## Camera
 
@@ -116,14 +179,65 @@ still fully navigable — panning is decoration, never the only way to reach any
 └──────────────────────────────────────────────────────┘
 ```
 
-**Pixi owns:** the canvas, layer sprites, the camera transform, the character `AnimatedSprite`,
-hover glow filters, the ticker.
+**Pixi owns:** the canvas, layer sprites, the camera transform, the character sprite, hover glow,
+the billboard carousel and its perspective mesh, the ticker.
 
-**React owns:** the three overlay panels, routing, focusable navigation, all text content.
+**React owns:** the three overlay panels, routing, focusable navigation, all text content, and the
+DOM half of the glitch transition.
 
 **They talk through `lib/store.ts`** and nothing else. Pixi publishes hover state and click intent;
-React publishes which overlay is open (so the scene can dim, blur or push the camera while a panel is
-up). Neither side queries the other's internals.
+React publishes which overlay is open and whether a transition is running. Neither side queries the
+other's internals.
+
+The store has grown past hover state, and the rule it was built on still holds: **anything written
+every frame is owned by the ticker, and anything written occasionally goes through the store.** A
+route change is occasional — one write. The carousel's dwell timer is occasional. The per-frame
+values those produce never touch the store or React at all, because re-rendering the tree sixty
+times a second to move one number is the old site's bug wearing a state-management hat.
+
+### The theme
+
+Seven CSS custom properties on `:root`, written by the root layout from `lib/theme.ts`, and mapped
+into Tailwind's token space with `@theme inline` so that every generated utility compiles to a
+`var(--…)` reference rather than to a literal. That indirection is the whole design: a component
+says `text-active`, never `text-cyan-400`, so the palette is swappable without finding and rewriting
+anything.
+
+The scene cannot read a CSS variable — it is drawing into a canvas — so `lib/theme.ts` also exposes
+the same values as numbers. One definition, two consumers, no second copy to drift.
+
+Colours are named by **role** (`primary`, `active`, `alert`, `ground`, `panel`, `text`, `dim`), not
+by hue. Several palettes live in the table and one is selected by `DEFAULT_PALETTE`; changing the
+theme is changing that constant.
+
+### The transition layer
+
+The glitch at a route change happens in both mediums at once (`docs/DESIGN.md` § Glitch as the
+transition), which makes *who starts it* the only interesting question. The answer is React, because
+React is what knows the route changed:
+
+1. The pathname changes. A client component in the layout notices, writes
+   `transition: { startedAt, from, to }` to the store, and schedules the clear.
+2. React animates its own overlay with Motion — slices, channel split, flash.
+3. The scene reads `transition` on the next tick and drives a `GlitchFilter` on the scene root from
+   the *same* `startedAt`, so the two stay in phase without talking to each other.
+4. The filter is attached when the transition starts and detached when it ends, the same discipline
+   the hover glow follows: an attached filter costs a render target every frame it exists, and an
+   idle scene should cost nothing.
+
+Neither side waits on the other, and neither animates the other's pixels. That is the whole reason
+the clock is a timestamp in a shared store rather than a callback across the boundary.
+
+### Fonts in the canvas
+
+Pixi measures a font at the moment it constructs a `Text`, and never re-measures. A text object built
+before its webfont has loaded is laid out in the fallback face and silently stays wrong — the font
+arrives, the DOM reflows, and the canvas does not.
+
+So anything drawn in the scene waits on `document.fonts.ready` before it is constructed, and the
+fonts are loaded through `next/font` so they are self-hosted and present in the first CSS payload
+rather than fetched later from a third party. This is a load-order bug that only shows up on a cold
+cache, which is exactly the visit that matters.
 
 ### Hotspots: why they are built twice
 
@@ -200,9 +314,11 @@ Typed modules under `content/`, one per collection:
 - `projects.ts` — software and AI research work, each with an ISO date. Timestamped and sorted at
   render, so ordering is never a matter of array position.
 - `art.ts` — drawing portfolio pieces.
-- `updates.ts` — the changelog. **One source feeding two surfaces:** the billboard carousel in the
-  scene shows the most recent few, and `/updates` lists them all. The billboard must never have its
-  own separate copy of this data.
+- `posts.ts` — the blog. **One source feeding two surfaces:** the billboard carousel in the scene
+  shows the newest three, and `/updates` lists them all. The billboard must never have its own
+  separate copy of this data. A post carries a title, an ISO date and a `target` — the project or
+  art piece it is about — and **borrows that thing's picture** rather than having one of its own
+  (`docs/CONTENT.md`). The target is also what the feed links to.
 - `links.ts` — socials, GitHub, résumé.
 
 The old site's project list lived in `index.html` as ~150 lines of hand-written markup per entry.
@@ -219,3 +335,9 @@ Treating content as data is the single biggest maintainability win available her
 - **WebGL unavailable** → render a static composite of the layers and skip the character. The site
   must still function as a portfolio.
 - Layer art exported as WebP with a PNG fallback; budget in `docs/ANIMATION.md`.
+- **Blur happens at import, not at runtime.** Object glow is a pre-blurred texture, so hovering costs
+  one extra quad rather than a multi-pass filter every frame. The two runtime blurs that remain — the
+  billboard's glow behind a post image, and the glitch filter — are bounded: the first re-renders
+  once per slide into a `RenderTexture`, the second exists only for the ~400 ms of a transition.
+- **Blog post images are fetched for the three the carousel shows**, not for the whole archive. The
+  rest load with the panel that lists them.

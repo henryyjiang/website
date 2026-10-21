@@ -50,6 +50,32 @@ What this fixes, point by point:
 - `AnimatedSprite` advances on `Ticker` deltas, so playback speed is independent of frame rate.
 - Pixi's ticker is stopped on tab hide and started on return, so no catch-up burst is possible.
 
+### The character must never swallow a click
+
+The character stands in the room, between the layer art and the objects, and the actions Henry has
+planned put it **on top of the hotspots**: lying in the bed, sitting at the desk. So the two things
+to hold are stated here rather than discovered later:
+
+1. **Hit testing is driven by the object masks and nothing else.** It does not consult what is drawn
+   over a point, and the character is not a hit candidate. A pointer over the character's elbow where
+   the bed is behind it hits the bed, because the bed is what is clickable there. This is already how
+   `hitTest` works; the requirement is that it stays that way.
+2. **Hover glow belongs to the object, not to the pixels on screen.** The glow sprite sits behind its
+   object, so a character drawn in front of the bed is not lit by the bed's glow. If an action leaves
+   the character substantially covering a hotspot, that is an art decision with a visual cost, and
+   the fix is the drawing or the `z` — never a special case in the hit test.
+
+**Draw order between the character and the objects is one number**, `z` in the character's meta,
+defaulting to behind them. Behind is right for sitting at the desk — the desk occludes the legs and
+the character reads as *in* the room. Lying in the bed wants the opposite, and one number cannot be
+both; if a single loop has to do both, the bed's art splits into a back and a front piece and the
+character goes between. That is a decision for whenever the real animation exists, and it is not a
+reason to complicate anything now.
+
+This is testable before Henry draws anything, and should be tested that way: a placeholder loop
+positioned to cover part of the bed and part of the desk proves clicks and glow still land, with no
+real animation involved. See `docs/ROADMAP.md` Phase 5.
+
 ### Required tab-visibility handling
 
 Not optional, and the one piece that must be got right:
@@ -91,8 +117,22 @@ old repository's `.git` reaching 100 MB.
 | Asset | Format | Target |
 | --- | --- | --- |
 | Layer art (`sky`, `skyline`, `room`, `near`) | WebP, PNG fallback | ≤ 400 KB per layer |
+| Object art | WebP, PNG fallback | ≤ 150 KB per object |
+| Object glow textures | WebP | ≤ 80 KB per object — they are blurred, so they compress hard |
+| Content images (blog, projects, art) | WebP, palette PNG fallback | ≤ 250 KB each, three fetched up front |
 | Character atlas | PNG + JSON manifest | ≤ 1.5 MB total |
 | Total initial scene payload | — | ≤ 4 MB |
+
+Only the three post images the carousel shows count against that total; the rest load with the panel
+that lists them. A budget is about what a first visit costs.
+
+The content images cap their longest side at 1600px and encode their fallback to a palette PNG,
+which the scene's layers do not. The fallback is served to a browser with no WebP support — in
+practice none — so what it actually costs is repository weight, and unlike the three scene layers
+this is a set that grows with every drawing added to the portfolio. Measured on the eight project
+screenshots: 320 KB of WebP against 2.4 MB of full-colour PNG, or 616 KB palette-encoded, which also
+brings every fallback inside the 250 KB row above. Scene layers keep full colour because quantising
+a flat painted gradient bands visibly once it is composited in WebGL.
 
 For scale: the old site shipped 34 MB of character frames alone, plus a 4.4 MB intro video and a
 1.9 MB room image.
@@ -111,5 +151,17 @@ The three tab panels are DOM, animated with Motion. Different medium, same two r
 2. Everything is gated behind `prefers-reduced-motion`. Reduced motion means panels appear and
    disappear without travel — not that they become unusable.
 
-Direction for the overlays is "flowy, animated, energetic" and explicitly not retro. Nothing more
-specific is decided; see `docs/ROADMAP.md` Phase 4. Do not invent the design ahead of that phase.
+Direction for the overlays is "flowy, animated, energetic", now in a **cyberpunk register** with a
+glitch as the signature route transition — see `docs/DESIGN.md` § Glitch as the transition for its
+anatomy and `docs/ARCHITECTURE.md` § The transition layer for who drives it. That settles the
+*frame*: how a panel arrives and what it is made of. How a project list, an art portfolio or a blog
+post reads **inside** a panel is still undecided and still Phase 4.
+
+Two things the glitch does not get to break:
+
+- **It is bounded.** The filter attaches when the transition starts and detaches when it ends. A
+  glitch filter left attached costs a render target on every frame of an otherwise idle scene.
+- **It is not a CSS transition.** The DOM half is driven by Motion writing transforms directly, and
+  the scene half runs in the ticker from a shared timestamp. The first rule on this page applies to
+  it exactly as it applies to the camera: nothing that JavaScript writes per frame may also carry a
+  CSS `transition`.

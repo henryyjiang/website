@@ -18,6 +18,24 @@ export const MANIFEST_VERSION = 1
 
 export type ManifestRect = { x: number; y: number; width: number; height: number }
 
+/**
+ * Four corners, clockwise from top-left, in scene units.
+ *
+ * Named `x0..x3` rather than `tl`/`tr`/… because that is the shape Pixi's
+ * `PerspectiveMesh` takes, and a conversion step between the manifest and the mesh
+ * would be a place for two corners to get swapped.
+ */
+export type ManifestQuad = {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  x3: number
+  y3: number
+}
+
 export type ManifestImage = {
   /** Primary source, WebP. Path under public/, so browser-absolute. */
   src: string
@@ -74,7 +92,27 @@ export type ManifestObject = ManifestImage & {
    * needing a matching rectangle maintained by hand. Measured, like `bounds`.
    */
   inner: ManifestRect
+  /**
+   * The art's four extreme corners, clockwise from top-left.
+   *
+   * Meaningful for a flat surface drawn in perspective and ignored by everything
+   * else. The billboard's carousel is a `PerspectiveMesh` pinned to these, so a
+   * post image sits on the screen at the angle it was drawn rather than flat inside
+   * a rectangle. See docs/ARCHITECTURE.md § Objects and surfaces.
+   */
+  quad: ManifestQuad
   mask: AlphaMask
+  /**
+   * A pre-blurred, saturation-boosted copy of this object's own art, at a quarter of
+   * the canvas.
+   *
+   * The hover glow is this sprite behind the object with additive blending and an
+   * eased alpha — not a `BlurFilter`, which would cost a render target and several
+   * passes on every frame something is hovered. Blurring at import is also exactly
+   * the recipe Henry paints with, which is why it sits in the scene rather than on
+   * top of it. See docs/DESIGN.md § Lighting and glow.
+   */
+  glow: ManifestImage
 }
 
 export type ManifestCharacterFrame = {
