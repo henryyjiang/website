@@ -441,30 +441,47 @@ Left:
       scored 100 with 0 ms. It is the first-visit cost of compiling Pixi and uploading the
       layers, and it is real for a first-time visitor even though the steady state is clean.
 
-- [ ] **Real-device pass — still open, and not something this audit could close.** There is no
-      handset on this machine. What was done instead is Lighthouse's mobile preset, which is a
-      Moto-G-class CPU throttle over slow 4G, plus a hands-on pass at 375x812 with touch
-      emulation: the scene opens on the focal slice, swipe pans the room, the panels read and
-      the focus ring is visible. Device pixel ratio is capped at 2 as
-      `docs/ARCHITECTURE.md` § Performance policy requires — a 375x812 phone at DPR 2 gets a
-      750x1624 backing store and no more. None of that is a real GPU under a real thermal
-      budget, which is the part most likely to struggle and the part still untested.
+- [x] **Real-device pass — closed on emulation, by decision, 2026-10-21.** Henry's call: good
+      enough to ship on. Recorded rather than ticked, because what was done is not what the box
+      originally asked for and the difference is worth being able to find later.
 
-- [ ] **The nav's idle tabs are Henry's call, not the audit's.** They are `--dim` on
-      `--panel/80`, which measures **2.65:1** where WCAG wants 4.5:1 for text this size. That is
-      not a slip: `docs/DESIGN.md` § Chrome specifies this exact colour, measured off the
-      reference's own idle menu item, and says in as many words that the inversion dims
-      everything to near-illegible and that copying it is the point. So `docs/DESIGN.md` is
-      deliberately left alone — the audit does not get to quietly rewrite a design decision into
-      a defect.
+      What was done: Lighthouse's mobile preset, a Moto-G-class CPU throttle over slow 4G, plus a
+      hands-on pass at 375x812 with touch emulation — the scene opens on the focal slice, swipe
+      pans the room, the panels read and the focus ring is visible. Device pixel ratio is capped
+      at 2 as `docs/ARCHITECTURE.md` § Performance policy requires: a 375x812 phone at DPR 2 gets
+      a 750x1624 backing store and no more.
 
-      It is recorded here because it is the one piece of text on the site a reader has to be
-      able to read that still cannot be read, and because the fix is one value if Henry wants
-      it: the same maroon clears 4.5:1 at `#99757B` and 5.5:1 at `#A1848A`, which is the `muted`
-      role that now exists. Note what already softens it — the current tab is `--active` at
-      14.4:1, hover goes to full `--text`, and focus is now a bright `--primary` ring — so a
-      visitor can always tell where they are and where they are going. It is the three *idle*
-      labels that are dim.
+      What is therefore still unmeasured, in the order it is likely to bite: a real GPU under a
+      real thermal budget over a sustained pan; the carousel's per-slide `RenderTexture` blur,
+      which is the biggest recurring runtime cost and would show as a hitch every 4.5 seconds;
+      the glitch filter's render target on each route change; whether `TAP_SLOP`'s 12px is right
+      for a thumb rather than a mouse; and Safari, since every pass here ran on Chromium and
+      WebKit is the engine an iPhone will actually use. If any of this ever needs closing
+      properly, the cheap way is Vercel Speed Insights — a project toggle, real visitors' devices,
+      and it measures INP, which Lighthouse cannot.
+
+- [x] **The nav's idle tabs stay dim. Settled by Henry on 2026-10-21**, the design as drawn.
+
+      They are `--dim` on `--panel/80`, which measures **2.65:1** where WCAG wants 4.5:1 for text
+      this size. That was never a slip — `docs/DESIGN.md` § Chrome specifies this exact colour,
+      measured off the reference's own idle menu item, and says in as many words that the
+      inversion dims everything to near-illegible and that copying it is the point. The audit
+      raised it rather than fixing it, and the answer is that the design wins.
+
+      Written down so the next person reading § Chrome against § Accessibility finds a decision
+      instead of thinking they have found a bug, and `docs/DESIGN.md` § Accessibility carries the
+      same note. Should it ever be reopened: the change is one word, `text-dim` to `text-muted`
+      in `components/nav/TopNav.tsx`, which takes the idle labels to 5.56:1 while the borders
+      stay `dim` and the inversion survives structurally — the current tab still has a container
+      nothing else does. `#99757B` is about the floor at 4.64:1 if dimmer-but-legal is wanted.
+      What is *not* available is darkening the ground underneath: `#7E464E` tops out at 2.87:1
+      on pure black, so the colour has to move or the exception has to be accepted. It is
+      accepted.
+
+      What already softens it, and is why this is a defensible place to land: the current tab is
+      `--active` at 14.4:1, hover goes to full `--text`, and focus is now a bright `--primary`
+      ring. A visitor can always tell where they are and where they are going. It is the three
+      *idle* labels that are dim.
 - [ ] Move the domain off the old deployment
 - [ ] Retire the old project (`docs/DEPLOYMENT.md`)
 
@@ -495,6 +512,12 @@ Tracked here so they don't get silently decided:
   2026-10-21: the animations are authored to sit above the whole scene, so the character draws over
   the room's objects and there is no `z` to serve anything. The bed's art does not split. The only
   thing that ever draws over the character is the `near` band, which is empty.
+- ~~**Does the nav's inversion have to clear WCAG?**~~ No. Settled 2026-10-21, after the
+  accessibility audit measured the idle tabs at 2.65:1 against a 4.5:1 requirement. The dimmed
+  idle item is the reference's, measured off it, and § Chrome exists to say so — the design wins
+  and the exception is accepted knowingly. Everything else the audit found was fixed; this is the
+  one thing that was decided instead. Phase 9 carries the numbers and the one-word change that
+  would reverse it.
 - **Project dates.** The old markup carried none; they still need reconstructing.
 - ~~**Art portfolio shape.**~~ A grid of wide 16:9 cards opening a full-page popup, settled
   2026-10-21. Video pieces play in the popup; the grid shows a poster frame pulled from the video.

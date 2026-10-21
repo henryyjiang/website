@@ -663,3 +663,14 @@ what `/updates` lists, and nothing is only in the scene.
   place something is said, and the site makes no sound at all.
 - Neon is used at display sizes and for accents; body copy keeps a 4.5:1 ratio on its own ground, and
   the glitch transition never carries meaning on its own.
+
+**One knowing exception, and it is the nav.** The idle tabs are `--dim` on `--panel/80`, which
+measures 2.65:1 where the rule above would want 4.5:1. That is § Chrome's dimmed idle menu item,
+measured off the reference, and dimming it to near-illegible is the whole of what makes a list of
+four items read as one live item and three dormant ones. Henry settled it on 2026-10-21, after the
+audit raised it: the design wins here. Everything the audit found that was *not* this was fixed —
+secondary content text moved to the `muted` role precisely so that `--dim` could keep doing this one
+job honestly. The current tab is `--active` at 14.4:1, hover goes to full `--text` and focus is a
+`--primary` ring, so where you are and where you are going are never in doubt; it is the three idle
+labels that are dim, on purpose. `docs/ROADMAP.md` Phase 9 carries the numbers and the one-word
+change that would reverse it.
