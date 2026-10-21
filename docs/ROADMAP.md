@@ -374,8 +374,97 @@ Left:
       watchlist rows are wanted. Both or neither
 - [ ] `NEXT_PUBLIC_SITE_URL` once a custom domain is attached, so the card stops naming the
       `.vercel.app` host (`lib/site.ts`)
-- [ ] Lighthouse and real-device passes
-- [ ] Accessibility audit against the commitments in `docs/DESIGN.md`
+- [x] **Accessibility audit against the commitments in `docs/DESIGN.md`**, 2026-10-21. Walked
+      keyboard-only, then again with reduced motion forced, then with WebGL refused; contrast
+      measured off the rendered page rather than off the palette table. Five of the six
+      commitments held. What did not, and what it cost:
+
+      - **Focus was invisible on 30 of the 34 controls on the site.** `clip-path` clips an
+        element's `outline` away with everything else outside its border box, and every notched
+        control carries one — all four nav tabs, every Close, all eight project links, all four
+        feed rows. `getComputedStyle` reported a 2px solid `--primary` ring on each of them and
+        nothing was ever drawn. Only the socials rows and the art grid, the one focusable pair
+        that is not cut, had a visible ring. Fixed with an inset ring on the notch utilities
+        (`app/globals.css`), which is inside the box and so survives the clip. The nav's shape
+        moved out of an inline style into `u-notch-b` to be selectable at all.
+      - **Reduced motion got a shorter glitch rather than a crossfade.** The DOM half was right —
+        `GlitchBurst` draws no bands and cuts 320 ms to 120 ms — but the scene read the same
+        `transition` from the store and ran the full 180-unit slice displacement and RGB split
+        regardless. `reducedMotion` was in that callback's scope and in its dependency list, and
+        used only by the character twenty lines up, which is why it survived review. The scene
+        now dips its own alpha and recovers, attaching no filter at all
+        (`components/scene/SceneStage.tsx` § `REDUCED_FADE`).
+      - **`--dim` was doing two jobs and only one was safe.** It is the reference's idle *menu
+        item*, measured off it and deliberately at the edge of legibility (`docs/DESIGN.md`
+        § Chrome) — and it had also become the colour of every date, section heading, watchlist
+        label and pill control, all of them measured at 2.65:1 against their real background
+        against the 4.5:1 § Accessibility promises. Added a `muted` role, each palette's own
+        `dim` mixed toward its own `text` until it clears 5.5:1, and repointed the content
+        usages. `dim` keeps the nav and the hairlines. Body copy itself was never the problem:
+        it measures 14.6:1 and the commitment as written always held.
+      - **The home route had no `main` landmark and said nothing at all.** It rendered `null`, so
+        a screen reader arriving at the front door found a nav, an `aria-hidden` canvas and
+        silence. It now carries an `sr-only` `main` with the site's own three strings from
+        `content/site.ts` — the room is still the whole of the visible design.
+      - **The art grid's accessible name did not contain its own visible text**, so a voice user
+        could not say what they could see (WCAG 2.5.3). The hand-written `aria-label` is gone;
+        the name is composed from the cell, and the video badge supplies "video" as real text
+        rather than being hidden.
+
+      Verified rather than assumed: the camera is pinned under reduced motion (identical frames
+      with the pointer at opposite corners), the carousel holds on the newest post past four
+      dwell periods, the popup traps focus and returns it to the opener on Escape, and with
+      WebGL refused the site falls back to the static composite with the nav intact. The site
+      makes no sound — there is no `audio` element, no `AudioContext` and no `play()` anywhere
+      in the source. **The character freeze could not be exercised**: `art/character/` is still
+      empty, so `manifest.character` is null and the branch has no frames to hold. That is
+      Phase 8, not a gap here.
+
+- [x] **Lighthouse**, 2026-10-21, v13.5 headless, deployed site and then the fixed build.
+
+      | | perf | a11y | best practices | SEO |
+      | --- | --- | --- | --- | --- |
+      | `henryjiang.vercel.app`, desktop, before | 100 | 98 | 100 | 100 |
+      | `henryjiang.vercel.app`, mobile, before | 100 | 98 | 100 | 100 |
+      | this build, mobile, after | 98 | **100** | 100 | 100 |
+
+      Mobile after: FCP 0.8 s, LCP 2.3 s, TBT 40 ms, CLS 0, Speed Index 1.9 s. Desktop after is
+      100 across the board with TBT 0 ms. The 98 and the 96 seen on another run are LCP noise on
+      a 4x-throttled CPU, not a regression — nothing in this pass touched the scene's loading.
+
+      Accessibility was 98 on both deployed passes because of the missing `main` on `/`; it is
+      100 on all four routes now. `/art` also failed `label-content-name-mismatch`, which scores
+      zero weight and so never showed in the number.
+
+      **One cold-cache outlier worth knowing about before reading too much into a single run:**
+      the first deployed desktop pass scored 76 with 560 ms of blocking time. Two further passes
+      scored 100 with 0 ms. It is the first-visit cost of compiling Pixi and uploading the
+      layers, and it is real for a first-time visitor even though the steady state is clean.
+
+- [ ] **Real-device pass — still open, and not something this audit could close.** There is no
+      handset on this machine. What was done instead is Lighthouse's mobile preset, which is a
+      Moto-G-class CPU throttle over slow 4G, plus a hands-on pass at 375x812 with touch
+      emulation: the scene opens on the focal slice, swipe pans the room, the panels read and
+      the focus ring is visible. Device pixel ratio is capped at 2 as
+      `docs/ARCHITECTURE.md` § Performance policy requires — a 375x812 phone at DPR 2 gets a
+      750x1624 backing store and no more. None of that is a real GPU under a real thermal
+      budget, which is the part most likely to struggle and the part still untested.
+
+- [ ] **The nav's idle tabs are Henry's call, not the audit's.** They are `--dim` on
+      `--panel/80`, which measures **2.65:1** where WCAG wants 4.5:1 for text this size. That is
+      not a slip: `docs/DESIGN.md` § Chrome specifies this exact colour, measured off the
+      reference's own idle menu item, and says in as many words that the inversion dims
+      everything to near-illegible and that copying it is the point. So `docs/DESIGN.md` is
+      deliberately left alone — the audit does not get to quietly rewrite a design decision into
+      a defect.
+
+      It is recorded here because it is the one piece of text on the site a reader has to be
+      able to read that still cannot be read, and because the fix is one value if Henry wants
+      it: the same maroon clears 4.5:1 at `#99757B` and 5.5:1 at `#A1848A`, which is the `muted`
+      role that now exists. Note what already softens it — the current tab is `--active` at
+      14.4:1, hover goes to full `--text`, and focus is now a bright `--primary` ring — so a
+      visitor can always tell where they are and where they are going. It is the three *idle*
+      labels that are dim.
 - [ ] Move the domain off the old deployment
 - [ ] Retire the old project (`docs/DEPLOYMENT.md`)
 

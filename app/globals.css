@@ -13,6 +13,7 @@
   --color-ground: var(--ground);
   --color-panel: var(--panel);
   --color-text: var(--text);
+  --color-muted: var(--muted);
   --color-dim: var(--dim);
   --color-primary: var(--primary);
   --color-active: var(--active);
@@ -129,6 +130,25 @@ body {
 }
 
 /*
+ * The bottom two corners only: the nav's tabs.
+ *
+ * They hang off the top edge of the screen, so a notched top corner would cut into
+ * nothing and read as a rendering mistake. This is a class rather than an inline
+ * style on the tab because a clipped element needs the focus treatment below, and a
+ * shape that only exists inside a component cannot be selected for.
+ */
+.u-notch-b {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--notch)),
+    calc(100% - var(--notch)) 100%,
+    var(--notch) 100%,
+    0 calc(100% - var(--notch))
+  );
+}
+
+/*
  * Scanlines. The reference has them and they are not the retro kind — no curvature,
  * no bloom, no vignette, just a 1px line at a few percent over a panel so it reads
  * as a lit surface. The moment they are strong enough to notice individually they
@@ -181,7 +201,7 @@ body {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.08em;
-  color: var(--dim);
+  color: var(--muted);
   text-transform: uppercase;
 }
 
@@ -191,7 +211,7 @@ body {
  * panel's link default because that default is written at zero specificity above.
  */
 .u-pill {
-  color: var(--dim);
+  color: var(--muted);
   text-decoration: none;
   transition:
     color 150ms,
@@ -242,6 +262,34 @@ body {
 :where(a, button, [tabindex]:not([tabindex='-1'])):focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/*
+ * The same ring again, drawn *inside* a notched control.
+ *
+ * **An outline and a `clip-path` cannot both be had.** An outline is painted
+ * entirely outside the border box, and `clip-path` clips a box to its polygon —
+ * outline included — so on every cut control the ring above was computed, reported
+ * by `getComputedStyle` as a 2px solid `--primary`, and never drawn. The audit on
+ * 2026-10-21 found it on 13 of the 15 controls on the Coding tab, on all four nav
+ * tabs, on every Close and on every feed row: the whole site bar the socials row
+ * and the art grid, which are the only focusable things not cut. It is invisible
+ * rather than subtle, and nothing about the CSS looks wrong.
+ *
+ * An inset shadow is inside the border box, so the clip keeps it. It is 2px of the
+ * same colour in the same place the outline would have been, give or take the two
+ * corners the notch takes off.
+ *
+ * `[tabindex='-1']` stays excluded for the reason it is excluded above: a panel's
+ * heading and the Art popup's frame take focus as reading positions, and a ring
+ * around either reads as a rendering fault rather than as focus.
+ */
+:where(.u-notch, .u-notch-tl, .u-notch-b):where(
+    a,
+    button,
+    [tabindex]:not([tabindex='-1'])
+  ):focus-visible {
+  box-shadow: inset 0 0 0 2px var(--primary);
 }
 
 ::selection {

@@ -121,7 +121,7 @@ function Readout({ rows }: { rows: readonly { label: string; value: string }[] }
     <dl className="grid">
       {rows.map((row) => (
         <div key={row.label} className="flex items-baseline gap-3 border-b border-dim/15 py-1.5">
-          <dt className="u-telemetry w-32 shrink-0 text-dim">{row.label}</dt>
+          <dt className="u-telemetry w-32 shrink-0 text-muted">{row.label}</dt>
           <dd className="min-w-0 text-sm">{row.value}</dd>
         </div>
       ))}
@@ -235,7 +235,7 @@ function PostRow({ post }: { post: Post }) {
             the one place it has to change size with the breakpoint — and that class
             is written outside Tailwind's layers, where it beats every utility that
             could override it. `font-mono` is the theme's face either way. */}
-        <span className="flex items-center gap-2 font-mono text-[0.625rem] tracking-[0.08em] text-dim uppercase sm:text-sm sm:tracking-[0.1em]">
+        <span className="flex items-center gap-2 font-mono text-[0.625rem] tracking-[0.08em] text-muted uppercase sm:text-sm sm:tracking-[0.1em]">
           <time dateTime={post.date}>{formatDate(post.date)}</time>
           {target ? <span aria-hidden="true">· {targetLabel(target)}</span> : null}
         </span>

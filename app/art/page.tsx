@@ -36,7 +36,7 @@ export default function ArtPage() {
       </div>
 
       {pieces.length === 0 ? (
-        <p className="text-sm text-dim">
+        <p className="text-sm text-muted">
           Nothing catalogued here yet. Add pieces to <code>content/art.ts</code> and drop their
           images — or videos — into <code>art/pieces/</code>.
         </p>

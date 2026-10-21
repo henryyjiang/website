@@ -41,9 +41,9 @@ export function LinkRow({ links, label }: { links: readonly Link[]; label: strin
           >
             <LinkIcon
               href={link.href}
-              className="size-4 shrink-0 text-dim transition-colors duration-150 group-hover:text-active"
+              className="size-4 shrink-0 text-muted transition-colors duration-150 group-hover:text-active"
             />
-            <span className="u-label text-dim sm:min-w-28">{link.label}:</span>
+            <span className="u-label text-muted sm:min-w-28">{link.label}:</span>
             <span className="min-w-0 text-sm break-all text-active underline decoration-dim/50 underline-offset-4 transition-colors duration-150 group-hover:decoration-active">
               {linkText(link.href)}
             </span>

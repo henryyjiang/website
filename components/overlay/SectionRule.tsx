@@ -9,7 +9,7 @@
 export function SectionRule({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
-      <h2 id={id} className="u-label shrink-0 text-dim">
+      <h2 id={id} className="u-label shrink-0 text-muted">
         {children}
       </h2>
       <span aria-hidden="true" className="h-px flex-1 bg-dim/30" />

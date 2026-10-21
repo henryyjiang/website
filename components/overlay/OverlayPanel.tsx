@@ -98,7 +98,7 @@ export function OverlayPanel({ children }: { children?: React.ReactNode }) {
 
           <Link
             href="/"
-            className="u-label u-notch shrink-0 border border-dim/40 px-4 py-2 text-dim transition-colors duration-150 hover:border-alert/60 hover:text-alert"
+            className="u-label u-notch shrink-0 border border-dim/40 px-4 py-2 text-muted transition-colors duration-150 hover:border-alert/60 hover:text-alert"
           >
             Close
           </Link>

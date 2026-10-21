@@ -44,18 +44,18 @@ export function TopNav() {
               <Link
                 href={destination.href}
                 aria-current={current ? 'page' : undefined}
-                className={`relative block border px-5 py-3 text-sm font-semibold tracking-[0.16em] uppercase backdrop-blur-sm transition-colors duration-150 sm:px-7 sm:text-base ${
+                // `u-notch-b` cuts the bottom two corners only — these hang off the
+                // top edge of the screen, so a notched top corner would cut into
+                // nothing and read as a rendering mistake. It is a class rather than
+                // an inline clip-path because a clipped control cannot show an
+                // outline, and app/globals.css gives the notch utilities an inset
+                // focus ring instead; an inline shape nothing can select for left
+                // these four tabs with no visible focus at all.
+                className={`u-notch-b relative block border px-5 py-3 text-sm font-semibold tracking-[0.16em] uppercase backdrop-blur-sm transition-colors duration-150 sm:px-7 sm:text-base ${
                   current
                     ? 'z-10 border-active/70 bg-panel/95 text-active'
                     : 'border-dim/30 bg-panel/80 text-dim hover:text-text'
                 }`}
-                style={{
-                  // The cut is on the bottom corners only: these hang off the top
-                  // edge of the screen, so a notched top corner would cut into
-                  // nothing and read as a rendering mistake.
-                  clipPath:
-                    'polygon(0 0, 100% 0, 100% calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, 0 calc(100% - var(--notch)))',
-                }}
               >
                 {destination.label}
               </Link>

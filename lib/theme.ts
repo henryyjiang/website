@@ -25,6 +25,25 @@ export type Palette = {
   panel: string
   /** Body copy. Must clear 4.5:1 on `ground` and on `panel`. */
   text: string
+  /**
+   * Secondary *content* text: dates, section headings, control labels, the
+   * watchlist's row labels. Quieter than `text` and still legible — it must clear
+   * 4.5:1 on `ground` and on `panel`, because every one of those says something.
+   *
+   * **This exists because `dim` was doing two jobs and only one of them was safe.**
+   * `dim` is the reference's idle *menu item*, measured off it and deliberately at
+   * the edge of legibility (docs/DESIGN.md § Chrome). It had also become the colour
+   * of every date, heading and pill on the site, where near-illegible is not a style
+   * but a defect — the audit on 2026-10-21 measured all of them at 2.65:1 against
+   * their actual background, against the 4.5:1 docs/DESIGN.md § Accessibility
+   * promises. One role per job: `dim` keeps the nav's inversion, `muted` carries
+   * anything a reader has to be able to read.
+   *
+   * Each palette's value is its own `dim` mixed toward its own `text` until it
+   * clears 5.5:1 on `panel`, which is the lighter of the two grounds everywhere —
+   * so it stays in the palette's family rather than becoming a generic grey.
+   */
+  muted: string
   /** Idle and secondary text. Deliberately dim — see docs/DESIGN.md § Chrome. */
   dim: string
   /** Brand accent. The "yellow" slot: focus rings, the current marker, rules. */
@@ -58,6 +77,7 @@ export const PALETTES = {
     ground: '#05060E',
     panel: '#0A0C18',
     text: '#FFE5C2',
+    muted: '#9E8372',
     dim: '#8A6F62',
     primary: '#FFFF67',
     active: '#67FFFF',
@@ -68,6 +88,7 @@ export const PALETTES = {
     ground: '#080E14',
     panel: '#0E1118',
     text: '#D8E4E8',
+    muted: '#A1848A',
     dim: '#7E464E',
     primary: '#F9F31A',
     active: '#66F6F2',
@@ -78,6 +99,7 @@ export const PALETTES = {
     ground: '#0B0710',
     panel: '#140C1A',
     text: '#FFE8D6',
+    muted: '#A08289',
     dim: '#7A5A6A',
     primary: '#FFA12B',
     active: '#FF4D9D',
@@ -88,6 +110,7 @@ export const PALETTES = {
     ground: '#05100B',
     panel: '#0A1711',
     text: '#DFFFE9',
+    muted: '#779481',
     dim: '#5E7A68',
     primary: '#9DFF3C',
     active: '#FF3CC8',
@@ -98,6 +121,7 @@ export const PALETTES = {
     ground: '#07080A',
     panel: '#101216',
     text: '#E6EAF0',
+    muted: '#848C98',
     dim: '#5A6472',
     primary: '#FFFFFF',
     active: '#7DE3FF',
@@ -116,7 +140,7 @@ export function isPaletteName(value: string | null | undefined): value is Palett
 }
 
 /** The roles a palette carries, minus the label. The keys that become CSS variables. */
-const ROLES = ['ground', 'panel', 'text', 'dim', 'primary', 'active', 'alert'] as const
+const ROLES = ['ground', 'panel', 'text', 'muted', 'dim', 'primary', 'active', 'alert'] as const
 
 export type Role = (typeof ROLES)[number]
 

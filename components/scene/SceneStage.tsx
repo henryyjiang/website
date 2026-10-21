@@ -42,6 +42,18 @@ extend({ Container, Sprite })
 const GLITCH_SLICES = 14
 const GLITCH_OFFSET = 180
 
+/**
+ * How far the scene dips at the middle of a reduced-motion transition.
+ *
+ * Reduced motion gets a crossfade instead of the glitch (docs/DESIGN.md
+ * § Accessibility), and a crossfade is the one thing the scene can do that moves
+ * nothing: it darkens and comes back while the panel underneath changes. Deep
+ * enough to read as the room acknowledging the change, nowhere near a blackout —
+ * "less travel, never less site" cuts both ways, and a scene that vanishes on every
+ * navigation is less site.
+ */
+const REDUCED_FADE = 0.45
+
 /** Generous enough to cover every band's bleed, so the filter never clips the scene. */
 const FILTER_AREA = new Rectangle(-SCENE_W, -SCENE_H, SCENE_W * 3, SCENE_H * 3)
 
@@ -504,7 +516,31 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
       const filter = glitchRef.current
       const { transition } = getSceneState()
 
-      if (transition && filter) {
+      if (transition && reducedMotion) {
+        // The crossfade, which is what reduced motion is promised instead of the
+        // glitch (docs/DESIGN.md § Accessibility). The DOM half already honours
+        // that — `GlitchBurst` draws no bands and shortens the burst — but this
+        // half did not: it read the same `transition` from the store and ran the
+        // full 180-unit slice displacement and RGB split regardless, so reduced
+        // motion got a glitch that was merely shorter. Found by audit on
+        // 2026-10-21, having been invisible in review because `reducedMotion` was
+        // in this callback's scope and in its dependency list, and used only by the
+        // character a few lines up.
+        //
+        // No filter is attached at all: a sine dip and recovery on the root's own
+        // alpha moves nothing, costs no render target, and still says the room
+        // changed with the panel.
+        const progress = Math.min(
+          1,
+          (performance.now() - transition.startedAt) / transition.duration,
+        )
+        root.alpha = 1 - REDUCED_FADE * Math.sin(progress * Math.PI)
+
+        if (root.filters && (root.filters as unknown[]).length > 0) {
+          root.filters = []
+          root.filterArea = undefined
+        }
+      } else if (transition && filter) {
         const elapsed = performance.now() - transition.startedAt
         const progress = Math.min(1, elapsed / transition.duration)
         // Front-loaded, matching the reference: the worst of it is over in the
@@ -524,9 +560,15 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
           root.filterArea = FILTER_AREA
           root.filters = [filter]
         }
-      } else if (root.filters && (root.filters as unknown[]).length > 0) {
-        root.filters = []
-        root.filterArea = undefined
+      } else {
+        // Nothing in flight. Put back whatever either branch borrowed — the filter
+        // costs a render target every frame it stays attached, and a crossfade that
+        // was interrupted would otherwise leave the room dimmed for good.
+        if (root.filters && (root.filters as unknown[]).length > 0) {
+          root.filters = []
+          root.filterArea = undefined
+        }
+        if (root.alpha !== 1) root.alpha = 1
       }
     },
     [app, assets.character, hitCandidates, reducedMotion],

@@ -137,7 +137,18 @@ function GridCell({
         onOpen(piece.slug)
       }}
       className="group u-pill block"
-      aria-label={`${piece.title}${media?.video ? ', video' : ''}`}
+      // No `aria-label`. It used to carry the title plus ", video", which made the
+      // accessible name a string that did not contain the cell's own visible text —
+      // the medium is printed under the title and was in neither. WCAG's "label in
+      // name" wants the opposite, so that someone driving the page by voice can say
+      // what they can see; Lighthouse caught it on 2026-10-21
+      // (`label-content-name-mismatch`), and a hand-written label spliced from the
+      // same fields would only have to be kept in step with them by hand.
+      //
+      // So the name is composed from the contents instead, which is what a link's
+      // name is by default: the badge below supplies "video" as real text rather
+      // than being hidden, and the title and medium are already there. The name
+      // cannot disagree with the cell because it is the cell.
     >
       <span className="u-notch relative block aspect-video overflow-hidden border border-dim/25 bg-ground/60 transition-colors duration-150 group-hover:border-active/60">
         {media ? (
@@ -154,7 +165,7 @@ function GridCell({
             />
           </picture>
         ) : (
-          <span className="u-telemetry grid size-full place-items-center text-dim">
+          <span className="u-telemetry grid size-full place-items-center text-muted">
             No image
           </span>
         )}
@@ -162,11 +173,11 @@ function GridCell({
         {media?.video ? (
           /* A video and a drawing look identical as thumbnails, so the one that
              plays says so before it is clicked rather than after. */
-          <span
-            aria-hidden="true"
-            className="u-notch absolute bottom-2 left-2 border border-primary/50 bg-ground/80 px-2 py-1 text-[0.625rem] leading-none tracking-[0.14em] text-primary uppercase"
-          >
-            ▶ Video
+          <span className="u-notch absolute bottom-2 left-2 border border-primary/50 bg-ground/80 px-2 py-1 text-[0.625rem] leading-none tracking-[0.14em] text-primary uppercase">
+            {/* The glyph is decoration; the word is the whole point and is what
+                puts "video" into the cell's accessible name now that the link has
+                no hand-written label of its own. */}
+            <span aria-hidden="true">▶ </span>Video
           </span>
         ) : null}
       </span>
@@ -176,7 +187,7 @@ function GridCell({
           {piece.title}
         </span>
         {piece.medium ? (
-          <span className="u-telemetry mt-1 block truncate text-dim">{piece.medium}</span>
+          <span className="u-telemetry mt-1 block truncate text-muted">{piece.medium}</span>
         ) : null}
       </span>
     </a>
@@ -315,7 +326,7 @@ function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => v
               />
             </picture>
           ) : (
-            <p className="py-12 text-center text-sm text-dim">
+            <p className="py-12 text-center text-sm text-muted">
               Nothing has been dropped into <code>art/pieces/</code> for this one yet.
             </p>
           )}
