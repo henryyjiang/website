@@ -134,11 +134,38 @@ old repository's `.git` reaching 100 MB.
 | Object art | WebP, PNG fallback | ≤ 150 KB per object |
 | Object glow textures | WebP | ≤ 80 KB per object — they are blurred, so they compress hard |
 | Content images (blog, projects, art) | WebP, palette PNG fallback | ≤ 250 KB each, three fetched up front |
+| Video pieces (`art/pieces/<slug>.mp4`) | MP4, H.264 | ≤ 6 MB each — **see the exception below** |
 | Character atlas | PNG + JSON manifest | ≤ 1.5 MB total |
 | Total initial scene payload | — | ≤ 4 MB |
 
 Only the three post images the carousel shows count against that total; the rest load with the panel
-that lists them. A budget is about what a first visit costs.
+that lists them. A budget is about what a first visit costs. **A video piece costs a first visit
+nothing**: the Art grid shows a poster frame, and the MP4 is not fetched until a reader opens that
+piece's popup. That is why the per-video budget is a separate row rather than part of the 4 MB.
+
+**The video budget is a warning, and both pieces currently exceed it on purpose.** `npm run art`
+reports any video over 6 MB and imports it anyway. On 2026-10-21 Henry decided to ship
+`my-first-animation` at 15 MB rather than compress it, and the reasoning generalises, so it is
+written down here rather than relearned every time the warning appears:
+
+- The piece is thirty seconds of hand-drawn line art at 24fps, densely hatched and moving in every
+  frame. That is close to the worst case for H.264 — there is little temporal redundancy and a lot
+  of high-frequency detail, which is exactly what costs bits.
+- The levers were measured, not guessed. `-tune animation` made it *larger* at the same CRF; CRF 30
+  still landed at 9.6 MB; even 1024px wide was 6.8 MB. Nothing reaches 6 MB without going somewhere
+  the linework visibly softens, and compared side by side at 1280/CRF 26 it does.
+- The thing being damaged is the thing the piece is *of*. A drawing portfolio that compresses away
+  its own linework to hit a number has got the trade backwards.
+
+So the rule is: **the budget is the default and the art wins the argument.** A video over it should
+be a deliberate, recorded choice about a specific piece, not a thing that drifts. If several pieces
+start exceeding it, the answer is a different delivery strategy — multiple renditions, or a real
+video host — not a quiet creep upward. `current-wip-animation` sits at 6.2 MB, which is the budget
+doing its job: close enough to pass without argument.
+
+The encoder settings in `scripts/import-art.ts` are deliberately uniform and were left alone for
+both pieces. Per-piece encoder overrides would be a second source of truth about how a piece looks,
+in a pipeline whose whole point is that dropping a file in is the entire workflow.
 
 The content images cap their longest side at 1600px and encode their fallback to a palette PNG,
 which the scene's layers do not. The fallback is served to a browser with no WebP support — in

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T20:16:58.980Z",
+  "generatedAt": "2026-10-21T22:14:11.409Z",
   "images": {
     "projects": {
       "automated-intersection": {
@@ -88,22 +88,40 @@
       }
     },
     "pieces": {
-      "night-window": {
-        "src": "/images/pieces/night-window.webp",
-        "fallback": "/images/pieces/night-window.png",
-        "width": 1000,
-        "height": 1000,
+      "current-wip-animation": {
+        "src": "/images/pieces/current-wip-animation.webp",
+        "fallback": "/images/pieces/current-wip-animation.png",
+        "width": 1600,
+        "height": 900,
+        "video": {
+          "src": "/images/pieces/current-wip-animation.mp4",
+          "type": "video/mp4",
+          "width": 1600,
+          "height": 900
+        }
+      },
+      "my-first-animation": {
+        "src": "/images/pieces/my-first-animation.webp",
+        "fallback": "/images/pieces/my-first-animation.png",
+        "width": 1600,
+        "height": 900,
         "lit": {
-          "src": "/images/pieces/night-window--lit.webp",
-          "fallback": "/images/pieces/night-window--lit.png",
-          "width": 1000,
-          "height": 1000,
-          "luma": 0.3337,
+          "src": "/images/pieces/my-first-animation--lit.webp",
+          "fallback": "/images/pieces/my-first-animation--lit.png",
+          "width": 1600,
+          "height": 900,
+          "luma": 0.1011,
           "headline": {
-            "id": "yellow",
-            "hex": "#FBF653",
-            "contrast": 8.64
+            "id": "red",
+            "hex": "#FF406D",
+            "contrast": 5.35
           }
+        },
+        "video": {
+          "src": "/images/pieces/my-first-animation.mp4",
+          "type": "video/mp4",
+          "width": 1600,
+          "height": 900
         }
       }
     },

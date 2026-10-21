@@ -23,13 +23,24 @@ import type { ArtPiece } from './types'
 
 export const ART_PIECES: readonly ArtPiece[] = [
   {
-    // FILLER — this is a crop of the scene's own skyline layer, not a portfolio
-    // piece. It is here to prove an image piece renders: thumbnail, popup, caption.
-    // Delete it when real drawings arrive.
-    slug: 'night-window',
-    title: 'Night window study',
-    date: '2026-10-20',
-    medium: '2D',
-    caption: 'FILLER — a crop of the scene art, standing in for a real piece.',
+    slug: 'current-wip-animation',
+    title: 'Current WIP Animation',
+    date: '2026-10-21',
+    medium: '2D animation',
+    caption:
+      'Four shots of colour animation, in progress: a figure seen from below on a ' +
+      'rooftop against a blue sky, a close pass across a train window, carriages ' +
+      'tumbling loose over a city, and two characters in close-up against white.',
+  },
+  {
+    slug: 'my-first-animation',
+    title: 'My First Animation!',
+    date: '2025-07-09',
+    medium: '2D animation',
+    caption:
+      'Five shots of black-and-white line animation: a close-up of a player mid-turn, ' +
+      'two figures colliding in the air over speed lines, a ball rising into a dark sky ' +
+      'behind a cyan trail, a sweeping kick drawn as a fan of strokes, and a panel grid ' +
+      'of faces reacting.',
   },
 ]

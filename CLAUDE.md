@@ -207,9 +207,17 @@ the environment and `MAL_USERNAME` in `content/about.ts`, and with either missin
 absent and everything else renders — which is the state of a fresh clone, so do not "fix" a build
 that is not showing them. Everything else on the site is a content module.
 
-**What is in `content/` is filler in two places and real everywhere else.** One post and one art
-piece exist only to exercise those layouts and are marked `FILLER`; the eight Coding projects are
-the real ones carried over from the old site.
+**What is in `content/` is placeholder in one place and real everywhere else.** The eight Coding
+projects are the real ones carried over from the old site, and the Art tab holds two real pieces
+since 2026-10-21 — `my-first-animation` and `current-wip-animation`, both 2D animations, which are
+also the first things to exercise the video path in anger. What is left is the blog post pointing
+at the first of them: its `target` is right and its copy is a placeholder, to be written when the
+Blog tab gets its pass.
+
+**A piece's `date` is when the animation was made, not when it was added.** Both were read off the
+source files' `creation_time` rather than typed, which is why `my-first-animation` is dated
+2025-07-09 while the post announcing it is dated 2026-10-21. The grid sorts on that date and shows
+it nowhere, so a guessed one is invisible and wrong (`content/types.ts`).
 
 The third filler, a *video* piece standing in with a clip of the reference footage, was deleted on
 2026-10-21 because it could not ship: its files were gitignored by name, but the generated

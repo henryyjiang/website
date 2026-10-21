@@ -38,14 +38,15 @@ import type { Post } from './types'
 
 export const POSTS: readonly Post[] = [
   {
-    // FILLER — delete once there is a real post about a real drawing. It exists to
-    // prove the one link the blog has that nothing else does: a post opening a piece
-    // in the Art popup rather than navigating to a page.
-    slug: 'night-window-study',
+    // Rewrite this when the Blog tab gets its pass — the copy is a placeholder, the
+    // piece it points at is not. It is also the one link the blog has that nothing
+    // else does: a post opening a piece in the Art popup rather than navigating to
+    // a page, so keep a post pointing at a piece here.
+    slug: 'first-animation',
     date: '2026-10-21',
-    title: 'Night window study',
-    body: 'A colour study of the view the room looks out on.',
-    target: { to: 'piece', slug: 'night-window' },
+    title: 'My first animation',
+    body: 'Five shots of line animation, start to finish.',
+    target: { to: 'piece', slug: 'my-first-animation' },
   },
   {
     slug: 'rebuilding-the-site',

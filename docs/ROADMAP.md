@@ -279,12 +279,15 @@ interiors — the short version and the state:
 - [x] Posts borrow their target's image rather than carrying one (2026-10-21)
 - [x] Video pieces can carry a chosen thumbnail: `<slug>.mp4` plus `<slug>.png` under one slug is a
       pairing rather than a collision, and the automatic frame is the fallback
-- [ ] Replace the filler entries with real ones. One per tab is in `content/` to prove the shapes,
-      each marked `FILLER`
+- [x] The Art tab's filler piece replaced by real work: `my-first-animation` (2025-07-09) and
+      `current-wip-animation` (2026-10-21), both 2D animations, added 2026-10-21. The first video
+      pieces to ship, so the video path is now load-bearing
+- [ ] Write the blog post that points at it. The `target` is real; the copy is still a placeholder
 
-**Filler, not seed.** Two entries exist only to exercise the layouts and are meant to be deleted: a
-post, and an art piece drawn from existing scene art. The eight Coding entries are **not** filler;
-they are the real projects carried over from the old site, with their screenshots.
+**Filler, not seed.** The entries that existed only to exercise the layouts were always meant to be
+deleted. The art piece is gone, replaced by real work. One is left — a post — and only its copy is
+a placeholder now; it points at a real piece. The eight Coding entries are **not** filler; they are
+the real projects carried over from the old site, with their screenshots.
 
 A third — a video piece standing in with a clip from `art/reference/` — was deleted on 2026-10-21,
 during the pre-deploy pass. It had proved the video path end to end locally and could never have
@@ -381,8 +384,9 @@ not have served. See `docs/DEPLOYMENT.md` § The cutover, as it actually happene
 
 Left:
 
-- [ ] Replace the two `FILLER` entries — one post, one art piece (`content/posts.ts`,
-      `content/art.ts`). Both are live on the site right now
+- [ ] Write the one remaining placeholder post (`content/posts.ts`). It is live on the site right
+      now and points at a real piece; only its words are stand-ins. The art piece it replaced is
+      done — `content/art.ts` is two real animations as of 2026-10-21
 - [ ] `MAL_CLIENT_ID` in the project's environment, and `MAL_USERNAME` in `content/about.ts`, if the
       watchlist rows are wanted. Both or neither
 - [x] **Accessibility audit against the commitments in `docs/DESIGN.md`**, 2026-10-21. Walked
