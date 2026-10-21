@@ -36,10 +36,10 @@ Consequences, which are worth being explicit about:
 
 This folder is a duplicate; the original working copy of the old site is separate and also intact.
 
-## Remaining isolation step — still open, and now the gate
+## The isolation step — done on 2026-10-21
 
-**Disable the Vercel Git integration on the old project.** The remote change already makes an
-accidental deploy impossible from this folder, but the old project should not be watching for
+**Disable the Vercel Git integration on the old project.** The remote change already made an
+accidental deploy impossible from this folder, but the old project should not have been watching for
 pushes that might arrive from the original folder either.
 
 In the Vercel dashboard, on the `portfoliosite` project: Settings → Git → **Disconnect**.
@@ -51,9 +51,9 @@ indistinguishable from taking the live site down. Pausing is a spend-management 
 deploy freeze. Disconnecting is the operation that stops new commits from building while leaving the
 current production deployment serving the domain.
 
-This was a background precaution while the rebuild was in flight. It is the **first step of the
-cutover** now, and it should be done before a second project exists on the same account pointing at
-the same work — not after.
+This was a background precaution while the rebuild was in flight, and it became the first step of
+the cutover. `portfoliosite` was disconnected from the Vercel project on 2026-10-21, and `website`
+connected in its place.
 
 ## Git history: settled
 
@@ -95,23 +95,51 @@ is content; a client id is a credential. Both or neither — one alone does noth
 `lib/site.ts` falls back to `VERCEL_PROJECT_PRODUCTION_URL`, which Vercel sets on every deployment
 and which is correct from the first one.
 
-## Target setup
+## The cutover, as it actually happened — 2026-10-21
 
-When the rebuild is ready (Phase 6):
+The plan above this line, for most of the rebuild, was a **second Vercel project** on `website`,
+verified on its own `.vercel.app` URL while the old site kept the real one, then a domain move, then
+retiring the old project. That is not what was done, and the record is worth keeping straight.
 
-- A **new Vercel project** on `henryyjiang/website`, framework preset Next.js, default build
-  (`next build`). Preview deployments on branches; production on `main`.
-- Verify on the Vercel-assigned domain first, while the old site still holds the real domain.
-- **Then** move the custom domain from the old project to the new one — by **adding** it to the new
-  project (Settings → Domains), which raises a **Move Domain** confirmation naming both projects.
-  Confirming that is the whole move.
-- **Then** retire the old project. Keep the `portfoliosite` repository — it is the archive of the
-  previous site and of this one's history.
+**The existing Vercel project was repointed instead.** Settings → Git → disconnect `portfoliosite`,
+connect `website`. One project, one URL, no transfer.
 
-**Never remove the domain from the old project first.** It is the obvious-looking order and it is
-the one that drops traffic: between the remove and the add, the domain is attached to nothing.
-Vercel's own guidance is explicit that deleting a domain before reassigning it interrupts traffic,
-and the add-then-confirm flow above exists precisely so that the swap is one operation rather than
-two. `vercel domains move` is not this operation either — it moves ownership between teams.
+That turned out to be the better shape for this site, for a reason the plan had missed: **there is
+no custom domain.** The real address is `henryjiang.vercel.app`, which is Vercel's own
+project-scoped subdomain and is therefore a property of the *project*, not something attachable to a
+new one. A second project could never have served it. So the domain move and the "retire the old
+project" step were both moot — the project never changed identity, and nothing had to be moved.
 
-Until that cutover, the new project's deployments are only ever reachable at Vercel preview URLs.
+What that shape costs is the verify-first window. With one project there is no staging URL to check
+while the old build still serves: the first green build from `website` *is* production. That was an
+acceptable trade here only because the build had been verified independently — `git archive HEAD`
+into an empty directory, `npm ci`, `npm run build`, green with all eight routes prerendered.
+
+### Connecting a repository does not deploy anything
+
+The step that caused real confusion, and the one worth remembering:
+
+**Connecting a Git repository to an existing Vercel project triggers no build.** It arms the
+trigger and waits for the next push to the production branch. For thirteen minutes the project was
+connected to `website` while production still served the **May 11th `portfoliosite` build**, which
+looked exactly like a failed cutover and was not one. `058ea79`, pushed at 15:35, produced the first
+build from `website` and went live.
+
+A push that produces *no* deployment is a different fault. Vercel's own ordering of causes, which is
+the order to work through: the **Git login connection** under Account Settings → Authentication
+(their most common cause by some margin), then Settings → Git → **Ignored Build Step**, then the
+**production branch**, then whether the Vercel GitHub App was installed against *selected
+repositories* only — a live possibility here, since it was first installed for `portfoliosite`.
+
+### Two things that stay true
+
+**Keep the `portfoliosite` repository.** With the project repointed away from it, that repository is
+now the only copy of the old site anywhere — it is no longer deployed, and the old site's files were
+deleted from this repository's `main`. Deleting it would leave no copy at all.
+
+**If a custom domain is ever attached and later moved, never remove it from its current project
+first.** It is the obvious-looking order and it is the one that drops traffic: between the remove and
+the add, the domain is attached to nothing. The domain is *added* to the destination project, which
+raises a **Move Domain** confirmation naming both; Vercel's guidance is explicit that deleting it
+first interrupts traffic. `vercel domains move` is not this operation either — it moves ownership
+between teams.

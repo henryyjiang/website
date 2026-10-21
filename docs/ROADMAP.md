@@ -7,14 +7,14 @@ harden into a design decision.
 
 ---
 
-## Phase 0 — Infrastructure *(complete, bar one check)*
+## Phase 0 — Infrastructure *(complete)*
 
 - [x] Assess the old site and diagnose the animation failure (`docs/ANIMATION.md`)
 - [x] Choose the stack: Next.js + React + Pixi.js
 - [x] Write project and framework docs
 - [x] Point `origin` at `henryyjiang/website`
 - [x] Create the `art/` inbox and document the drop-in conventions
-- [ ] Confirm the old Vercel integration is disabled
+- [x] Confirm the old Vercel integration is disabled — done 2026-10-21 at the cutover
 - [x] First commit on the new origin
 
 **Deployment isolation is the gate on everything else.** The old site is live on Vercel through a
@@ -345,7 +345,7 @@ both lying in the bed and sitting at the desk, or whether the bed's art has to s
 
 ---
 
-## Phase 9 — Launch *(in progress)*
+## Phase 9 — Launch *(live — 2026-10-21)*
 
 Done in the pre-deploy pass on 2026-10-21, before the Vercel project exists:
 
@@ -366,14 +366,25 @@ Done in the pre-deploy pass on 2026-10-21, before the Vercel project exists:
 - [x] **The static fallback is finally the real scene**, which Phase 3 left outstanding: the same
       composite, flattened from the same layers in the renderer's own draw order
 
+Done at the cutover, the same day:
+
+- [x] **The site is live at `henryjiang.vercel.app`**, building from `website` on `main`
+- [x] The old Vercel integration disabled — Phase 0's last open box, closed by disconnecting
+      `portfoliosite` from the project
+
+Two boxes came off this list by being **moot rather than done**, and the distinction matters if
+anyone reads this later. The cutover repointed the *existing* Vercel project at `website` rather
+than creating a second one, so there was only ever one project and one URL: the domain never needed
+moving, and the old project was not retired because it **is** the project. There is no custom
+domain — `henryjiang.vercel.app` is Vercel's project-scoped subdomain, which a second project could
+not have served. See `docs/DEPLOYMENT.md` § The cutover, as it actually happened.
+
 Left:
 
-- [ ] Confirm the old Vercel integration is disabled — still Phase 0's open box
-- [ ] New Vercel project on `henryyjiang/website`
+- [ ] Replace the two `FILLER` entries — one post, one art piece (`content/posts.ts`,
+      `content/art.ts`). Both are live on the site right now
 - [ ] `MAL_CLIENT_ID` in the project's environment, and `MAL_USERNAME` in `content/about.ts`, if the
       watchlist rows are wanted. Both or neither
-- [ ] `NEXT_PUBLIC_SITE_URL` once a custom domain is attached, so the card stops naming the
-      `.vercel.app` host (`lib/site.ts`)
 - [x] **Accessibility audit against the commitments in `docs/DESIGN.md`**, 2026-10-21. Walked
       keyboard-only, then again with reduced motion forced, then with WebGL refused; contrast
       measured off the rendered page rather than off the palette table. Five of the six
@@ -482,10 +493,11 @@ Left:
       `--active` at 14.4:1, hover goes to full `--text`, and focus is now a bright `--primary`
       ring. A visitor can always tell where they are and where they are going. It is the three
       *idle* labels that are dim.
-- [ ] Move the domain off the old deployment
-- [ ] Retire the old project (`docs/DEPLOYMENT.md`)
+- [ ] `NEXT_PUBLIC_SITE_URL` **only if** a custom domain is ever attached. Until then
+      `VERCEL_PROJECT_PRODUCTION_URL` already resolves to `henryjiang.vercel.app`, which is correct,
+      so there is nothing to set (`lib/site.ts`)
 
-Shippable without Phase 8.
+Shipped without Phase 8, as planned.
 
 ---
 

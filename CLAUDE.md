@@ -185,7 +185,9 @@ than a breakage.
 Work proceeds in the order in `docs/ROADMAP.md`. The rough-layout phase is **done** and the real
 scene art landed on 2026-10-20, so the seams it was built for are now being used: glow, the billboard
 carousel and the theme all hang off the manifest rather than off components. The character
-animation is still outstanding and is **not a ship blocker** — Phase 10 can go live without Phase 9.
+animation is still outstanding and was **not a ship blocker**: Phase 9 went live without Phase 8 on
+2026-10-21, at `henryjiang.vercel.app`. (This sentence used to number those two phases 10 and 9,
+which matched nothing in `docs/ROADMAP.md` — the launch is Phase 9 and the character is Phase 8.)
 
 **The visual direction is settled: cyberpunk, in the register of Cyberpunk 2077's loading screen**,
 with a glitch as the route transition and a palette measured out of Henry's own skyline art. See
