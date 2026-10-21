@@ -153,8 +153,12 @@ function PostRow({ post }: { post: Post }) {
     </>
   )
 
+  // The gutter widens with the thumbnail. At 16px a 288px picture and a 48px
+  // headline were touching, which made the row read as one block rather than as a
+  // picture and the thing it is about; on a phone, where the picture is 80px, the
+  // same 16px is right and anything more eats the headline's width.
   const shell =
-    'u-notch flex w-full items-center gap-4 border border-dim/25 bg-ground/40 p-4 transition-colors duration-150'
+    'u-notch flex w-full items-center gap-4 border border-dim/25 bg-ground/40 p-4 transition-colors duration-150 sm:gap-6 lg:gap-8'
 
   if (!target) {
     return <div className={shell}>{body}</div>
