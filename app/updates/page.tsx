@@ -20,10 +20,17 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * this tab and the Coding one. Anything that wants a paragraph is a project or a
  * piece, and the post points at it.
  *
- * Henry asked for more height on 2026-10-21 and it is the thumbnail that gives it:
- * the row is as tall as its picture, so a larger square makes the entry more of a
- * thing to look at without adding a word to it. Condensed is still the point; a row
- * that is one line taller is not an article.
+ * **The thumbnail is `--post-shot`, a fifth of the screen**, where a Coding
+ * screenshot is `--shot` and gets a third (app/globals.css). The row is exactly as
+ * tall as its picture, so that one number is the feed's height as well, and the two
+ * tabs hold their proportion to each other at every window width rather than only
+ * at the one they were judged at. Henry set the ratio on 2026-10-21, after a fixed
+ * 96px square turned out to read as a table of contents rather than as a feed.
+ *
+ * Condensed still means condensed: the body is one truncated line at any row
+ * height. The picture is what grew, because a post is a notice about something
+ * shown at full size one tab over — give it a paragraph and this becomes the
+ * article list the tab exists not to be.
  *
  * **And they point inward.** `target` names the Coding entry or the Art piece the
  * post is about; `lib/post-target.ts` turns that into the URL the other panel
@@ -97,7 +104,7 @@ function PostRow({ post }: { post: Post }) {
   const body = (
     <>
       {image ? (
-        <picture className="u-notch block size-20 shrink-0 overflow-hidden border border-dim/25 sm:size-24">
+        <picture className="u-notch block size-20 shrink-0 overflow-hidden border border-dim/25 sm:size-[var(--post-shot)]">
           <source srcSet={image.src} type="image/webp" />
           <img
             src={image.fallback}
@@ -115,7 +122,7 @@ function PostRow({ post }: { post: Post }) {
            same column so the rows still line up. */
         <span
           aria-hidden="true"
-          className="u-notch grid size-20 shrink-0 place-items-center border border-dim/20 bg-ground/40 sm:size-24"
+          className="u-notch grid size-20 shrink-0 place-items-center border border-dim/20 bg-ground/40 sm:size-[var(--post-shot)]"
         >
           <span className="u-telemetry text-dim">◢</span>
         </span>

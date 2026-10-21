@@ -540,11 +540,17 @@ thumbnail, the date, a headline, one line of body at most. The density is the po
 should take in the whole feed at a glance, and anything that wants a paragraph is a Coding entry or
 an Art piece, not a post.
 
-The row is as tall as its thumbnail, so the thumbnail is the dial for how much presence an entry
-has; it was turned up on 2026-10-21 because the rows read as a table of contents rather than as
-things worth clicking. Note what did *not* change: the body is still one truncated line. Height
-bought with a bigger picture keeps the feed scannable, where height bought with more text would
-have made it the article list this tab exists not to be.
+**The thumbnail is a fifth of the screen, where a Coding screenshot is a third** — `--post-shot`
+against `--shot` in `app/globals.css`, settled 2026-10-21. The row is exactly as tall as its
+thumbnail, so that one number is the feed's height as well, and the ratio is the real decision: a
+post is a notice about something shown at full size one tab over, so it is drawn at a fixed
+fraction of the size that thing gets, and the two tabs keep their proportion to each other at every
+window width rather than only at the one they were judged at. A fixed pixel square was tried first
+and read as a table of contents.
+
+Note what did *not* change with the height: the body is still one truncated line at any row size.
+Height bought with a bigger picture keeps the feed scannable, where height bought with more text
+would have made it the article list this tab exists not to be.
 
 **The thumbnail is borrowed, not exported.** A post shows the picture of whatever it points at, so
 the feed is a column of the same images the other two tabs show at full size — which is what makes

@@ -53,6 +53,22 @@
    * there is nothing for the width half of it to do — see app/desk/page.tsx.
    */
   --shot: clamp(16rem, 33vw, 46rem);
+
+  /*
+   * The same idea for the blog feed's thumbnail, at a fifth of the screen where a
+   * project screenshot gets a third. The ratio is the point: a post is a notice
+   * about something that is shown at full size one tab over, so it is drawn at a
+   * fraction of the size that thing gets, and the two tabs stay in proportion as
+   * the window changes rather than only at the width they were eyeballed at.
+   *
+   * A feed row is exactly as tall as its thumbnail, so this is the row's height
+   * too. The floor and ceiling are `--shot`'s, scaled by the same 20/33, so both
+   * stop growing at about the same very wide display.
+   *
+   * `sm` and up, for the reason `--shot` is: below that the text beside it has
+   * nowhere to go, and a fifth of a phone is most of the row.
+   */
+  --post-shot: clamp(10rem, 20vw, 28rem);
 }
 
 html,
