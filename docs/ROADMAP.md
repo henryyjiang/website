@@ -231,7 +231,10 @@ scene units, then brightness up about half again when the wider halo read as fai
 one it replaced. The hard line he spotted at the glow's rim was `BlurFilter`'s own padding, which
 Pixi derives as twice the strength — two sigma, where a gaussian is still at 8%, so the filter was
 clipping its own output square. Both the render texture and the filter padding now come from one
-tail length of 3.5 sigma.
+tail length of 3.5 sigma. Pushed brighter again after that, the multiply ran out of room — the blue
+channel was already at the ceiling at the screen's edge — so the glow is drawn twice instead:
+additive light has no ceiling where colour and alpha both do, and layering adds light without
+touching hue.
 
 **Verified in the browser, not assumed.** The mesh is a `PerspectiveMesh` on the manifest's four
 corners with its texture frame cropped to the quad's measured 1.682 aspect; the glow render texture

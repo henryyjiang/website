@@ -142,6 +142,25 @@ const GLOW_BASE = 1.7
 const GLOW_MAX_GAIN = 9
 const GLOW_SATURATE = 0.75
 
+/**
+ * How many additive copies of the glow are drawn.
+ *
+ * **The way to go brighter once the colour is maxed out.** Light added to the frame
+ * is the texture's colour times its alpha times the sprite's — and at the screen's
+ * edge the blue channel of a blue image was already landing at 74 of a possible 78,
+ * so turning the per-image gain up bought nothing in blue and only lifted red and
+ * green, which is the definition of washing a colour out toward white. Alpha cannot
+ * help either: it stops at 1, and the resting level is deliberately held at 0.6 to
+ * leave room for hover.
+ *
+ * Additive light has no such ceiling. Two quads of the same texture add twice the
+ * light with the hue untouched, which is the one thing a multiply cannot do, and
+ * they cost a second quad of a texture already uploaded. The stack sits in a
+ * container whose alpha the ticker drives, so the resting and hovered levels keep
+ * their ratio — 0.6 and 1 become an effective 1.2 and 2.
+ */
+const GLOW_LAYERS = 2
+
 type Slide = { post: Post; src: string; fallback: string; luma: number }
 
 /**
@@ -158,7 +177,7 @@ type Slide = { post: Post; src: string; fallback: string; luma: number }
  * which is nothing React needs to re-render for, and SceneStage already reads
  * per-frame values this way.
  */
-export type BillboardSurfaceState = { lit: boolean; glow: Sprite | null }
+export type BillboardSurfaceState = { lit: boolean; glow: Container | null }
 
 /**
  * The billboard's live surface: the newest posts, projected onto the real screen.
@@ -304,7 +323,7 @@ export function BillboardSurface({
 
   const meshHost = useRef<Container | null>(null)
   const meshRef = useRef<PerspectiveMesh | null>(null)
-  const glowRef = useRef<Sprite | null>(null)
+  const glowRef = useRef<Container | null>(null)
   const glowTexture = useRef<RenderTexture | null>(null)
 
   // --- the projection -----------------------------------------------------------
@@ -386,13 +405,13 @@ export function BillboardSurface({
   }, [isInitialised, geometry.bounds.width, geometry.bounds.height])
 
   useEffect(() => {
-    const sprite = glowRef.current
+    const stack = glowRef.current
     const target = glowTexture.current
-    if (!sprite || !target || !isInitialised) return
+    if (!stack || !target || !isInitialised) return
 
     // Reported before the early return, so the ticker learns on the frame a slide
     // goes away rather than being left lighting the city with the last one.
-    stateRef.current = { lit: texture !== null, glow: sprite }
+    stateRef.current = { lit: texture !== null, glow: stack }
 
     if (!texture || !slide) return
 
@@ -425,11 +444,13 @@ export function BillboardSurface({
     app.renderer.render({ container: stage, target, clear: true })
     stage.destroy({ children: true })
 
-    sprite.texture = target
-    sprite.position.set(geometry.bounds.x - GLOW_SPREAD, geometry.bounds.y - GLOW_SPREAD)
-    sprite.scale.set(GLOW_DOWNSCALE)
+    // Position and scale on the stack, texture on each layer: they are copies of one
+    // another and differ in nothing.
+    stack.position.set(geometry.bounds.x - GLOW_SPREAD, geometry.bounds.y - GLOW_SPREAD)
+    stack.scale.set(GLOW_DOWNSCALE)
+    for (const layer of stack.children) (layer as Sprite).texture = target
     // `alpha` and `visible` belong to the ticker from here (glow.ts), which eases
-    // this one up as the billboard's baked glow eases down.
+    // the stack up and down as a whole.
   }, [app, isInitialised, texture, slide, geometry.bounds, stateRef])
 
   useEffect(
@@ -459,13 +480,11 @@ export function BillboardSurface({
           the bright middle of it and only the spill past the screen's edges shows —
           which is what light coming off a screen looks like. Additive, like the
           object glows and like the blooms painted into the city. */}
-      <pixiSprite
-        ref={glowRef}
-        label="billboard:post-glow"
-        texture={Texture.EMPTY}
-        blendMode="add"
-        visible={false}
-      />
+      <pixiContainer ref={glowRef} label="billboard:post-glow" visible={false}>
+        {Array.from({ length: GLOW_LAYERS }, (_, layer) => (
+          <pixiSprite key={layer} texture={Texture.EMPTY} blendMode="add" />
+        ))}
+      </pixiContainer>
 
       <pixiContainer ref={meshHost} label="billboard:image" />
 

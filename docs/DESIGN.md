@@ -309,10 +309,25 @@ the value at any given distance went up — so the brightness went up with it by
 half again, and the saturation with that, because a bigger multiply clips more pixels
 and clipping is what turns coloured light grey.
 
+**Past a point, brightness stops being the lever and layering starts.** Pushed once
+more, the per-image multiply ran out: light added to the frame is the texture's colour
+times its alpha times the sprite's, and at the screen's edge the blue channel of a
+blue image was already landing at 74 of a possible 78. Turning the gain up bought
+nothing in blue and only lifted red and green, which is precisely how a colour washes
+out to white. Alpha could not help either — it stops at 1, and the resting level is
+held at 0.6 on purpose so that hovering has somewhere to go.
+
+Additive light has no ceiling, so the glow is **drawn twice**. Two quads of one
+texture add twice the light with the hue untouched, which is the one thing a multiply
+cannot do, and the second costs a quad of a texture that is already uploaded. The
+stack sits in a container whose alpha the ticker drives, so the resting and hovered
+levels keep their ratio: 0.6 and 1 become an effective 1.2 and 2.
+
 The skirt that results, as light actually added to the frame at rest, for a blue
-image: 15/42/74 at the screen's edge, 10/28/49 at 40 units out, 5/13/23 at 90, 1/4/6
-at 140, nothing by 190 — with saturation holding at 0.79 the whole way out rather
-than washing toward white.
+image: 30/84/148 at the screen's edge, 20/56/98 at 40 units out, 10/26/47 at 90,
+1/7/12 at 140, nothing by 190 — with saturation at 0.79 all the way out, identical to
+what it was at half the brightness. That is the test of whether the lever was the
+right one.
 
 Two bounds matter. The lift is a multiply, so it rescues dark pixels and clips bright
 ones; past a point an image stops being brightened and starts being flattened into a

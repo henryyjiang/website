@@ -1,6 +1,6 @@
 'use client'
 
-import type { Sprite } from 'pixi.js'
+import type { Container } from 'pixi.js'
 
 import type { ManifestObject } from '@/lib/scene-manifest'
 import type { GlowSpec, Hotspot } from './hotspots'
@@ -44,13 +44,19 @@ export class HotspotGlow {
   }
 
   /**
-   * Ease toward `target` (1 hovered, 0 not) and apply the result to `sprite`.
+   * Ease toward `target` (1 hovered, 0 not) and apply the result to `view`.
    *
-   * The sprite is passed in per frame rather than held as a field, because the two
-   * are created in different phases: Pixi ref callbacks fire during commit, while
-   * the effect that builds these objects runs after it. Storing the sprite here
-   * meant the ref arrived before the object existed and the glow silently never
-   * attached — correct hover state, no visible effect.
+   * A `Container` rather than a `Sprite`, because the billboard's is a stack of
+   * several additive copies rather than one — alpha stops at 1 and additive light
+   * does not, so going brighter than a single quad allows means drawing more of them
+   * (components/scene/BillboardSurface.tsx). Only `alpha` and `visible` are touched
+   * either way, and a sprite is a container.
+   *
+   * It is passed in per frame rather than held as a field, because the two are
+   * created in different phases: Pixi ref callbacks fire during commit, while the
+   * effect that builds these objects runs after it. Storing it here meant the ref
+   * arrived before the object existed and the glow silently never attached —
+   * correct hover state, no visible effect.
    *
    * `presence` scales the whole thing, and exists for one case: the billboard has
    * two glows and only ever wants one of them. Its baked glow is a blurred copy of
@@ -62,7 +68,7 @@ export class HotspotGlow {
    * still runs, so neither glow can pop when a slide changes.
    */
   update(
-    sprite: Sprite | null | undefined,
+    view: Container | null | undefined,
     target: number,
     t: number,
     presence = 1,
@@ -71,19 +77,19 @@ export class HotspotGlow {
       (this.spec.standing + (this.spec.peak - this.spec.standing) * target) * presence
     this.level += (want - this.level) * t
 
-    if (!sprite) return
+    if (!view) return
 
     // Below this the sprite is contributing nothing an eye could see, so stop
     // drawing it. An additive quad is cheap, but three of them over the whole canvas
     // every frame for nothing is not free either.
     if (this.level < 0.004) {
       this.level = 0
-      sprite.visible = false
+      view.visible = false
       return
     }
 
-    sprite.visible = true
-    sprite.alpha = this.level
+    view.visible = true
+    view.alpha = this.level
   }
 }
 
