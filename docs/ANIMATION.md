@@ -61,16 +61,24 @@ to hold are stated here rather than discovered later:
    the bed is behind it hits the bed, because the bed is what is clickable there. This is already how
    `hitTest` works; the requirement is that it stays that way.
 2. **Hover glow belongs to the object, not to the pixels on screen.** The glow sprite sits behind its
-   object, so a character drawn in front of the bed is not lit by the bed's glow. If an action leaves
-   the character substantially covering a hotspot, that is an art decision with a visual cost, and
-   the fix is the drawing or the `z` — never a special case in the hit test.
+   object, so a character drawn in front of the bed is not lit by the bed's glow — the glow lights up
+   *behind* him. Now that the character always draws over the room this is the normal case rather
+   than an edge one: if an action leaves him substantially covering a hotspot, that is an art
+   decision with a visual cost, and the fix is the drawing — never a special case in the hit test.
 
-**Draw order between the character and the objects is one number**, `z` in the character's meta,
-defaulting to behind them — **except that the number does not exist yet.** As of 2026-10-21
-`CharacterMeta` is `{ fps, anchor, scale }` and `SceneStage` renders the character before the
-objects, hardcoded. The default is the right one and nothing is blocked by this, but the in-front
-case cannot currently be authored; adding `z` is a small change and belongs with the real
-animation. `docs/ROADMAP.md` Phase 8 has the test that found it. Behind is right for sitting at the desk — the desk occludes the legs and
+**The character draws over the room's objects, and there is no `z`.** Settled 2026-10-21: Henry's
+animations are authored to sit above the whole scene, so nothing in the room is meant to occlude
+the character. That answers the question this section used to leave open — one draw order serves
+both sitting at the desk and lying in the bed, and **the bed's art never has to split into a back
+and a front piece**, which was the fallback if a single number could not do both. What overlaps
+what is decided in the drawing, which is where it belongs.
+
+The renderer is correspondingly simpler: the character is the last child of the room band, and no
+meta field controls it. `meta.json` stays `{ fps, anchor, scale }`.
+
+The one place "above the whole scene" is not literally true is the `near` band, which draws after
+the room and is currently empty. Art placed there would be deliberately in front of the room plane,
+and whether a character belongs in front of *that* is a question for when such art exists. Behind is right for sitting at the desk — the desk occludes the legs and
 the character reads as *in* the room. Lying in the bed wants the opposite, and one number cannot be
 both; if a single loop has to do both, the bed's art splits into a back and a front piece and the
 character goes between. That is a decision for whenever the real animation exists, and it is not a

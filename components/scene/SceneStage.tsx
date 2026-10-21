@@ -55,9 +55,24 @@ let MOUNT_SEQUENCE = 0
  * decision as the billboard being in the skyline band — design, not measurement —
  * so it lives in code rather than being inferred from the art.
  *
- * Within the room it draws after the layer art and before the objects, so the desk
- * and the bed can occlude it. That is what makes the character read as *in* the
- * room rather than pasted over it.
+ * **Within the room it draws last, over the objects.** Settled 2026-10-21: Henry's
+ * animations are authored to sit above the whole scene, so nothing in the room is
+ * ever meant to occlude the character and the bed never has to split into a back
+ * and a front piece to let him lie in it. That retires the `z` this file was going
+ * to need — one draw order serves sitting at the desk and lying in the bed, because
+ * the art decides what overlaps what, not the renderer.
+ *
+ * The one place "above the whole scene" is not literally true is the `near` band
+ * (`bands.ts`), which draws after the room and is empty. Art put there would be
+ * deliberately in front of the room plane, and whether a character belongs in front
+ * of *that* is a question for when such art exists. Nothing is lost by waiting: the
+ * band has been empty since the foreground inbox was flattened.
+ *
+ * Note the cost this chooses, named in docs/ANIMATION.md: an object's hover glow
+ * sits behind the object, so where the character covers a hotspot the glow lights
+ * up behind him. That is correct — the glow belongs to the object, not to the
+ * pixels on screen — and it is why covering a hotspot completely is an art
+ * decision rather than a free one.
  */
 const CHARACTER_BAND: BandId = 'room'
 
@@ -608,18 +623,6 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
             <pixiSprite key={layer.id} label={layer.id} texture={layer.texture} x={0} y={0} />
           ))}
 
-          {band.id === CHARACTER_BAND && assets.character && (
-            <pixiSprite
-              ref={characterRef}
-              label="character"
-              texture={assets.character.frames[0]}
-              x={assets.character.anchor.x}
-              y={assets.character.anchor.y}
-              anchor={CHARACTER_ANCHOR}
-              scale={assets.character.scale}
-            />
-          )}
-
           {/*
             Glow first, then the object on top of it. Additive, so it adds light to
             whatever is behind rather than painting over it — the same thing the
@@ -648,6 +651,18 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
               />
             </pixiContainer>
           ))}
+
+          {band.id === CHARACTER_BAND && assets.character && (
+            <pixiSprite
+              ref={characterRef}
+              label="character"
+              texture={assets.character.frames[0]}
+              x={assets.character.anchor.x}
+              y={assets.character.anchor.y}
+              anchor={CHARACTER_ANCHOR}
+              scale={assets.character.scale}
+            />
+          )}
 
           {band.id === 'skyline' && billboard && (
             <BillboardSurface

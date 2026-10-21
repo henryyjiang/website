@@ -322,13 +322,13 @@ a single 1916 × 444 sheet at 52 KB, because every frame trims to the ball. Trim
 work than the doc's "often halves the sheet count" suggests — for sparse art it is the difference
 between one sheet and twenty.
 
-**What it found that matters: the `z` knob does not exist.** `docs/ANIMATION.md` says draw order
-between the character and the objects "is one number, `z` in the character's meta, defaulting to
-behind them". `CharacterMeta` is `{ fps, anchor, scale }` and `SceneStage` renders the character
-before the objects, hardcoded. Behind is the right default and the right case for sitting at the
-desk, so nothing is broken — but **lying in the bed is currently unbuildable**, and that is the
-case the open question below is about. Testing the in-front case meant moving one JSX block by
-hand. Implementing `z` is small and belongs with the real animation, not before it.
+**What it found that matters: the `z` knob did not exist**, and now it never needs to. The docs
+described draw order as "one number, `z` in the character's meta, defaulting to behind them";
+`CharacterMeta` was `{ fps, anchor, scale }` and the character was rendered before the objects,
+hardcoded, so lying in the bed could not be authored at all. Henry settled it the same day: the
+animations are drawn to sit above the whole scene. So the character became the last child of the
+room band, `z` was never added, and the bed's art does not split. Testing the in-front case had
+meant moving a JSX block by hand; that block is where it belongs now.
 
 **Also worth knowing before animating:** the desk's mask is 42% solid inside its bounds and
 **hollow under the tabletop** — the clickable desk is the top surface, the monitor and the legs.
@@ -372,9 +372,10 @@ Tracked here so they don't get silently decided:
 - ~~**Music.**~~ Cut entirely on 2026-10-20, after being specified and documented. The strip Henry
   drew under the billboard for a now-playing readout stays as painted art with nothing rendered into
   it. If it comes back, the spec was in `docs/AUDIO.md` at commit time.
-- **Can one character `z` serve both the bed and the desk?** Depends on the animation. Phase 8 —
-  and note there is no `z` yet to serve either: the character is hardcoded behind the objects. See
-  the Phase 8 findings above.
+- ~~**Can one character `z` serve both the bed and the desk?**~~ The question is void. Settled
+  2026-10-21: the animations are authored to sit above the whole scene, so the character draws over
+  the room's objects and there is no `z` to serve anything. The bed's art does not split. The only
+  thing that ever draws over the character is the `near` band, which is empty.
 - **Project dates.** The old markup carried none; they still need reconstructing.
 - ~~**Art portfolio shape.**~~ A grid of wide 16:9 cards opening a full-page popup, settled
   2026-10-21. Video pieces play in the popup; the grid shows a poster frame pulled from the video.
