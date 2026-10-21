@@ -175,21 +175,44 @@ Replacing it is dropping a new `art/about/me.*` and running `npm run art`.
 `FAVOURITES` is rendered under a heading that says **Favourites**, which is also the rule for what
 belongs in it: a row that is a *status* rather than a favourite does not.
 
-**Why `Currently watching` and `Last completed` are gone** (2026-10-21). They were stale on the old
-site and stale here, because the only thing keeping them true is Henry remembering to edit this
-file after finishing an episode. A list that is wrong is worse than no list.
+**`Currently watching` and `Last completed` are not in this file**, and that is the point. They
+were hand-typed on the old site and went stale, because the only thing keeping them true was Henry
+remembering to edit a file after finishing an episode. They are fetched now.
 
-They can come back, but only attached to something that fetches them, and that is a feature rather
-than a content edit:
+### The watchlist
 
-- **MyAnimeList's own API v2** (`api.myanimelist.net/v2/users/{user}/animelist`) is the route. It
-  needs an app registered on MAL for a client ID, and the list has to be public.
-- **Jikan**, the unofficial MAL API, is not: it is read-only and dropped user-list endpoints in
-  v3. Don't plan around it.
-- Where the fetch runs is the real decision. At build time it is one request and no runtime cost,
-  but it is only as fresh as the last deploy — which, for a site that deploys when Henry pushes,
-  is no better than the hand-typed rows unless something redeploys it on a schedule. A route
-  handler or a client fetch is always current and puts a third-party request in the page's path.
+`lib/myanimelist.ts` reads the two rows from **MyAnimeList's own API v2**,
+`api.myanimelist.net/v2/users/{user}/animelist`. They render under their own `Watchlist` heading on
+the blog tab, below the favourites and never among them — a status is not a favourite, and filing
+it with things that do not change is what let it rot unnoticed.
+
+It is configured in two halves, each where it belongs:
+
+| | Where | Why |
+| --- | --- | --- |
+| `MAL_CLIENT_ID` | environment (`.env.local`, Vercel) | a credential |
+| `MAL_USERNAME` | `content/about.ts` | public, and a fact about Henry |
+
+Register an app at `https://myanimelist.net/apiconfig` — app type "other", and only the Client ID
+is needed. **There is no OAuth**: the site reads one public list and never acts as Henry, so the
+`X-MAL-CLIENT-ID` header is the whole of it and there is no token to store or refresh. The list has
+to be public, or the API answers 403.
+
+**With either half missing the rows are simply absent**, which is the state of a fresh clone and
+renders correctly. So does a 401, a 403, a timeout, or a response whose shape has changed:
+`parseAnimeList` validates every row and anything unrecognised is skipped rather than rendered.
+Nothing in that module throws, and nothing in it can fail a build — a portfolio that will not
+deploy because someone else's API is having an afternoon is the worse outcome.
+
+**It is fetched hourly, not per request.** `revalidate: 3600` keeps `/updates` prerendered and
+makes it ISR: the hit happens on revalidation rather than in front of a reader, a stale page is
+served while it happens, and MyAnimeList sees two requests an hour rather than two per visitor.
+With no credentials configured the route is plain static again, which is a quick way to tell at a
+glance whether the integration is on — `npm run build` prints a `Revalidate` column for `/updates`
+only when it is.
+
+**Not Jikan.** The unofficial MAL API is read-only and dropped its user-list endpoints in v3, so it
+cannot serve this. Don't plan around it.
 
 ## Images
 

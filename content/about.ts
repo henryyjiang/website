@@ -21,6 +21,20 @@
 export const NAME = 'Henry'
 
 /**
+ * Henry's MyAnimeList username — the half of that integration that is content.
+ *
+ * The other half is `MAL_CLIENT_ID` in the environment, and the split is on
+ * purpose: a client id is a credential and belongs in a secret, a username is
+ * public and is a fact about Henry, which is what this file is for.
+ *
+ * **`null` turns the feature off**, which is the state of a fresh clone and has to
+ * keep rendering. Fill it in and the watchlist rows appear; the list must be public
+ * on MyAnimeList, or the API answers 403 and they stay away. See
+ * `lib/myanimelist.ts` and `docs/CONTENT.md` § About.
+ */
+export const MAL_USERNAME: string | null = null
+
+/**
  * The portrait beside the about section, as a slug rather than a path.
  *
  * It is the photograph from the old site's about block (`assets/me.jpeg`), and it
@@ -54,11 +68,11 @@ export const BIO = [
  * That heading is also the rule for what belongs: a row that is a *status* rather
  * than a favourite does not.
  *
- * Which is why `Currently watching` and `Last completed` are gone (2026-10-21).
- * They were stale on the old site and stale here, because the only thing that keeps
- * them true is Henry remembering to edit a file after finishing an episode. They
- * come back when something fetches them — MyAnimeList's own API can, and
- * `docs/CONTENT.md` § About records what that would take.
+ * Which is why `Currently watching` and `Last completed` are not here. They were
+ * stale on the old site and stale here, because the only thing that kept them true
+ * was Henry remembering to edit a file after finishing an episode. They are fetched
+ * now instead — `lib/myanimelist.ts`, under their own heading in the panel, because
+ * a status is not a favourite.
  */
 export const FAVOURITES: readonly { label: string; value: string }[] = [
   { label: 'Anime', value: 'Blue Lock' },

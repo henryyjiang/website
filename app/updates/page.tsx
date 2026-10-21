@@ -6,6 +6,7 @@ import { FAVOURITES, NAME, PORTRAIT } from '@/content/about'
 import { POSTS } from '@/content/posts'
 import { byDateDesc, type Post, type PostTarget } from '@/content/types'
 import { imageFor, imageForPost } from '@/lib/content-images'
+import { fetchWatchlist, type Watchlist } from '@/lib/myanimelist'
 import { isExternalTarget, postHref } from '@/lib/post-target'
 
 /**
@@ -20,6 +21,12 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * than leaving a reader to work out what `Anime: Blue Lock` is asserting, and the
  * portrait is the width the feed's thumbnails are (`--post-shot`), so the tab has
  * one picture size rather than three.
+ *
+ * **Under it, what he is actually watching**, fetched from MyAnimeList rather than
+ * typed (`lib/myanimelist.ts`). It is a second block with its own heading because a
+ * status is not a favourite — the thing that made those two rows wrong for years
+ * was filing them next to things that do not change. The block is absent entirely
+ * when the fetch has nothing, which is also a fresh clone's state.
  *
  * **The posts are news links, not articles.** A thumbnail, a date and a headline —
  * no prose at all, which is the whole difference between this tab and the Coding
@@ -53,8 +60,9 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * surfaces (docs/CONTENT.md) — so this page is also the accessible copy of what the
  * billboard shows, since canvas text is not in the accessibility tree.
  */
-export default function UpdatesPage() {
+export default async function UpdatesPage() {
   const posts = byDateDesc(POSTS)
+  const watchlist = await fetchWatchlist()
 
   return (
     <OverlayPanel>
@@ -74,17 +82,14 @@ export default function UpdatesPage() {
 
             <SectionRule>Favourites</SectionRule>
 
-            <dl className="grid">
-              {FAVOURITES.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-baseline gap-3 border-b border-dim/15 py-1.5"
-                >
-                  <dt className="u-telemetry w-32 shrink-0 text-dim">{item.label}</dt>
-                  <dd className="min-w-0 text-sm">{item.value}</dd>
-                </div>
-              ))}
-            </dl>
+            <Readout rows={FAVOURITES} />
+
+            {watchlist ? (
+              <>
+                <SectionRule>Watchlist</SectionRule>
+                <Readout rows={watchlistRows(watchlist)} />
+              </>
+            ) : null}
           </div>
         </div>
       </section>
@@ -102,6 +107,52 @@ export default function UpdatesPage() {
       </section>
     </OverlayPanel>
   )
+}
+
+/**
+ * A column of label-and-value rows: the favourites, and the watchlist under them.
+ *
+ * One component for both so the two blocks cannot drift apart — they sit directly
+ * above and below each other, where a two-pixel disagreement in the label column
+ * would be the only thing a reader noticed about either.
+ */
+function Readout({ rows }: { rows: readonly { label: string; value: string }[] }) {
+  return (
+    <dl className="grid">
+      {rows.map((row) => (
+        <div key={row.label} className="flex items-baseline gap-3 border-b border-dim/15 py-1.5">
+          <dt className="u-telemetry w-32 shrink-0 text-dim">{row.label}</dt>
+          <dd className="min-w-0 text-sm">{row.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/**
+ * The fetched list, as the same label-and-value rows everything else here uses.
+ *
+ * Each row is dropped when it has nothing to say rather than rendered empty: "he is
+ * between shows" and "the API did not answer" look identical in an empty row, and
+ * only one of them is worth a line. A score of 0 is MyAnimeList for "not rated", so
+ * it is a missing rating rather than a bad one and the slash-ten is left off.
+ */
+function watchlistRows(watchlist: Watchlist): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = []
+
+  if (watchlist.watching.length > 0) {
+    rows.push({ label: 'Watching', value: watchlist.watching.join(', ') })
+  }
+
+  const last = watchlist.lastCompleted
+  if (last) {
+    rows.push({
+      label: 'Last completed',
+      value: last.score > 0 ? `${last.title} — ${last.score}/10` : last.title,
+    })
+  }
+
+  return rows
 }
 
 /**

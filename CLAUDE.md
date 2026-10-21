@@ -75,6 +75,7 @@ lib/
   store.ts            Shared state between Pixi and React
   content-images.ts   Joins a content entry to its image by slug. Reads the manifest below.
   post-target.ts      Where a blog post points: the Coding row, or the Art popup.
+  myanimelist.ts      The blog tab's watchlist rows. Server-only; off without credentials.
 content/              Typed content modules. All copy and project data lives here.
 art/                  ART INBOX. Henry drops exports here; see art/README.md.
 public/scene/         Build output: optimised layers, packed atlases, manifest. Generated.
@@ -194,6 +195,12 @@ news links that point *into* the site; Art is a grid of wide 16:9 cards opening 
 on the glitch.
 Each tab is arranged differently on purpose — the three work areas are peers but they are not the
 same kind of thing to read.
+
+**One thing on the site is fetched rather than written: the blog tab's watchlist rows**, from
+MyAnimeList (`lib/myanimelist.ts`, `docs/CONTENT.md` § The watchlist). It needs `MAL_CLIENT_ID` in
+the environment and `MAL_USERNAME` in `content/about.ts`, and with either missing the rows are
+absent and everything else renders — which is the state of a fresh clone, so do not "fix" a build
+that is not showing them. Everything else on the site is a content module.
 
 **What is in `content/` is filler in three places and real everywhere else.** One post, one art piece
 and one video piece exist only to exercise those layouts and are marked `FILLER`; the eight Coding
