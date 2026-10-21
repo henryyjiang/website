@@ -1,21 +1,33 @@
 /**
  * Software and AI research work. Surfaced in the desk panel.
  *
+ * **Trimmed to two entries on 2026-10-21.** The eight carried over from the old
+ * site were everything Henry had ever shipped; the Coding tab is a portfolio rather
+ * than a CV, so it now holds the two he wants shown. The other six — fwubbo, the
+ * Hawkes/kinetic HFT model, Darwin, Batstick and the automated intersection — are in
+ * git history along with their screenshots, and restoring one is adding its object
+ * back and dropping its `art/projects/<slug>.png` back in. Nothing else referenced
+ * them except two blog posts, which went with them.
+ *
+ * The two QuantConnect strategies used to be separate rows and are now one, because
+ * they are the same kind of thing published in the same place and read better as a
+ * pair than as two entries competing on CAGR.
+ *
  * DATES NEED REVIEW. The old site's markup carried no dates at all, so these were
  * derived from the archived git history — the date each entry first appeared in
  * `index.html` on the `archive/old-site` branch. That is an *upper bound* on when
- * the work was done, not the work's date, and three of them (POTS, Hawkes, Quantum
- * Walk) share 2026-05-11 only because that is when the projects section was
- * reorganised in one commit.
+ * the work was done, not the work's date. `quantconnect-models` is the exception and
+ * is right: Henry dated it June 2026 himself on 2026-10-21. Only the month and year
+ * are ever shown, so the day is filler.
+ *
+ * Its screenshot is the two backtests stacked into one square image — both strategies
+ * are in one row now, so one picture has to show both.
  *
  * Henry should correct these. Nothing else depends on their precision — the list
  * sorts on `date`, so fixing a date reorders the list and changes nothing else.
  *
  * Screenshots live at `art/projects/<slug>.png` and are resolved by slug through
- * `lib/content-images.ts`, so no entry below writes an image path. The eight carried
- * over from the old site pointed at `/assets/`, which was never under `public/` and
- * 404'd for every one of them. The desk panel does not render them yet — that is
- * Phase 7 in docs/ROADMAP.md — but the pipeline carries them.
+ * `lib/content-images.ts`, so no entry below writes an image path.
  *
  * See docs/CONTENT.md.
  */
@@ -24,13 +36,22 @@ import type { Project } from './types'
 
 export const PROJECTS: readonly Project[] = [
   {
-    slug: 'fwubbo',
-    title: 'fwubbo: Personal Dashboard Wrapper',
-    date: '2026-04-07',
+    slug: 'quantconnect-models',
+    title: 'QuantConnect Models',
+    date: '2026-06-11',
     blurb:
-      'A personal dashboard for daily use. Streams the Claude API to modify widgets and create new widgets and themes, so every visualisation tool I have made lives in one place.',
-    tags: ['tooling', 'ai', 'full-stack'],
-    links: [{ label: 'GitHub', href: 'https://github.com/henryyjiang/fwubbo' }],
+      'Two systematic strategies published on QuantConnect. A mid-cap macro equity model combining BQP and discrete quantum walk strategies reaches 80%+ CAGR and 1.29 Sharpe, sizing positions by quantum stochastic walk asset correlation. A fractal regime-detection OTM options strategy classifies volatility regimes with Hurst exponents (DFA), Hill tail-index and multifractal spectral width, reaching 60%+ CAGR and 1.18 Sharpe across 105 trades from 2020–2025.',
+    tags: ['quant', 'quantum', 'ml', 'options'],
+    links: [
+      {
+        label: 'Quantum Walk BQP',
+        href: 'https://www.quantconnect.com/strategies/478/Quantum-Walk-BQP-Mid-Cap-Macro',
+      },
+      {
+        label: 'Mandelbrotian Volatility',
+        href: 'https://www.quantconnect.com/strategies/315/Mandelbrotian-Vol-Clustering-Options-Strat',
+      },
+    ],
   },
   {
     slug: 'pots-flareup-predictor',
@@ -40,80 +61,5 @@ export const PROJECTS: readonly Project[] = [
       'Full-stack iOS app connecting over BLE to collect 1M+ entries of live heart rate and ECG data, with a boosted tree classifier reaching 70%+ flareup detection accuracy 15 minutes in advance.',
     tags: ['ml', 'ios', 'health'],
     links: [{ label: 'GitHub', href: 'https://github.com/henryyjiang/potsmonitor' }],
-  },
-  {
-    slug: 'kinetic-hawkes-hft',
-    title: 'Self-Excitatory Hawkes Process + Kinetic Theory HFT Model',
-    date: '2026-05-11',
-    blurb:
-      'Built on two weeks of MSFT L3 data for a kinetic queue-prediction market making strategy, achieving 49% PnL. The Hawkes process strategy was calibrated with MLE and reached a 65% win rate across 54M+ MBO events.',
-    tags: ['quant', 'market-microstructure'],
-    links: [{ label: 'Write-up', href: 'https://henryyjiang.github.io/kinetichawkes/' }],
-  },
-  {
-    slug: 'quantum-walk-bqp',
-    title: 'Quantum Walk BQP Trading Model',
-    date: '2026-05-11',
-    blurb:
-      'Mid-cap macro equity model combining BQP and discrete quantum walk strategies, reaching 80%+ CAGR and 1.29 Sharpe with quantum stochastic walk asset correlation position sizing.',
-    tags: ['quant', 'quantum'],
-    links: [
-      {
-        label: 'QuantConnect',
-        href: 'https://www.quantconnect.com/strategies/478/Quantum-Walk-BQP-Mid-Cap-Macro',
-      },
-    ],
-  },
-  {
-    slug: 'mandelbrotian-volatility',
-    title: 'Mandelbrotian Volatility Options ML Model',
-    date: '2026-02-02',
-    blurb:
-      'A fractal regime-detection OTM options strategy using Hurst exponents (DFA), Hill tail-index and multifractal spectral width to classify volatility regimes, achieving 60%+ CAGR and 1.18 Sharpe across 105 trades from 2020–2025.',
-    tags: ['quant', 'ml', 'options'],
-    links: [
-      {
-        label: 'QuantConnect',
-        href: 'https://www.quantconnect.com/strategies/315/Mandelbrotian-Vol-Clustering-Options-Strat',
-      },
-    ],
-  },
-  {
-    slug: 'darwin',
-    title: 'Darwin: Agentic Evolving GPT',
-    date: '2025-10-25',
-    blurb:
-      'A proof-of-concept Darwin-Gödel model: genetic algorithms applied to GPT agents that iteratively modify and improve their own training code, with a live chat window letting the model request new datasets and library upgrades.',
-    detail:
-      'I plan to continue this with finetuning 30B models and removing the API calls.',
-    tags: ['ai', 'research', 'agents'],
-    links: [
-      { label: 'GitHub', href: 'https://github.com/henryyjiang/DARWIN' },
-      { label: 'arXiv', href: 'http://arxiv.org/abs/2602.05848' },
-    ],
-  },
-  {
-    slug: 'batstick',
-    title: 'Batstick: Smart Walking Aid',
-    date: '2026-04-07',
-    blurb:
-      'A walking aid for the visually impaired, designed with VIBUG. Converts ultrasonic readings into an array of vibration motors conveying object position with over 80% accuracy.',
-    detail: 'Featured on Fox News and placed Top 12 at the National Innovator Challenge.',
-    tags: ['hardware', 'accessibility'],
-    links: [],
-  },
-  {
-    slug: 'automated-intersection',
-    title: 'Automated Intersection Management for Self-Driving Vehicles',
-    date: '2025-10-25',
-    blurb:
-      'An AI intersection management system improving simulated traffic flow by 50% using Pygame, Q-learning and a Double Q-table approach, plus a physical Raspberry Pi car running YOLOv3-mini and OpenCV for lane detection and motor control.',
-    tags: ['ml', 'robotics', 'rl'],
-    links: [
-      {
-        label: 'GitHub',
-        href: 'https://github.com/henryyjiang/automatedintersectionmanagement',
-      },
-    ],
   },
 ]

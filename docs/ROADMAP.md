@@ -286,8 +286,8 @@ interiors — the short version and the state:
 
 **Filler, not seed.** The entries that existed only to exercise the layouts were always meant to be
 deleted. The art piece is gone, replaced by real work. One is left — a post — and only its copy is
-a placeholder now; it points at a real piece. The eight Coding entries are **not** filler; they are
-the real projects carried over from the old site, with their screenshots.
+a placeholder now; it points at a real piece. The Coding entries are **not** filler; they are real
+work carried over from the old site, trimmed from eight to two on 2026-10-21.
 
 A third — a video piece standing in with a clip from `art/reference/` — was deleted on 2026-10-21,
 during the pre-deploy pass. It had proved the video path end to end locally and could never have

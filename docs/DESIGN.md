@@ -407,6 +407,21 @@ with nothing to project is still in the blog and simply has nothing to say up th
 headline always sets light-on-dark with its outline, because there is no pale panel left for
 near-black type to sit on.
 
+**A light image projects a weak headline, and that is accepted. Settled by Henry on 2026-10-21.**
+`npm run art` scores the headline's five neons against the slice of the image the text covers and
+warns below 4.5:1. The QuantConnect row is a screenshot of a white analytics UI — 0.978 luma — so
+the best of the five is orange at **2.03:1**, and the import says so on every run. Henry looked at
+it on the billboard and called it good, so the warning stands as a recorded decision rather than an
+open finding.
+
+Written down for the same reason § Accessibility records the nav's idle tabs: the next person to
+read the warning should find a decision instead of thinking they have found a bug. What the warning
+is right about is that this cannot be fixed with a different colour — all five were tried. The only
+real fix is a darker capture: QuantConnect has a dark theme, and re-exporting both backtests into
+`art/projects/quantconnect-models.png` would lift the contrast and suit the room, with no code
+change. Worth knowing rather than worth doing, while the current one reads well enough to its
+author.
+
 ## Chrome
 
 ### What the reference does
@@ -502,7 +517,7 @@ from `sm` up; below that the row stacks, there is no column, and the plain 22rem
 had is what remains.
 
 **No tag row and no skills grid.** Both were there and both were cut on 2026-10-21. A list of
-languages above the list, and `#ml #quant` under every entry, are claims the eight projects
+languages above the list, and `#ml #quant` under every entry, are claims the projects
 underneath already make, and they were the first thing a reader met. The data stays in `content/`;
 nothing surfaces it.
 

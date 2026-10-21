@@ -34,10 +34,13 @@ every other image the content refers to — see **Images** below. The eight carr
 site had their paths written in here and pointed at `/assets/`, a folder that was never under
 `public/`; all eight 404'd and nothing said so.
 
-Carry over from the old site: fwubbo, the POTS flare-up predictor, the Hawkes/kinetic HFT model, the
-quantum-walk BQP model, the Mandelbrotian volatility options model, Darwin, Batstick, and the
-automated intersection management project. Dates will need to be reconstructed — the old markup had
-none.
+Eight entries carried over from the old site. **Six came off on 2026-10-21** and the tab is now two:
+the POTS flare-up predictor, and `quantconnect-models`, which merges the quantum-walk BQP model and
+the Mandelbrotian volatility options model into one row because they are the same kind of thing
+published in the same place. fwubbo, the Hawkes/kinetic HFT model, Darwin, Batstick and the
+automated intersection management project are in git history with their screenshots; restoring one
+is adding its object back and dropping its `art/projects/<slug>.png` back in. Dates still need
+reconstructing — the old markup had none.
 
 ### `art.ts`
 

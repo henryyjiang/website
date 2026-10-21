@@ -1,90 +1,30 @@
 {
-  "generatedAt": "2026-10-21T22:14:11.409Z",
+  "generatedAt": "2026-10-21T22:53:38.402Z",
   "images": {
     "projects": {
-      "automated-intersection": {
-        "src": "/images/projects/automated-intersection.webp",
-        "fallback": "/images/projects/automated-intersection.png",
-        "width": 600,
-        "height": 600
-      },
-      "batstick": {
-        "src": "/images/projects/batstick.webp",
-        "fallback": "/images/projects/batstick.png",
-        "width": 600,
-        "height": 600
-      },
-      "darwin": {
-        "src": "/images/projects/darwin.webp",
-        "fallback": "/images/projects/darwin.png",
-        "width": 1130,
-        "height": 1078,
-        "lit": {
-          "src": "/images/projects/darwin--lit.webp",
-          "fallback": "/images/projects/darwin--lit.png",
-          "width": 1130,
-          "height": 1078,
-          "luma": 0.191,
-          "headline": {
-            "id": "yellow",
-            "hex": "#FBF653",
-            "contrast": 11.31
-          }
-        }
-      },
-      "fwubbo": {
-        "src": "/images/projects/fwubbo.webp",
-        "fallback": "/images/projects/fwubbo.png",
-        "width": 1600,
-        "height": 950,
-        "lit": {
-          "src": "/images/projects/fwubbo--lit.webp",
-          "fallback": "/images/projects/fwubbo--lit.png",
-          "width": 1600,
-          "height": 950,
-          "luma": 0.0912,
-          "headline": {
-            "id": "orange",
-            "hex": "#FF9B53",
-            "contrast": 8.45
-          }
-        }
-      },
-      "kinetic-hawkes-hft": {
-        "src": "/images/projects/kinetic-hawkes-hft.webp",
-        "fallback": "/images/projects/kinetic-hawkes-hft.png",
-        "width": 1600,
-        "height": 839,
-        "lit": {
-          "src": "/images/projects/kinetic-hawkes-hft--lit.webp",
-          "fallback": "/images/projects/kinetic-hawkes-hft--lit.png",
-          "width": 1600,
-          "height": 839,
-          "luma": 0.0653,
-          "headline": {
-            "id": "magenta",
-            "hex": "#FF6DD6",
-            "contrast": 7.53
-          }
-        }
-      },
-      "mandelbrotian-volatility": {
-        "src": "/images/projects/mandelbrotian-volatility.webp",
-        "fallback": "/images/projects/mandelbrotian-volatility.png",
-        "width": 1596,
-        "height": 660
-      },
       "pots-flareup-predictor": {
         "src": "/images/projects/pots-flareup-predictor.webp",
         "fallback": "/images/projects/pots-flareup-predictor.png",
         "width": 684,
         "height": 1490
       },
-      "quantum-walk-bqp": {
-        "src": "/images/projects/quantum-walk-bqp.webp",
-        "fallback": "/images/projects/quantum-walk-bqp.png",
+      "quantconnect-models": {
+        "src": "/images/projects/quantconnect-models.webp",
+        "fallback": "/images/projects/quantconnect-models.png",
         "width": 1600,
-        "height": 763
+        "height": 1600,
+        "lit": {
+          "src": "/images/projects/quantconnect-models--lit.webp",
+          "fallback": "/images/projects/quantconnect-models--lit.png",
+          "width": 1600,
+          "height": 1600,
+          "luma": 0.9776,
+          "headline": {
+            "id": "orange",
+            "hex": "#FF9B53",
+            "contrast": 2.03
+          }
+        }
       }
     },
     "pieces": {

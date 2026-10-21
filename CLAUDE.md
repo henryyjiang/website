@@ -207,8 +207,9 @@ the environment and `MAL_USERNAME` in `content/about.ts`, and with either missin
 absent and everything else renders — which is the state of a fresh clone, so do not "fix" a build
 that is not showing them. Everything else on the site is a content module.
 
-**What is in `content/` is placeholder in one place and real everywhere else.** The eight Coding
-projects are the real ones carried over from the old site, and the Art tab holds two real pieces
+**What is in `content/` is placeholder in one place and real everywhere else.** The Coding tab was
+cut from eight entries to two on 2026-10-21 — `quantconnect-models`, which merges the two
+QuantConnect strategies into one row, and the POTS predictor — and the Art tab holds two real pieces
 since 2026-10-21 — `my-first-animation` and `current-wip-animation`, both 2D animations, which are
 also the first things to exercise the video path in anger. What is left is the blog post pointing
 at the first of them: its `target` is right and its copy is a placeholder, to be written when the

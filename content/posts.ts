@@ -55,25 +55,16 @@ export const POSTS: readonly Post[] = [
     body: 'Starting over with a painted apartment, a real parallax scene, and an animation pipeline that survives a tab switch.',
   },
   {
-    slug: 'three-quant-models',
+    // Was "Three quant models shipped", pointing at the Hawkes/kinetic entry. That
+    // entry came off the Coding tab on 2026-10-21 and two of the three models it
+    // named are no longer on the site, so this points at what is: the combined
+    // QuantConnect row. Rewritten rather than deleted because the thing it
+    // announces still happened and is still listed.
+    slug: 'quantconnect-models',
     date: '2026-05-11',
-    title: 'Three quant models shipped',
-    body: 'Hawkes process market making, a quantum walk macro model, and the kinetic queue strategy.',
-    target: { to: 'project', slug: 'kinetic-hawkes-hft' },
-  },
-  {
-    slug: 'fwubbo-dashboard',
-    date: '2026-04-07',
-    title: 'fwubbo dashboard',
-    body: 'A personal dashboard that streams the Claude API to build its own widgets.',
-    target: { to: 'project', slug: 'fwubbo' },
-  },
-  {
-    slug: 'darwin-preprint',
-    date: '2026-02-02',
-    title: 'Darwin preprint on arXiv',
-    body: 'The self-modifying agent work went up as a preprint.',
-    target: { to: 'project', slug: 'darwin' },
+    title: 'Two models on QuantConnect',
+    body: 'A quantum walk macro equity model and a fractal volatility options strategy, both published.',
+    target: { to: 'project', slug: 'quantconnect-models' },
   },
 ]
 
