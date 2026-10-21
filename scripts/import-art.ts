@@ -79,6 +79,17 @@ const CONTENT_PNG = { compressionLevel: 9, palette: true, quality: 90, effort: 8
 /** Mask cell size in scene units. 8 gives 320 x 180 cells over the canvas. */
 const MASK_SCALE = 8
 
+/**
+ * Alpha at which a pixel counts as part of the art, for bounds and corners.
+ *
+ * Low, because these measurements are about where the art *ends*, and an
+ * anti-aliased edge is still the art.
+ */
+const EDGE_ALPHA = 40
+
+/** How far a measured surface quad is pushed outward, in scene units. See `bleed`. */
+const SURFACE_BLEED = 2
+
 /** Per-layer budget from docs/ANIMATION.md. Exceeding it warns rather than fails. */
 const LAYER_BUDGET_BYTES = 400 * 1024
 
@@ -496,12 +507,24 @@ function largestInnerRect(
 }
 
 /**
- * Measure a 1-bit alpha mask, the art's tight bounds, and its largest solid rect.
+ * Measure a 1-bit alpha mask, the art's tight bounds, its largest solid rect and its
+ * four corners.
  *
- * All three are derived from the art rather than declared in code, so a redrawn
- * object brings its own hit area with it and the two can never drift apart. An alpha
- * of 128 is the threshold — anti-aliased edges below half opacity are not worth
- * clicking.
+ * All of them are derived from the art rather than declared in code, so a redrawn
+ * object brings its own hit area and its own carousel surface with it, and the two
+ * can never drift apart.
+ *
+ * **Everything but the mask is measured at full resolution.** The mask is
+ * deliberately coarse — it is for hit testing, where a cell either catches the
+ * pointer or does not, and being a few units generous is better than being strict.
+ * The quad is not like that: the billboard's carousel is pinned to it, so an error
+ * there is a visible sliver of unlit screen along the edge of a projected image.
+ * Measuring it off the 320 x 180 mask quantised every corner to 8 scene units and
+ * did exactly that — up to 5.5 units of the billboard's peach surface showed down
+ * the right-hand side, and because the four corners rounded in different directions
+ * it also skewed the perspective the image was projected at. The same goes for
+ * `bounds`, which places the carousel's glow, and `inner`, which is where a headline
+ * sits.
  */
 async function measureAlpha(buffer: Buffer): Promise<{
   mask: { scale: number; width: number; height: number; bits: string }
@@ -509,22 +532,36 @@ async function measureAlpha(buffer: Buffer): Promise<{
   inner: { x: number; y: number; width: number; height: number }
   quad: ManifestQuad
 }> {
-  const width = Math.ceil(SCENE_W / MASK_SCALE)
-  const height = Math.ceil(SCENE_H / MASK_SCALE)
+  // --- the mask: coarse and generous, for hit testing ---------------------------
+  const maskWidth = Math.ceil(SCENE_W / MASK_SCALE)
+  const maskHeight = Math.ceil(SCENE_H / MASK_SCALE)
 
   // Downsampling averages alpha, so a cell counts as solid if its average clears a
   // low bar. That deliberately errs toward slightly generous hit areas: a hover that
   // triggers a few pixels early is unnoticeable, one that fails on an object's edge
   // feels broken.
-  const { data } = await sharp(buffer)
-    .resize(width, height, { fit: 'fill', kernel: 'cubic' })
+  const { data: maskData } = await sharp(buffer)
+    .resize(maskWidth, maskHeight, { fit: 'fill', kernel: 'cubic' })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true })
 
-  const bytes = new Uint8Array(Math.ceil((width * height) / 8))
-  // Hit testing errs generous; the inner rect must err strict, because a headline
-  // placed a few cells outside the billboard hangs in the sky.
+  const bytes = new Uint8Array(Math.ceil((maskWidth * maskHeight) / 8))
+  for (let i = 0; i < maskWidth * maskHeight; i++) {
+    if (maskData[i * 4 + 3]! < EDGE_ALPHA) continue
+    bytes[i >> 3]! |= 1 << (7 - (i & 7))
+  }
+
+  // --- bounds, inner and the corners: exact -------------------------------------
+  const { data, info } = await sharp(buffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const { width, height, channels } = info
+
+  // Objects are normalised to the design canvas, so a pixel coordinate here is
+  // already a scene coordinate and nothing needs scaling back up.
   const solid = new Uint8Array(width * height)
   let minX = width
   let minY = height
@@ -545,12 +582,11 @@ async function measureAlpha(buffer: Buffer): Promise<{
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const alpha = data[(y * width + x) * 4 + 3]!
+      const alpha = data[(y * width + x) * channels + 3]!
+      // Strict for `inner`, because that rect is where something gets drawn on top
+      // and it has to land on the solid part.
       if (alpha >= 250) solid[y * width + x] = 1
-      if (alpha < 40) continue
-
-      const i = y * width + x
-      bytes[i >> 3]! |= 1 << (7 - (i & 7))
+      if (alpha < EDGE_ALPHA) continue
 
       if (x < minX) minX = x
       if (y < minY) minY = y
@@ -568,39 +604,59 @@ async function measureAlpha(buffer: Buffer): Promise<{
 
   const inner = largestInnerRect(solid, width, height)
   const empty = maxX < 0
+
   return {
     mask: {
       scale: MASK_SCALE,
-      width,
-      height,
+      width: maskWidth,
+      height: maskHeight,
       bits: Buffer.from(bytes).toString('base64'),
     },
     bounds: empty
       ? { x: 0, y: 0, width: 0, height: 0 }
-      : {
-          x: minX * MASK_SCALE,
-          y: minY * MASK_SCALE,
-          width: (maxX - minX + 1) * MASK_SCALE,
-          height: (maxY - minY + 1) * MASK_SCALE,
-        },
-    inner: {
-      x: inner.x * MASK_SCALE,
-      y: inner.y * MASK_SCALE,
-      width: inner.width * MASK_SCALE,
-      height: inner.height * MASK_SCALE,
-    },
-    quad: empty
-      ? { x0: 0, y0: 0, x1: 0, y1: 0, x2: 0, y2: 0, x3: 0, y3: 0 }
-      : {
-          x0: corner.tl.x * MASK_SCALE,
-          y0: corner.tl.y * MASK_SCALE,
-          x1: corner.tr.x * MASK_SCALE,
-          y1: corner.tr.y * MASK_SCALE,
-          x2: corner.br.x * MASK_SCALE,
-          y2: corner.br.y * MASK_SCALE,
-          x3: corner.bl.x * MASK_SCALE,
-          y3: corner.bl.y * MASK_SCALE,
-        },
+      : { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 },
+    inner,
+    quad: empty ? { x0: 0, y0: 0, x1: 0, y1: 0, x2: 0, y2: 0, x3: 0, y3: 0 } : bleed(corner),
+  }
+}
+
+/**
+ * Push a measured quad a hair outward from its own centre.
+ *
+ * Whatever alpha threshold the corners are found at, they land *inside* the painted
+ * edge — the last pixel above the threshold, with the anti-aliased ramp beyond it
+ * uncounted. For a hit area that is the right way to be wrong. For the billboard it
+ * is not: a projection a pixel short leaves a line of the unlit screen showing along
+ * one edge, which is exactly the thing a lit screen never does, while one that
+ * overhangs by a pixel lands on the black frame drawn around it and cannot be seen.
+ *
+ * So the direction to fail in is chosen here rather than left to a threshold. Two
+ * units, which covers an anti-aliased edge and nothing more.
+ */
+function bleed(corner: Record<'tl' | 'tr' | 'br' | 'bl', { x: number; y: number }>): ManifestQuad {
+  const points = [corner.tl, corner.tr, corner.br, corner.bl]
+  const cx = points.reduce((n, p) => n + p.x, 0) / 4
+  const cy = points.reduce((n, p) => n + p.y, 0) / 4
+
+  const out = points.map((p) => {
+    const dx = p.x - cx
+    const dy = p.y - cy
+    const length = Math.hypot(dx, dy) || 1
+    return {
+      x: Math.round(p.x + (dx / length) * SURFACE_BLEED),
+      y: Math.round(p.y + (dy / length) * SURFACE_BLEED),
+    }
+  })
+
+  return {
+    x0: out[0]!.x,
+    y0: out[0]!.y,
+    x1: out[1]!.x,
+    y1: out[1]!.y,
+    x2: out[2]!.x,
+    y2: out[2]!.y,
+    x3: out[3]!.x,
+    y3: out[3]!.y,
   }
 }
 

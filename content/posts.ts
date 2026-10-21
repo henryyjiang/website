@@ -5,6 +5,11 @@
  * of them. The billboard must never hold its own copy, which is the whole reason
  * this file exists rather than the headlines being written into the scene.
  *
+ * **The carousel only shows posts that have a picture**, which means posts with a
+ * `target` that resolves to one. The billboard's screen is not painted into the city
+ * any more, so there is no unlit surface for a headline to sit on; a post with
+ * nothing to project is listed on /updates and skipped up there.
+ *
  * `title` is constrained by the billboard: it has to read as large, brief text at a
  * distance, so keep it to a headline and put prose in `body`. `body` is constrained
  * by the panel, which is a condensed feed of news links rather than a page of

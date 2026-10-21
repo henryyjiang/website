@@ -86,6 +86,24 @@ export type Hotspot = {
   href: string
   band: BandId
   /**
+   * Whether this object's own art is drawn, or whether it exists only to be
+   * measured.
+   *
+   * Every object is measured for a hit area, an inner rect and a surface quad, and
+   * most of them are also the picture of a thing in the room. The billboard is not,
+   * any more: Henry painted its screen out of `skyline.png` on 2026-10-21 once the
+   * carousel was landing on the right four corners, so the only thing left in that
+   * part of the city is the frame around a hole, and what fills the hole is the
+   * projected post image. The object file stays as the record of *where the screen
+   * is* — a shape, not art.
+   *
+   * The import still writes its texture and its glow, so this is one constant away
+   * from being drawn again and needs no re-import to flip. The renderer simply does
+   * not load them, which also saves two full-canvas textures' worth of video memory
+   * for art nobody sees.
+   */
+  drawn: boolean
+  /**
    * How this object emits.
    *
    * Here rather than in `glow.ts` or in the import script for the same reason `band`
@@ -101,6 +119,7 @@ export const HOTSPOTS: readonly Hotspot[] = [
     id: 'desk',
     href: '/desk',
     band: 'room',
+    drawn: true,
     glow: FURNITURE,
   },
   {
@@ -110,14 +129,23 @@ export const HOTSPOTS: readonly Hotspot[] = [
     id: 'bed',
     href: '/art',
     band: 'room',
+    drawn: true,
     glow: FURNITURE,
   },
   {
     id: 'billboard',
     href: '/updates',
     band: 'skyline',
+    // A shape, not art. See `drawn` above.
+    drawn: false,
     // A floodlit screen the size of a building, and it should read like one: a bright
     // rim against the billboard frame that falls away into the city.
+    //
+    // Since the screen stopped being painted, nothing bakes a glow for it that anyone
+    // sees — `standing` and `peak` drive the carousel's own glow instead, rendered
+    // from whichever post image is up (components/scene/BillboardSurface.tsx). The
+    // bake-time numbers below are kept because they still shape the texture the
+    // import writes, and because flipping `drawn` back would want them.
     //
     // The blur is the delicate number. Henry drew a black frame roughly 90 scene px
     // wide around the lit surface, and a glow whose falloff is longer than that lights
@@ -142,3 +170,8 @@ export const HOTSPOTS: readonly Hotspot[] = [
     },
   },
 ]
+
+/** Whether this object's art is drawn at all. Unknown ids are drawn, like any layer. */
+export function isDrawnObject(id: string): boolean {
+  return HOTSPOTS.find((hotspot) => hotspot.id === id)?.drawn ?? true
+}

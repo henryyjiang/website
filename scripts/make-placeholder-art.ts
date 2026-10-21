@@ -360,8 +360,12 @@ async function main(): Promise<void> {
     else skipped++
   } else {
     process.stdout.write(
-      '  warn   could not find the billboard surface in art/background/skyline.png\n' +
-        '         (looking for the flat fill at rgb(255,229,194)) — left as it was\n',
+      '  note   no billboard surface to trace in art/background/skyline.png, and as\n' +
+        '         of 2026-10-21 there should not be: Henry painted the screen out\n' +
+        '         once the carousel was landing on it. art/objects/billboard.png is\n' +
+        '         kept as the record of where that screen is — only its alpha is\n' +
+        '         read, so to move it, export a solid fill at the new position.\n' +
+        '         See art/README.md. Left as it was.\n',
     )
   }
 

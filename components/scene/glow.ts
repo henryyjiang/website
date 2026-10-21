@@ -51,9 +51,24 @@ export class HotspotGlow {
    * the effect that builds these objects runs after it. Storing the sprite here
    * meant the ref arrived before the object existed and the glow silently never
    * attached — correct hover state, no visible effect.
+   *
+   * `presence` scales the whole thing, and exists for one case: the billboard has
+   * two glows and only ever wants one of them. Its baked glow is a blurred copy of
+   * the *unlit* screen Henry painted, so while a post image is projected over that
+   * screen the light coming off the building would be peach no matter what is
+   * showing — which is wrong, and conspicuously so. The carousel's own glow takes
+   * over instead, and this is how each is faded out of the other's way. Scaling the
+   * target rather than the result is what keeps that a crossfade: the easing below
+   * still runs, so neither glow can pop when a slide changes.
    */
-  update(sprite: Sprite | null | undefined, target: number, t: number): void {
-    const want = this.spec.standing + (this.spec.peak - this.spec.standing) * target
+  update(
+    sprite: Sprite | null | undefined,
+    target: number,
+    t: number,
+    presence = 1,
+  ): void {
+    const want =
+      (this.spec.standing + (this.spec.peak - this.spec.standing) * target) * presence
     this.level += (want - this.level) * t
 
     if (!sprite) return

@@ -263,6 +263,15 @@ the billboard is showing the same image the Coding row or the Art grid shows, sa
 Henry's Clip Studio recipe again, but on content that changes, so this one is rendered once per slide
 rather than baked at import.
 
+**And it is the only light the billboard throws.** Every object gets a pre-blurred copy of its own
+art at import (§ Lighting and glow), which for the billboard was a copy of the *unlit* peach screen —
+so while that glow was lit underneath a projected image, the building threw peach light into the city
+whatever was on the screen, which is the one thing a working screen never does. It was the first
+thing Henry noticed about the finished carousel. Now that the object is not drawn, its baked glow is
+not either, and the slide's own glow carries the billboard's `GlowSpec` — 0.7 at rest, 1 when pointed
+at. It still fades with the slide, because there is a moment on load before an image is up, and the
+city should not be lit by one that is not there.
+
 **And the image is saturated hard before it is projected** — settled 2026-10-21. A photograph or a
 screenshot pasted onto the billboard at its own saturation reads as a picture hung on a wall, not as
 a lit screen in a neon city, and it sits wrong against a skyline painted entirely in full-strength
@@ -299,10 +308,17 @@ one at the other. It was drawn to hold a now-playing readout for a music player 
 cut, so nothing is rendered into it. It still works as part of the billboard's furniture, and the
 option to put something there later is open.
 
-The surface is **measured, never typed**: the billboard object is the lit screen itself, traced out
-of the skyline art by the build, and the carousel projects onto its four measured corners. Redrawing
-the billboard moves the carousel with it and takes no export and no code —
-`docs/ARCHITECTURE.md` § Objects and surfaces.
+The surface is **measured, never typed**: `art/objects/billboard.png` says where the screen is and
+the carousel projects onto its four measured corners. Redrawing the billboard moves the carousel with
+it and takes no code — `docs/ARCHITECTURE.md` § Objects and surfaces.
+
+**The screen itself is no longer painted.** Henry removed the peach panel from `skyline.png` on
+2026-10-21, once the projection was landing on the right four corners, and the object is not drawn
+either — so what is behind the carousel is the inside of the frame. Two things follow. The billboard
+has no unlit state to fall back on, so **the carousel cycles only posts that have a picture**; a post
+with nothing to project is still in the blog and simply has nothing to say up there. And the
+headline always sets light-on-dark with its outline, because there is no pale panel left for
+near-black type to sit on.
 
 ## Chrome
 

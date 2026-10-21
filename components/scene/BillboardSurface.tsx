@@ -12,7 +12,7 @@ import {
   Text,
   Texture,
 } from 'pixi.js'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 
 import { BILLBOARD_COUNT, POSTS } from '@/content/posts'
 import { byDateDesc, type Post } from '@/content/types'
@@ -29,14 +29,14 @@ const DWELL_MS = 4500
 /**
  * Inset from the billboard's largest solid rectangle to the text's own box.
  *
- * Used only by a post with no image, which is set on the bare surface. The surface is
- * drawn in perspective, so its inner rect touches the sloping top and bottom edges at
- * exactly one point each; a margin keeps the headline off that pinch, and being a
- * fraction rather than a pixel count it survives the billboard being redrawn.
+ * The screen is drawn in perspective, so its inner rect touches the sloping top and
+ * bottom edges at exactly one point each; a margin keeps the headline off that pinch,
+ * and being a fraction rather than a pixel count it survives the billboard being
+ * redrawn at a different size.
  */
 const INSET = 0.08
 
-/** Type size as a fraction of the panel height, for a headline on the bare surface. */
+/** Type size as a fraction of the panel height, so the headline scales with the art. */
 const TEXT_SCALE = 0.13
 
 /**
@@ -84,9 +84,24 @@ const MESH_VERTICES = 10
 const GLOW_SPREAD = 90
 const GLOW_DOWNSCALE = 4
 const GLOW_BLUR = 9
-const GLOW_ALPHA = 0.55
 
-type Slide = { post: Post; src: string | null; fallback: string | null }
+type Slide = { post: Post; src: string; fallback: string }
+
+/**
+ * What the ticker needs to know about this surface, written straight to a ref.
+ *
+ * The billboard has two glows and only ever wants one: its baked one is a blurred
+ * copy of the unlit screen, so while an image is projected over that screen the
+ * building would throw peach light whatever the image is. The crossfade between them
+ * has to happen on the frame clock, where every other glow is eased
+ * (`components/scene/glow.ts`), so the alpha of the sprite below is not this
+ * component's to set — it only says whether a slide is up and hands over the sprite.
+ *
+ * A ref rather than the store or a prop callback: it changes when a slide changes,
+ * which is nothing React needs to re-render for, and SceneStage already reads
+ * per-frame values this way.
+ */
+export type BillboardSurfaceState = { lit: boolean; glow: Sprite | null }
 
 /**
  * The billboard's live surface: the newest posts, projected onto the real screen.
@@ -113,26 +128,38 @@ export function BillboardSurface({
   area,
   quad,
   reducedMotion,
+  stateRef,
 }: {
   /** The billboard's measured inner rect — where a bare headline sits. */
   area: ManifestRect
   /** Its four measured corners, clockwise from top-left. Where the image goes. */
   quad: ManifestQuad
   reducedMotion: boolean
+  /** Written, not read: what the ticker needs to drive the two glows. */
+  stateRef: RefObject<BillboardSurfaceState>
 }) {
   const { app, isInitialised } = useApplication()
 
+  /*
+   * The newest posts *that have a picture*, which is not the same as the newest
+   * posts.
+   *
+   * It used to be. A post with no image showed its headline on the peach screen
+   * Henry had painted into the city, which was a perfectly good unlit state. He
+   * painted that screen out on 2026-10-21, once the projection was landing on the
+   * right four corners — so what is behind the carousel now is the inside of the
+   * billboard's frame, and a post with nothing to project would be a headline over
+   * a hole. The blog still lists it; the billboard just has nothing to say about it.
+   */
   const slides = useMemo<Slide[]>(
     () =>
       byDateDesc(POSTS)
-        .slice(0, BILLBOARD_COUNT)
-        .map((post) => {
-          // The saturated copy, which is the only reason `lit` is baked. A post
-          // whose target has no picture — or which points nowhere — shows as a
-          // headline on the unlit surface, which is an ordinary state.
-          const lit = imageForPost(post)?.lit ?? null
-          return { post, src: lit?.src ?? null, fallback: lit?.fallback ?? null }
-        }),
+        .flatMap((post) => {
+          // The saturated copy, which is the only reason `lit` is baked.
+          const lit = imageForPost(post)?.lit
+          return lit ? [{ post, src: lit.src, fallback: lit.fallback }] : []
+        })
+        .slice(0, BILLBOARD_COUNT),
     [],
   )
 
@@ -169,8 +196,7 @@ export function BillboardSurface({
       const webp = await supportsWebP()
       const wanted = new Map<string, string>()
       for (const slide of slides) {
-        const url = webp ? slide.src : slide.fallback
-        if (url) wanted.set(slide.post.slug, url)
+        wanted.set(slide.post.slug, webp ? slide.src : slide.fallback)
       }
       if (wanted.size === 0 || cancelled) return
 
@@ -307,10 +333,11 @@ export function BillboardSurface({
     const target = glowTexture.current
     if (!sprite || !target || !isInitialised) return
 
-    if (!texture) {
-      sprite.visible = false
-      return
-    }
+    // Reported before the early return, so the ticker learns a bare slide is up and
+    // fades the baked glow back in rather than leaving the city unlit.
+    stateRef.current = { lit: texture !== null, glow: sprite }
+
+    if (!texture) return
 
     // Inset inside the target by the margin, so the blur has somewhere to spread
     // instead of being clipped at the texture's edge — a clipped glow has a straight
@@ -328,21 +355,24 @@ export function BillboardSurface({
     stage.destroy({ children: true })
 
     sprite.texture = target
-    sprite.position.set(
-      geometry.bounds.x - GLOW_SPREAD,
-      geometry.bounds.y - GLOW_SPREAD,
-    )
+    sprite.position.set(geometry.bounds.x - GLOW_SPREAD, geometry.bounds.y - GLOW_SPREAD)
     sprite.scale.set(GLOW_DOWNSCALE)
-    sprite.alpha = GLOW_ALPHA
-    sprite.visible = true
-  }, [app, isInitialised, texture, geometry.bounds])
+    // `alpha` and `visible` belong to the ticker from here (glow.ts), which eases
+    // this one up as the billboard's baked glow eases down.
+  }, [app, isInitialised, texture, geometry.bounds, stateRef])
+
+  useEffect(
+    () => () => {
+      stateRef.current = { lit: false, glow: null }
+    },
+    [stateRef],
+  )
 
   if (!slide || area.width <= 0 || area.height <= 0 || !fontReady) return null
 
   const palette = PALETTES[DEFAULT_PALETTE]
 
-  // A bare surface keeps the headline centred on it in near-black, because the
-  // surface Henry painted is a pale lit panel and that is the readable pairing.
+  // The headline's box, inset from the screen's largest solid rectangle.
   const panel = {
     x: area.x + area.width * INSET,
     y: area.y + area.height * INSET,
@@ -382,15 +412,10 @@ export function BillboardSurface({
           fontFamily: 'Rajdhani, system-ui, sans-serif',
           fontSize,
           fontWeight: '700',
-          // Light type carrying its own ground over an image; near-black on the bare
-          // peach surface, where the palette's light-on-dark pairing is the wrong way
-          // round. The billboard is the one place on the site where the ground can be
-          // either, which is why this is the one place the pairing is chosen at
-          // runtime rather than settled in the theme.
-          fill: hex(texture ? palette.text : palette.ground),
-          stroke: texture
-            ? { color: hex(palette.ground), width: TEXT_STROKE, join: 'round' }
-            : undefined,
+          // Light type carrying its own ground as an outline, because what is behind
+          // it is a photograph and could be any colour at all.
+          fill: hex(palette.text),
+          stroke: { color: hex(palette.ground), width: TEXT_STROKE, join: 'round' },
           align: 'center',
           wordWrap: true,
           wordWrapWidth: panel.width,

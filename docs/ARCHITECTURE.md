@@ -104,8 +104,8 @@ is typed by hand:
   rather than a rectangle around it.
 - **`inner`** — the largest axis-aligned rectangle that fits inside it, for anything laid out in a
   box.
-- **`quad`** — the four extreme corners, clockwise from top-left. Meaningful for a flat surface seen
-  in perspective, ignored by everything else.
+- **`quad`** — the four extreme corners, clockwise from top-left, pushed two units outward.
+  Meaningful for a flat surface seen in perspective, ignored by everything else.
 - **`glow`** — a pre-blurred, saturation-boosted copy of the object's own art, written as its own
   texture, shaped by that object's `GlowSpec` in `components/scene/hotspots.ts`. See
   `docs/DESIGN.md` § Lighting and glow for why the blur happens here and not at runtime, and why
@@ -117,17 +117,38 @@ flat against art that is not. The carousel is a `PerspectiveMesh`, which takes e
 and those corners are the object's own. Move the billboard, re-run the import, and the carousel
 follows.
 
-The corners are the extreme points of the mask's outline, which is right for the quads a screen is
+The corners are the extreme points along the two diagonals, which is right for the quads a screen is
 made of and would be wrong for a region with a concave notch. Surfaces are quads; if one ever needs
 to be a polygon, that is a new kind of thing, not a looser version of this one.
+
+**Only the mask is measured at 1/8 scale.** `bounds`, `inner` and `quad` are measured at full
+resolution, and the difference is not academic: measuring the corners off the mask quantised each one
+to 8 scene units, which left up to 5.5 units of the billboard's unlit peach screen showing down the
+right-hand side of every projected image, and — because the four corners rounded in different
+directions — tilted the perspective the image was projected at. A mask cell either catches a pointer
+or does not, and erring generous there is correct. A corner the carousel is pinned to has to be the
+corner.
+
+**The quad is then pushed two units outward from its own centre**, so it overhangs rather than falls
+short. An alpha threshold always lands inside the painted edge, with the anti-aliased ramp beyond it
+uncounted; for a projection, a pixel short is a line of unlit screen along an edge and a pixel over
+lands on the black frame drawn around it, where nothing can see it. The direction to fail in is
+chosen rather than inherited from a threshold.
 
 ### The billboard object is the surface, not the billboard
 
 Worth stating because it looks like an inconsistency. The billboard — frame, neon bars, lettering,
 the strip underneath — is painted into `art/background/skyline.png` and stays there.
-`art/objects/billboard.png` holds only the **lit screen**, and it is *traced out of the skyline* by
-`npm run art:placeholders` rather than drawn: the script finds the flat fill of the surface, copies
-those exact pixels, and writes them as the object.
+`art/objects/billboard.png` holds only the **screen**, and as of 2026-10-21 it is a shape and nothing
+else: the screen is not painted into the city at all any more, nothing draws the object, and the
+file exists so that the import can measure where the screen is. The renderer does not even load its
+texture (`components/scene/hotspots.ts` § `drawn`), which saves two full-canvas uploads for art
+nobody would see.
+
+It was traced out of the skyline by `npm run art:placeholders` while the screen was still painted
+there, which is why it exists at all; that script can no longer find a surface to trace and says so.
+The replacement is simpler than the tracer: only the alpha is read, so a solid fill at the right
+position is a complete object.
 
 That is enough, because what a hotspot actually needs from the art is a shape, not pixels:
 

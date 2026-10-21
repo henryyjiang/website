@@ -16,7 +16,7 @@ import {
 } from '@/lib/scene-space'
 import { getSceneState, setHovered, type HotspotId } from '@/lib/store'
 import { BANDS_IN_DRAW_ORDER, type Band, type BandId } from './bands'
-import { BillboardSurface } from './BillboardSurface'
+import { BillboardSurface, type BillboardSurfaceState } from './BillboardSurface'
 import { CameraRig } from './camera'
 import { glowSpecFor, GLOW_SPRING, HotspotGlow } from './glow'
 import { hitTest, inHitOrder, type HitTestable } from './hit-test'
@@ -132,7 +132,11 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
       for (const object of manifest.objects) {
         if (object.band !== band.id) continue
         const loaded = objects.get(object.id)
-        if (!loaded) continue
+        // No texture means the object is measured but not drawn — the billboard,
+        // whose screen Henry painted out of the city once the carousel was landing
+        // on it. It is still in `objects` and still clickable; there is just nothing
+        // of its own to put on the screen (components/scene/hotspots.ts § `drawn`).
+        if (!loaded?.texture || !loaded.glow) continue
         bandObjects.push({
           id: object.id,
           texture: loaded.texture,
@@ -153,6 +157,19 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
 
   // --- hover state --------------------------------------------------------------
   const objectViews = useRef(new Map<HotspotId, HotspotGlow>())
+
+  /**
+   * The billboard's second glow, and whether it is the one in use.
+   *
+   * The carousel writes both (`BillboardSurface`): the sprite it renders a blurred
+   * copy of the current slide into, and whether there is a slide at all. The tick
+   * crossfades between this and the billboard's baked glow, because only one of them
+   * is ever right — the baked one is the *unlit* screen blurred, so leaving it lit
+   * under a projected image throws peach light off the building no matter what is
+   * showing.
+   */
+  const billboardSurfaceRef = useRef<BillboardSurfaceState>({ lit: false, glow: null })
+  const postGlow = useRef<HotspotGlow | null>(null)
   // Populated by the Pixi ref callbacks, which fire during commit — before the
   // effect below runs. Kept separate from the glow objects for exactly that reason.
   const objectSprites = useRef(new Map<HotspotId, Sprite | null>())
@@ -169,14 +186,23 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
     const views = new Map<HotspotId, HotspotGlow>()
 
     for (const object of assets.manifest.objects) {
-      if (!assets.objects.has(object.id)) continue
+      // Only objects that are drawn have a baked glow sprite to drive.
+      if (!assets.objects.get(object.id)?.glow) continue
       views.set(object.id as HotspotId, new HotspotGlow(object, glowSpecFor(HOTSPOTS, object.id)))
     }
 
     objectViews.current = views
 
+    // Same spec as the billboard's own, because it is the same object emitting: a
+    // screen that is lit at rest and lifts when pointed at. Only the texture differs.
+    const billboard = assets.manifest.objects.find((object) => object.id === 'billboard')
+    postGlow.current = billboard
+      ? new HotspotGlow(billboard, glowSpecFor(HOTSPOTS, 'billboard'))
+      : null
+
     return () => {
       objectViews.current = new Map()
+      postGlow.current = null
     }
   }, [assets])
 
@@ -444,6 +470,19 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
         view.update(glowSprites.current.get(id), hovered === id ? 1 : 0, t)
       }
 
+      // The billboard's light is the carousel's, and only the carousel's: its own
+      // art is no longer drawn, so there is no baked glow to cross over with. This
+      // still fades with `lit` because there is a moment on load, and between a slide
+      // and the next, where no image is up and the city should not be lit by one.
+      const surface = billboardSurfaceRef.current
+
+      postGlow.current?.update(
+        surface.glow,
+        hovered === 'billboard' ? 1 : 0,
+        t,
+        surface.lit ? 1 : 0,
+      )
+
       // --- the route-change glitch ------------------------------------------
       // Read off the shared timestamp, so this and the DOM overlay are the same
       // event rather than two that happen to overlap.
@@ -615,6 +654,7 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
               area={billboard.inner}
               quad={billboard.quad}
               reducedMotion={reducedMotion}
+              stateRef={billboardSurfaceRef}
             />
           )}
         </pixiContainer>

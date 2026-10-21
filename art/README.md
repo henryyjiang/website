@@ -116,23 +116,29 @@ saturation — and the scene fades it up on hover. Painting one in would double 
 lit even when nothing is hovered. Signs *inside* the skyline art are a different matter: those are
 part of the city and should keep their painted glow.
 
-### The billboard: nothing to export
+### The billboard: a shape, not a picture
 
-The billboard is painted into `background/skyline.png`, and **it stays there** — leave it alone.
+The billboard's **frame, neon bars, lettering and the strip underneath** are painted into
+`background/skyline.png` and stay there. Its **screen** is not painted at all any more — Henry took
+it out on 2026-10-21, once the carousel was landing on the right four corners — so what is in the
+city art at that spot is the inside of the frame, and the thing that fills it is the projected post
+image.
 
-`objects/billboard.png` is generated for you. `npm run art:placeholders` finds the flat lit surface
-inside the skyline, copies those exact pixels, and writes them as the object. That gives the hotspot
-the three things it actually needs — a shape to click, four corners for the carousel to project
-onto, and an unlit screen to show before a post loads — without you drawing anything twice. Because
-the pixels are copied rather than redrawn, the object sits over an identical copy of itself and is
-invisible.
+`objects/billboard.png` is what remains, and it is now **the only record of where the screen is**.
+Nothing draws it. The import measures three things out of it and throws the pixels away:
 
-So if you redraw the billboard: change it in `skyline.png`, run `npm run art:placeholders`, then
-`npm run art`. Nothing else moves.
+- the shape you click to open the blog
+- the four corners the carousel projects onto
+- the inner rect a headline sits in
 
-The one thing that would break it is **repainting the screen a different colour** — the tracer is
-pinned to the flat peach it is drawn in now. It stops and says so rather than guessing, and the fix
-is one constant in `scripts/make-placeholder-art.ts` or an exported mask.
+**Only its alpha matters**, which makes redrawing it easy: if the billboard ever moves, export a
+solid fill covering the screen's new position, at the full 2560 × 1440 canvas, any colour you like.
+Then `npm run art`. There is nothing to keep in step with it, because nothing else draws that screen.
+
+`npm run art:placeholders` used to generate this file by tracing the peach fill out of the skyline.
+It cannot any more — there is no fill to trace — so it warns and leaves the file alone. That is the
+intended end state, not a breakage: the tracer existed to avoid drawing the screen twice, and the
+screen is now drawn zero times.
 
 **Already fixed, for the record:** the bed was painted into `skyline.png` too, at exactly the
 position `objects/bed.png` draws it. That one *did* matter — the bed is a room object at parallax

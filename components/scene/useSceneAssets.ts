@@ -3,6 +3,7 @@
 import { Assets, Rectangle, Texture } from 'pixi.js'
 import { useEffect, useState } from 'react'
 
+import { isDrawnObject } from './hotspots'
 import {
   decodeMask,
   type ManifestCharacter,
@@ -12,16 +13,27 @@ import {
 
 export type LoadedObject = {
   id: string
-  texture: Texture
+  /**
+   * Null for an object that is measured but never drawn.
+   *
+   * The billboard is the only one: its screen is no longer painted into the city, so
+   * the object exists to say where that screen is and the carousel fills it
+   * (`components/scene/hotspots.ts` § `drawn`). Skipping the upload matters more than
+   * it looks — an object's art is a full 2560 x 1440 frame, which is about 15 MB of
+   * video memory each once decoded, however small the file is on disk.
+   */
+  texture: Texture | null
   /**
    * The pre-blurred copy that lights up on hover, at a quarter of the canvas.
    *
    * Drawn behind the object with additive blending, scaled back to full size. The
    * GPU's bilinear upscale costs nothing and is itself a blur, so a quarter-size
    * texture is indistinguishable from a full-size one once it has been blurred.
+   *
+   * Null alongside `texture`, and for the same reason.
    */
-  glow: Texture
-  /** Decoded alpha mask cells, one byte per cell. */
+  glow: Texture | null
+  /** Decoded alpha mask cells, one byte per cell. Always present: this is the hit area. */
   cells: Uint8Array
 }
 
@@ -79,10 +91,12 @@ export function useSceneAssets(): SceneAssetsState {
         const pick = (image: { src: string; fallback: string }) =>
           webp ? image.src : image.fallback
 
+        const drawnObjects = manifest.objects.filter((object) => isDrawnObject(object.id))
+
         const sources = [
           ...manifest.layers.map(pick),
-          ...manifest.objects.map(pick),
-          ...manifest.objects.map((object) => pick(object.glow)),
+          ...drawnObjects.map(pick),
+          ...drawnObjects.map((object) => pick(object.glow)),
           ...(manifest.character?.sheets ?? []).map(pick),
         ]
 
@@ -99,11 +113,14 @@ export function useSceneAssets(): SceneAssetsState {
           if (texture) layerTextures.set(layer.id, texture)
         }
 
+        // A measured-only object still gets an entry, because the entry is what makes
+        // it clickable: hit testing reads `cells` and never the texture.
         const objects = new Map<string, LoadedObject>()
         for (const object of manifest.objects) {
-          const texture = loaded[pick(object)]
-          const glow = loaded[pick(object.glow)]
-          if (!texture || !glow) continue
+          const drawn = isDrawnObject(object.id)
+          const texture = drawn ? (loaded[pick(object)] ?? null) : null
+          const glow = drawn ? (loaded[pick(object.glow)] ?? null) : null
+          if (drawn && (!texture || !glow)) continue
           objects.set(object.id, {
             id: object.id,
             texture,

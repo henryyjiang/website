@@ -92,7 +92,7 @@ the code. Adding, replacing or reordering a layer must never require touching a 
 art/background/sky.png     parallax 0.10   (placeholder until Henry draws one)
 art/background/skyline.png parallax 0.30   (city and the skyscraper)
 art/foreground/            parallax 1.00   (the room: walls, window frame, floor)
-art/objects/               desk.png, bed.png — plus billboard.png, which is generated
+art/objects/               desk.png, bed.png — plus billboard.png, which is a shape only
 art/character/             frame sequence, video, or pre-packed atlas
 art/projects/              one screenshot per project, named after its slug
 art/pieces/                one drawing — or video — per art piece, named after its slug
@@ -167,11 +167,14 @@ effect starts and detach when it ends.
 object's own four measured corners, the same way its hit area is its own alpha. A rectangle in a
 config file is a second source of truth that goes stale the first time the art moves, silently.
 
-**`art/objects/billboard.png` is generated, not drawn.** The billboard is painted into the skyline;
-`npm run art:placeholders` traces its lit surface out of that art and copies those pixels into the
-object, so the hotspot has a shape, a quad and an unlit screen without Henry drawing anything twice.
-Re-run it after any change to `skyline.png`. The ledger in `art/.placeholders.json` means it will
-never overwrite a file Henry made himself.
+**`art/objects/billboard.png` is a shape, not art, and nothing draws it.** The billboard's screen is
+no longer painted into the skyline — Henry removed it on 2026-10-21 once the carousel was landing on
+the right corners — so this file is the only record of where that screen is. The import measures its
+hit area, its four corners and its inner rect, and the renderer never loads its pixels
+(`components/scene/hotspots.ts` § `drawn`). Only its alpha matters: if the billboard moves, export a
+solid fill at the new position on the full canvas. `npm run art:placeholders` used to trace it out
+of the skyline and can no longer — it warns and leaves the file alone, which is the end state rather
+than a breakage.
 
 ## Phase discipline
 
