@@ -271,8 +271,8 @@ interiors — the short version and the state:
       Socials and skills at the top. Every row is a `#project-<slug>` anchor the blog can link into
 - [x] **Blog** — the about-me section, moved off Coding and kept brief, at the top; below it the
       posts as condensed news links that point *into* the site
-- [x] **Art** — a 3-wide grid of square thumbnails, each opening a popup over the whole page on the
-      glitch transition. A piece can be a video
+- [x] **Art** — a grid of wide 16:9 cards, each opening a popup over the whole page on the glitch
+      transition. A piece can be a video. Reshaped from square cells three across on 2026-10-21
 - [x] `Post.target` — a post names the Coding entry or Art piece it is about, checked at import
 - [x] Video pieces end to end: `art/pieces/<slug>.mp4` transcoded, poster frame extracted, played
       in the popup
@@ -339,8 +339,8 @@ Tracked here so they don't get silently decided:
 - ~~**Which palette.**~~ `arasaka`, settled in Phase 5. Four others stay in `lib/theme.ts` and a
   swap is one constant, so this is reopenable at any time without it being a rebuild.
 - ~~**Panel interiors.**~~ Settled 2026-10-21, one shape per tab: Coding is rows of image-plus-text,
-  Blog is a brief about section over condensed inward-pointing news links, Art is a 3-wide grid with
-  a popup. `docs/DESIGN.md` § Panel interiors.
+  Blog is a brief about section over condensed inward-pointing news links, Art is a grid of wide
+  cards with a popup. `docs/DESIGN.md` § Panel interiors.
 - ~~**Do blog posts get their own routes?**~~ No. Settled 2026-10-20: the blog is a series of posts
   read in the panel, not a set of individually addressable pages. `slug` stays as the join to a
   post's image, not as a URL.
@@ -349,5 +349,5 @@ Tracked here so they don't get silently decided:
   it. If it comes back, the spec was in `docs/AUDIO.md` at commit time.
 - **Can one character `z` serve both the bed and the desk?** Depends on the animation. Phase 8.
 - **Project dates.** The old markup carried none; they still need reconstructing.
-- ~~**Art portfolio shape.**~~ A 3-wide grid of square thumbnails opening a full-page popup, settled
+- ~~**Art portfolio shape.**~~ A grid of wide 16:9 cards opening a full-page popup, settled
   2026-10-21. Video pieces play in the popup; the grid shows a poster frame pulled from the video.

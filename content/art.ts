@@ -13,9 +13,9 @@
  * a note for the reader, never a format switch. A piece whose slug has no file still
  * lists — the import warns and the panel renders the text.
  *
- * The presentation is settled: a 3-wide grid of square thumbnails, each opening a
- * popup over the whole page on the glitch transition. See docs/DESIGN.md § Panel
- * interiors and docs/CONTENT.md.
+ * The presentation is settled: a grid of wide 16:9 cards, each opening a popup over
+ * the whole page on the glitch transition. `caption` is **not displayed** — it is
+ * the image's alt text. See docs/DESIGN.md § Panel interiors and docs/CONTENT.md.
  */
 
 import type { ArtPiece } from './types'

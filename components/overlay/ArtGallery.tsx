@@ -55,7 +55,7 @@ export function ArtGallery({ pieces }: { pieces: readonly GalleryPiece[] }) {
 
   return (
     <>
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {pieces.map((item) => (
           <li key={item.slug}>
             <GridCell piece={item} onOpen={open} />
@@ -101,9 +101,15 @@ function Escape({ children }: { children: React.ReactNode }) {
 /**
  * One thumbnail.
  *
- * Square and cropped to fill — the one place on the site where an image is cropped,
+ * 16:9 and cropped to fill — the one place on the site where an image is cropped,
  * and it is cropping the *thumbnail* rather than the piece. A grid of mixed aspects
  * cannot be scanned, which is the only thing a grid is for.
+ *
+ * **Shaped like a video index, because half of these are videos.** Wide cells, four
+ * across on a desktop, a generous row gap and the text stacked under the image
+ * rather than squeezed onto one line with it. Square cells at three across made each
+ * piece the size of a poster, which is the popup's job; the grid's job is to be
+ * scanned.
  */
 function GridCell({
   piece,
@@ -127,7 +133,7 @@ function GridCell({
       className="group u-pill block"
       aria-label={`${piece.title}${media?.video ? ', video' : ''}`}
     >
-      <span className="u-notch relative block aspect-square overflow-hidden border border-dim/25 bg-ground/60 transition-colors duration-150 group-hover:border-active/60">
+      <span className="u-notch relative block aspect-video overflow-hidden border border-dim/25 bg-ground/60 transition-colors duration-150 group-hover:border-active/60">
         {media ? (
           <picture>
             <source srcSet={media.src} type="image/webp" />
@@ -159,11 +165,14 @@ function GridCell({
         ) : null}
       </span>
 
-      <span className="mt-2 flex items-baseline justify-between gap-3">
-        <span className="truncate text-sm font-semibold text-text transition-colors duration-150 group-hover:text-active">
+      <span className="mt-3 block">
+        <span className="block truncate text-sm font-semibold text-text transition-colors duration-150 group-hover:text-active">
           {piece.title}
         </span>
-        <span className="u-telemetry shrink-0 text-dim">{piece.medium ?? ''}</span>
+        <span className="u-telemetry mt-1 block truncate text-dim">
+          {piece.medium ? `${piece.medium} · ` : ''}
+          {formatDate(piece.date)}
+        </span>
       </span>
     </a>
   )
@@ -180,6 +189,14 @@ function GridCell({
  * underneath also listens for Escape and would otherwise route to `/` — both
  * listeners are on `window`, where capture runs before bubble regardless of which
  * was added first. Closing a popup should close the popup.
+ *
+ * **Everything that is not the piece is in the header.** Date beside the title,
+ * medium on the telemetry line, and no footer: a caption bar under the media was a
+ * band of prose where a reader is looking at a drawing, and the only thing it told
+ * them that the header does not was a sentence the piece already says. The space it
+ * cost goes back to the media, which is what the popup exists to show. The caption
+ * is still written in `content/art.ts` — it is the image's alt text now, which is
+ * the one reader it was always worth most to.
  */
 function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => void }) {
   const frame = useRef<HTMLDivElement | null>(null)
@@ -237,16 +254,22 @@ function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => v
         aria-modal="true"
         aria-label={piece.title}
         tabIndex={-1}
-        className="u-notch u-scanlines relative flex max-h-full w-full max-w-5xl flex-col overflow-hidden border border-dim/30 bg-panel/95 outline-none"
+        className="u-notch u-scanlines relative flex max-h-full w-full max-w-6xl flex-col overflow-hidden border border-dim/30 bg-panel/95 outline-none"
       >
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-dim/25 px-4 py-3 sm:px-6">
           <div className="min-w-0">
             <p aria-hidden="true" className="u-telemetry text-dim">
               ◢ art.{piece.slug.slice(0, 3)} · {media?.video ? 'motion' : 'still'}
+              {piece.medium ? ` · ${piece.medium}` : ''}
             </p>
-            <h2 className="truncate text-xl tracking-[0.04em] text-active uppercase sm:text-2xl">
-              {piece.title}
-            </h2>
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <h2 className="min-w-0 truncate text-xl tracking-[0.04em] text-active uppercase sm:text-2xl">
+                {piece.title}
+              </h2>
+              <time dateTime={piece.date} className="u-telemetry shrink-0 text-dim">
+                {formatDate(piece.date)}
+              </time>
+            </div>
           </div>
 
           <button
@@ -272,7 +295,7 @@ function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => v
               poster={media.fallback}
               width={media.video.width}
               height={media.video.height}
-              className="mx-auto max-h-[70vh] w-auto max-w-full"
+              className="mx-auto max-h-[78vh] w-auto max-w-full"
             >
               <source src={media.video.src} type={media.video.type} />
             </video>
@@ -284,7 +307,7 @@ function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => v
                 alt={piece.caption ?? piece.title}
                 width={media.width}
                 height={media.height}
-                className="mx-auto max-h-[70vh] w-auto max-w-full"
+                className="mx-auto max-h-[78vh] w-auto max-w-full"
               />
             </picture>
           ) : (
@@ -293,18 +316,6 @@ function PieceDialog({ piece, onClose }: { piece: GalleryPiece; onClose: () => v
             </p>
           )}
         </div>
-
-        <footer className="flex shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-dim/25 px-4 py-3 sm:px-6">
-          <time dateTime={piece.date} className="u-telemetry text-dim">
-            {formatDate(piece.date)}
-          </time>
-          {piece.medium ? <span className="u-telemetry text-dim">{piece.medium}</span> : null}
-          {piece.caption ? (
-            <p className="min-w-0 basis-full text-sm text-text/75 sm:basis-auto">
-              {piece.caption}
-            </p>
-          ) : null}
-        </footer>
       </div>
     </div>
   )

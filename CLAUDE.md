@@ -190,7 +190,8 @@ does not rule out this glitch, which is the clean digital kind.
 
 **Panel interiors are settled, one shape per tab** (2026-10-21, `docs/DESIGN.md` § Panel interiors).
 Coding is chronological rows of image-plus-text box; Blog is a brief about section over condensed
-news links that point *into* the site; Art is a 3-wide grid opening a full-page popup on the glitch.
+news links that point *into* the site; Art is a grid of wide 16:9 cards opening a full-page popup
+on the glitch.
 Each tab is arranged differently on purpose — the three work areas are peers but they are not the
 same kind of thing to read.
 

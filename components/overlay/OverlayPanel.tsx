@@ -21,7 +21,9 @@ import { DESTINATIONS } from '@/content/nav'
  * whole screen bar a hairline margin, and `TopNav` is drawn over its top edge rather
  * than floating above it with a gap — the tabs read as attached to the panel, which
  * is what they are. The header's top padding is what keeps the title out from under
- * them; it is the one measurement here that has to agree with the nav's height.
+ * them; it is the one measurement here that has to agree with the nav's height, and
+ * it is set to clear the tabs by about a line rather than to float the title in the
+ * middle of the frame — 64/80px left 40-odd pixels of nothing above every headline.
  *
  * The *behaviour* is deliberately that of a page rather than of a dialog. Each panel
  * is a real route with its own URL, so there is no focus trap and no `aria-modal`:
@@ -68,7 +70,7 @@ export function OverlayPanel({ children }: { children?: React.ReactNode }) {
         aria-labelledby="overlay-title"
         className="u-notch u-scanlines pointer-events-auto relative flex h-full w-full flex-col overflow-hidden border border-dim/30 bg-panel/92 backdrop-blur-md"
       >
-        <header className="flex shrink-0 items-end justify-between gap-4 border-b border-dim/25 px-5 pt-16 pb-3 sm:px-8 sm:pt-20">
+        <header className="flex shrink-0 items-end justify-between gap-4 border-b border-dim/25 px-5 pt-12 pb-3 sm:px-8 sm:pt-14">
           <div className="min-w-0">
             {/* The reference labels its live row with a part number. It is decoration,
                 but technical decoration: it implies a machine with more going on than

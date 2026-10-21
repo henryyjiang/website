@@ -43,6 +43,11 @@ export type ArtPiece = {
   title: string
   date: string
   medium?: string
+  /**
+   * NOT DISPLAYED. The popup showed this under the media until 2026-10-21, when the
+   * caption bar went (docs/DESIGN.md § Art). It is the image's alt text now, so it
+   * still earns its keep — write it for someone who cannot see the piece.
+   */
   caption?: string
 }
 

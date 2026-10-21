@@ -449,6 +449,12 @@ and a body of text at once, and a centred column three-quarters of the way up th
 hold both without cramping one. The header's top padding is what keeps the title clear of the tabs;
 it is the one measurement that has to agree with the nav's height.
 
+**It clears the tabs by about a line, and no more.** Tightened 2026-10-21. The padding was set to
+float the title comfortably under the nav and ended up leaving forty-odd pixels of nothing above
+every headline — the first thing a reader met on each of the three tabs was empty panel. A headline
+sitting just under the tabs reads as the top of the thing they are attached to, which is what they
+are.
+
 **The panel's title is the nav's label**, read from `content/nav.ts` rather than typed into the
 page. They name the same destination, so a page that carried its own title could disagree with the
 tab that leads to it — and did, briefly: the tab said "Coding" while the panel said "Desk".
@@ -516,16 +522,28 @@ scrolling the Coding list to the matching project, or opening the matching Art p
 An external `href` is still allowed, for a post about something that genuinely lives elsewhere, and
 a post with no target at all reads as plain text. `docs/CONTENT.md` § `posts.ts` has the shape.
 
-### Art — a 3-wide grid, and a popup
+### Art — a grid of wide cards, and a popup
 
-A **grid, three across**, of thumbnails. Two across at tablet width, one on a phone. Square cells
-with the art cropped to fill, because a grid of mixed aspects cannot be scanned — this is the one
-place cropping is right, and it is cropping the *thumbnail*, never the piece.
+A **grid of 16:9 cards**: four across on a desktop, three at laptop width, two at tablet, one on a
+phone. The art is cropped to fill, because a grid of mixed aspects cannot be scanned — this is the
+one place cropping is right, and it is cropping the *thumbnail*, never the piece.
+
+**Shaped like a video index**, reworked 2026-10-21. It was square cells three across, which made
+each thumbnail the size of a poster: two pieces filled the panel, and the grid was doing the
+popup's job instead of its own. Wide cells at four across, a row gap twice the column gap, and the
+title and its line of metadata stacked underneath rather than squeezed onto one line with it. Half
+of these pieces are videos and the other half are drawings of a lit street, so the shape a reader
+already scans video thumbnails in is the right one.
 
 **Clicking a cell opens the piece in a popup over the whole page**, nav included. The popup is the
 same chrome as a panel — near-black ground, hairline border, cut corner, scanlines, telemetry
-marker — so it reads as another surface of the same machine rather than as a web lightbox. The
-caption sits under the media, not over it.
+marker — so it reads as another surface of the same machine rather than as a web lightbox.
+
+**Everything that is not the piece is in the header**, and there is no footer. Date beside the
+title, medium on the telemetry line. The caption bar under the media went on 2026-10-21: it was a
+band of prose across the bottom of something a reader is looking at, and it cost the media the
+height it was using. The caption is still written in `content/art.ts` and is the image's alt text,
+which is the one reader it was always worth most to.
 
 **It arrives on the glitch.** Opening the popup fires one burst of the same transition a route
 change fires, from the same code (`components/theme/glitch.ts`). This is the one deliberate

@@ -63,8 +63,11 @@ video. Which one a piece is belongs to the file, not to the entry — the same r
 a path. `medium` is free text for the reader ('2D', 'animation', 'Blender'), never a format switch.
 
 This collection had no equivalent on the old site — the art was represented only by a link out to
-TikTok. Its presentation is settled now: a 3-wide grid of square thumbnails, a popup over the whole
-page, and the glitch transition on open. See `docs/DESIGN.md` § Panel interiors.
+TikTok. Its presentation is settled now: a grid of wide 16:9 cards, a popup over the whole page,
+and the glitch transition on open. See `docs/DESIGN.md` § Panel interiors.
+
+`caption` is **not displayed**. It is the alt text on the piece's image, and the popup shows the
+title, the date and `medium` only — the bar it used to sit in went on 2026-10-21.
 
 ### `posts.ts` — the blog
 
