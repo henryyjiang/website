@@ -139,7 +139,7 @@ function PostRow({ post }: { post: Post }) {
           <time dateTime={post.date}>{formatDate(post.date)}</time>
           {target ? <span aria-hidden="true">· {targetLabel(target)}</span> : null}
         </span>
-        <span className="text-xl leading-tight font-semibold text-active sm:text-3xl lg:text-4xl xl:text-5xl">
+        <span className="text-xl leading-tight font-semibold tracking-[0.03em] text-active uppercase sm:text-3xl lg:text-4xl xl:text-5xl">
           {post.title}
         </span>
       </span>

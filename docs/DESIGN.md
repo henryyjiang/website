@@ -547,9 +547,11 @@ fraction of the size that thing gets, and the two tabs keep their proportion to 
 window width rather than only at the one they were judged at. A fixed pixel square was tried first
 and read as a table of contents.
 
-**The headline is display type, and it is what carries the row.** A 288px picture next to a 16px
-title read as a caption beside a photograph rather than as an entry, so the title scales with the
-breakpoints to 48px at 1440 and the date line goes up with it. That is also what retired the one
+**The headline is display type, set in caps, and it is what carries the row.** A 288px picture next
+to a 16px title read as a caption beside a photograph rather than as an entry, so the title scales
+with the breakpoints to 48px at 1440 and the date line goes up with it. The caps came last and put
+the feed in the same voice as the panel titles and the nav; they take 0.03em of tracking for the
+reason every uppercase run on this site does — Rajdhani is condensed and closes up without it. That is also what retired the one
 line of body, the same day: under a headline that size it was the small print on a poster, and a
 feed of five posts does not need a summary of a headline.
 
