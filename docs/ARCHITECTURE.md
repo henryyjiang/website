@@ -365,5 +365,11 @@ Treating content as data is the single biggest maintainability win available her
   one extra quad rather than a multi-pass filter every frame. The two runtime blurs that remain — the
   billboard's glow behind a post image, and the glitch filter — are bounded: the first re-renders
   once per slide into a `RenderTexture`, the second exists only for the ~400 ms of a transition.
+- **No permanent filters, and the billboard's headline is why that is worth stating.** Setting it in
+  the inverse of the image underneath was tried, using `difference` blending, and Pixi implements
+  the advanced blend modes as filters — so it would have been one render target attached for the
+  life of the page rather than the life of an effect. It was dropped for a design reason rather than
+  that one, but the rule held either way. The headline's colour is now chosen at import from a fixed
+  set of neons and arrives as a plain fill (`components/scene/BillboardSurface.tsx`).
 - **Blog post images are fetched for the three the carousel shows**, not for the whole archive. The
   rest load with the panel that lists them.

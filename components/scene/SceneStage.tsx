@@ -666,7 +666,7 @@ export function SceneStage({ assets }: { assets: SceneAssets }) {
 
           {band.id === 'skyline' && billboard && (
             <BillboardSurface
-              area={billboard.inner}
+              area={billboard.clear}
               quad={billboard.quad}
               reducedMotion={reducedMotion}
               stateRef={billboardSurfaceRef}

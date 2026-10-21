@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T19:24:10.029Z",
+  "generatedAt": "2026-10-21T20:16:58.980Z",
   "images": {
     "projects": {
       "automated-intersection": {
@@ -24,7 +24,12 @@
           "fallback": "/images/projects/darwin--lit.png",
           "width": 1130,
           "height": 1078,
-          "luma": 0.191
+          "luma": 0.191,
+          "headline": {
+            "id": "yellow",
+            "hex": "#FBF653",
+            "contrast": 11.31
+          }
         }
       },
       "fwubbo": {
@@ -37,7 +42,12 @@
           "fallback": "/images/projects/fwubbo--lit.png",
           "width": 1600,
           "height": 950,
-          "luma": 0.0912
+          "luma": 0.0912,
+          "headline": {
+            "id": "orange",
+            "hex": "#FF9B53",
+            "contrast": 8.45
+          }
         }
       },
       "kinetic-hawkes-hft": {
@@ -50,7 +60,12 @@
           "fallback": "/images/projects/kinetic-hawkes-hft--lit.png",
           "width": 1600,
           "height": 839,
-          "luma": 0.0653
+          "luma": 0.0653,
+          "headline": {
+            "id": "magenta",
+            "hex": "#FF6DD6",
+            "contrast": 7.53
+          }
         }
       },
       "mandelbrotian-volatility": {
@@ -83,7 +98,12 @@
           "fallback": "/images/pieces/night-window--lit.png",
           "width": 1000,
           "height": 1000,
-          "luma": 0.3337
+          "luma": 0.3337,
+          "headline": {
+            "id": "yellow",
+            "hex": "#FBF653",
+            "contrast": 8.64
+          }
         }
       }
     },

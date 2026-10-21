@@ -42,6 +42,7 @@
 
 import type { Post } from '../content/types'
 import type { ManifestImage } from './scene-manifest'
+import type { HeadlineNeon } from './theme'
 
 import manifest from '../public/images/manifest.json'
 
@@ -106,7 +107,24 @@ export type ContentImage = ManifestImage & {
  * billboard's glow: a dark screenshot emits nothing without the lift, and a neon
  * drawing needs none (docs/DESIGN.md § The billboard).
  */
-export type LitImage = ManifestImage & { luma: number }
+export type LitImage = ManifestImage & {
+  luma: number
+  /**
+   * The neon this image's headline is set in, measured at import.
+   *
+   * Baked rather than decided at runtime for the usual reason — it is a property of
+   * a picture that does not change after the picture is written, so computing it per
+   * frame would be spending the GPU on an answer that was already knowable. It also
+   * means the choice is inspectable: it is sitting in the manifest where it can be
+   * read, rather than emerging from a shader.
+   *
+   * `contrast` is the WCAG ratio the winner achieved against this image, kept so the
+   * import can warn when even the best of the five is marginal. Below about 3 the
+   * headline is hard to read whatever colour it is, and the answer then is a
+   * different image rather than a different neon.
+   */
+  headline: { id: HeadlineNeon; hex: string; contrast: number }
+}
 
 /**
  * The social card: one flat JPEG, no WebP pair.

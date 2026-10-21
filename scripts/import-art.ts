@@ -28,16 +28,23 @@ import { PORTRAIT } from '../content/about.ts'
 import { ART_PIECES } from '../content/art.ts'
 import { POSTS } from '../content/posts.ts'
 import { PROJECTS } from '../content/projects.ts'
-import type { ContentImage, ContentImageManifest, ImageCollection } from '../lib/content-images.ts'
+import type {
+  ContentImage,
+  ContentImageManifest,
+  ImageCollection,
+  LitImage,
+} from '../lib/content-images.ts'
 import { type HotspotId } from '../lib/scene-layout.ts'
 import {
   MANIFEST_VERSION,
   type ManifestImage,
+  type ManifestLayer,
   type ManifestQuad,
+  type ManifestRect,
   type SceneManifest,
 } from '../lib/scene-manifest.ts'
 import { CARD_FRAME, SCENE_H, SCENE_W } from '../lib/scene-space.ts'
-import { DEFAULT_PALETTE, PALETTES } from '../lib/theme.ts'
+import { DEFAULT_PALETTE, HEADLINE_COLOURS, PALETTES } from '../lib/theme.ts'
 import { packFrames } from './lib/pack.ts'
 
 // --- configuration --------------------------------------------------------------
@@ -126,6 +133,15 @@ const PHOTO_EXT = new Set(['.jpg', '.jpeg'])
 
 /** Mask cell size in scene units. 8 gives 320 x 180 cells over the canvas. */
 const MASK_SCALE = 8
+
+/**
+ * Alpha at which a layer in front of an object counts as hiding it, for `clear`.
+ *
+ * Half. A window frame is painted solid and the opening is painted empty, so
+ * anything in between is an antialiased edge or a deliberate wash, and a box that
+ * stops at the first faintly tinted pixel would be needlessly small.
+ */
+const OCCLUDE_ALPHA = 128
 
 /**
  * Alpha at which a pixel counts as part of the art, for bounds and corners.
@@ -312,6 +328,33 @@ const BILLBOARD_LOOK = { saturation: 1.9, brightness: 1.06 } as const
 
 /** Where the poster frame is pulled from, in seconds. Past any fade-in, before much happens. */
 const POSTER_AT_SECONDS = 1
+
+/**
+ * The slice of a projected image the headline actually covers, as fractions of its
+ * height — the only part worth scoring a colour against.
+ *
+ * Derived from the renderer rather than guessed, but written here rather than
+ * imported because it is an approximation of a thing that varies: the text is
+ * inset by `INSET` from the billboard's clear rect and set at `TEXT_SCALE` of its
+ * height, and it runs to one, two or three lines depending on the title. This band
+ * covers the three-line case with a little margin, which is the conservative
+ * direction — scoring against more of the image than the text covers can only make
+ * a colour look worse than it is. See `components/scene/BillboardSurface.tsx`.
+ */
+const HEADLINE_BAND = { top: 0.08, height: 0.34 } as const
+
+/**
+ * The WCAG contrast a neon must clear before it is allowed to compete on hue.
+ *
+ * 4.5 is the ratio for body text, and this is large display type, for which the
+ * standard asks only 3. The stricter bar is deliberate: the type sits over a
+ * photograph rather than a flat fill, so the average it is scored against hides
+ * local patches that are worse, and the extra margin is what absorbs them.
+ */
+const HEADLINE_MIN_CONTRAST = 4.5
+
+/** Sample every Nth pixel when scoring. A colour choice does not need every pixel. */
+const HEADLINE_SAMPLE_STRIDE = 7
 
 /**
  * Width of the flattened composite, three quarters of the design canvas.
@@ -792,12 +835,81 @@ async function buildGlow(
   return writeImagePair(glow, `${SCENE_OUT}/glow`, id)
 }
 
-async function importObjects(): Promise<SceneManifest['objects']> {
+/**
+ * Read a written layer back as a full-canvas grid of "this pixel hides what is
+ * behind it".
+ *
+ * The layer PNGs this run just wrote, rather than `art/`, because those are already
+ * normalised to the design canvas and so a pixel index is a scene coordinate.
+ */
+async function occluderGrid(layer: ManifestLayer): Promise<Uint8Array> {
+  const { data, info } = await sharp(join(PUBLIC_DIR, layer.fallback))
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const grid = new Uint8Array(info.width * info.height)
+  for (let i = 0; i < grid.length; i++) {
+    if (data[i * info.channels + 3]! >= OCCLUDE_ALPHA) grid[i] = 1
+  }
+  return grid
+}
+
+/**
+ * The largest rectangle of this object that no occluder covers. See
+ * `ManifestObject.clear`.
+ *
+ * Same algorithm as `inner` over a different grid: the object's solid pixels with
+ * every occluding pixel knocked out. Falls back to `inner` when nothing is in front,
+ * which skips the second full-canvas scan for the objects that do not need it.
+ */
+async function measureClear(
+  source: Buffer,
+  inner: ManifestRect,
+  occluders: Uint8Array[],
+): Promise<ManifestRect> {
+  if (occluders.length === 0) return inner
+
+  const { data, info } = await sharp(source)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const { width, height, channels } = info
+  const visible = new Uint8Array(width * height)
+
+  for (let i = 0; i < visible.length; i++) {
+    if (data[i * channels + 3]! < 250) continue
+    if (occluders.some((grid) => grid[i] === 1)) continue
+    visible[i] = 1
+  }
+
+  return largestInnerRect(visible, width, height)
+}
+
+async function importObjects(layers: SceneManifest['layers']): Promise<SceneManifest['objects']> {
   const dir = join(ART_DIR, 'objects')
   const files = await listImages(dir)
   const objects: SceneManifest['objects'] = []
 
   const seen = new Set<string>()
+
+  // One grid per layer, built at most once and shared by every object that layer
+  // sits in front of. Reading a 2560 x 1440 PNG per object per layer would be the
+  // slowest thing this script does.
+  const grids = new Map<string, Uint8Array>()
+  const occludersFor = async (band: BandId): Promise<Uint8Array[]> => {
+    const inFront = layers.filter((layer) => BANDS[layer.band].z > BANDS[band].z)
+    return Promise.all(
+      inFront.map(async (layer) => {
+        const cached = grids.get(layer.id)
+        if (cached) return cached
+        const grid = await occluderGrid(layer)
+        grids.set(layer.id, grid)
+        return grid
+      }),
+    )
+  }
 
   for (const file of files) {
     const id = basename(file, extname(file))
@@ -816,6 +928,8 @@ async function importObjects(): Promise<SceneManifest['objects']> {
     const written = await writeImagePair(source, `${SCENE_OUT}/objects`, hotspot)
     const glow = await buildGlow(source, hotspot)
     const { mask, bounds, inner, quad } = await measureAlpha(source)
+    const band = OBJECT_BANDS[hotspot]
+    const clear = await measureClear(source, inner, await occludersFor(band))
 
     if (bounds.width === 0) {
       warn(`art/objects/${file} is fully transparent, so it can never be clicked.`)
@@ -823,19 +937,22 @@ async function importObjects(): Promise<SceneManifest['objects']> {
 
     objects.push({
       id: hotspot,
-      band: OBJECT_BANDS[hotspot],
+      band,
       z: OBJECT_Z,
       bounds,
       inner,
+      clear,
       quad,
       mask,
       glow: stripBytes(glow),
       ...stripBytes(written),
     })
 
+    const occluded = clear.width !== inner.width || clear.height !== inner.height
     log(
-      `  object ${OBJECT_BANDS[hotspot].padEnd(8)}        ${hotspot}  ` +
-        `(${kb(written.bytes)} + ${kb(glow.bytes)} glow, hit area ${bounds.width}x${bounds.height})`,
+      `  object ${band.padEnd(8)}        ${hotspot}  ` +
+        `(${kb(written.bytes)} + ${kb(glow.bytes)} glow, hit area ${bounds.width}x${bounds.height}` +
+        `${occluded ? `, clear ${clear.width}x${clear.height} of ${inner.width}x${inner.height}` : ''})`,
     )
   }
 
@@ -1007,13 +1124,134 @@ function extractPosterFrame(input: string, output: string): void {
  *
  * Rec. 709 luma, averaged over the image, as a fraction of full brightness.
  */
+/**
+ * WCAG relative luminance. Not the same thing as the Rec. 709 luma next door.
+ *
+ * `luma` is a weighted average of the raw channel values and is the right measure
+ * for "how much light will this image add when composited additively". This one
+ * linearises each channel first, which models how a human eye responds rather than
+ * how a wire encodes, and is the only luminance a contrast ratio is defined on.
+ * Using the cheaper one here would quietly overrate dark colours.
+ */
+function relativeLuminance(r: number, g: number, b: number): number {
+  const channel = (value: number): number => {
+    const s = value / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+}
+
+/** WCAG contrast ratio between two relative luminances, 1 (same) to 21 (black on white). */
+function contrastRatio(a: number, b: number): number {
+  return a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05)
+}
+
+/** Hue in degrees, and how colourful the pixel is, 0..1. */
+function hueAndChroma(r: number, g: number, b: number): { hue: number; chroma: number } {
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const delta = max - min
+  if (delta === 0) return { hue: 0, chroma: 0 }
+
+  let hue: number
+  if (max === r) hue = ((g - b) / delta) % 6
+  else if (max === g) hue = (b - r) / delta + 2
+  else hue = (r - g) / delta + 4
+
+  return { hue: (hue * 60 + 360) % 360, chroma: delta / 255 }
+}
+
+/** Shortest distance between two hues on the circle, 0..180 degrees. */
+function hueDistance(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360
+  return d > 180 ? 360 - d : d
+}
+
+/**
+ * Which neon this image's headline should be set in.
+ *
+ * **Legibility is a gate, not the score.** Ranking the five on contrast alone would
+ * hand yellow to almost every post on this site: the carousel's images are dark
+ * (luma 0.07 to 0.33) and yellow is the brightest neon, so it wins on contrast every
+ * time and the headline is the same colour forever. That is a worse answer than it
+ * looks like a measurement.
+ *
+ * So contrast decides who is *allowed* — everything clearing `HEADLINE_MIN_CONTRAST`
+ * over the band the text covers — and among those, the winner is the one furthest
+ * from the image's own dominant hue. A cyan drawing gets a warm headline, a red one
+ * gets cyan, and the type reads as deliberately set against the picture rather than
+ * borrowed from it.
+ *
+ * The dominant hue is a chroma-weighted circular mean, which matters twice over: a
+ * plain average of hue angles puts the mean of 350 degrees and 10 degrees at 180,
+ * the opposite of both, and weighting by chroma stops a large field of near-grey
+ * from outvoting the small saturated area that actually gives the image its colour.
+ *
+ * If nothing clears the gate the most legible neon wins anyway and the caller warns
+ * — a headline that is hard to read is a problem with the image, and refusing to
+ * choose would only mean no headline at all.
+ */
+function pickHeadlineNeon(
+  data: Buffer | Uint8Array,
+  channels: number,
+): { id: LitImage['headline']['id']; hex: string; contrast: number } {
+  const luminances: number[] = []
+  let hueX = 0
+  let hueY = 0
+
+  for (let i = 0; i < data.length; i += channels * HEADLINE_SAMPLE_STRIDE) {
+    const r = data[i]!
+    const g = data[i + 1]!
+    const b = data[i + 2]!
+    luminances.push(relativeLuminance(r, g, b))
+
+    const { hue, chroma } = hueAndChroma(r, g, b)
+    const radians = (hue * Math.PI) / 180
+    hueX += Math.cos(radians) * chroma
+    hueY += Math.sin(radians) * chroma
+  }
+
+  const dominantHue = ((Math.atan2(hueY, hueX) * 180) / Math.PI + 360) % 360
+
+  const scored = HEADLINE_COLOURS.map((neon) => {
+    const r = Number.parseInt(neon.hex.slice(1, 3), 16)
+    const g = Number.parseInt(neon.hex.slice(3, 5), 16)
+    const b = Number.parseInt(neon.hex.slice(5, 7), 16)
+    const own = relativeLuminance(r, g, b)
+    const contrast =
+      luminances.reduce((total, l) => total + contrastRatio(own, l), 0) / (luminances.length || 1)
+
+    return {
+      id: neon.id,
+      hex: neon.hex,
+      contrast: Number(contrast.toFixed(2)),
+      distance: hueDistance(hueAndChroma(r, g, b).hue, dominantHue),
+    }
+  })
+
+  const legible = scored.filter((neon) => neon.contrast >= HEADLINE_MIN_CONTRAST)
+  const field = legible.length > 0 ? legible : scored
+
+  const winner = field.reduce((best, neon) =>
+    neon.distance !== best.distance
+      ? neon.distance > best.distance
+        ? neon
+        : best
+      : neon.contrast > best.contrast
+        ? neon
+        : best,
+  )
+
+  return { id: winner.id, hex: winner.hex, contrast: winner.contrast }
+}
+
 async function writeLitVariant(
   source: Buffer,
   dir: string,
   slug: string,
   /** Matched to the image it is a copy of, so the pair never disagrees. */
   format: 'png' | 'jpeg',
-): Promise<ManifestImage & { luma: number }> {
+): Promise<LitImage> {
   const lit = await sharp(source).modulate(BILLBOARD_LOOK).toBuffer()
   const written = stripBytes(await writeImagePair(lit, dir, `${slug}--lit`, CONTENT_PNG, format))
 
@@ -1021,7 +1259,33 @@ async function writeLitVariant(
   const [r, g, b] = channels
   const luma = ((r?.mean ?? 0) * 0.2126 + (g?.mean ?? 0) * 0.7152 + (b?.mean ?? 0) * 0.0722) / 255
 
-  return { ...written, luma: Number(luma.toFixed(4)) }
+  // Scored against the lit copy rather than the original, because the lit copy is
+  // what the headline is actually read over — the saturation boost moves both the
+  // contrast and the hue the choice turns on.
+  const meta = await sharp(lit).metadata()
+  const band = await sharp(lit)
+    .extract({
+      left: 0,
+      top: Math.round(meta.height * HEADLINE_BAND.top),
+      width: meta.width,
+      height: Math.max(1, Math.round(meta.height * HEADLINE_BAND.height)),
+    })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const headline = pickHeadlineNeon(band.data, band.info.channels)
+
+  if (headline.contrast < HEADLINE_MIN_CONTRAST) {
+    warn(
+      `${slug}: the best headline colour over this image is ${headline.id} at ` +
+        `${headline.contrast}:1, under the ${HEADLINE_MIN_CONTRAST}:1 this wants. The ` +
+        `title will be hard to read on the billboard — the fix is a darker or less ` +
+        `busy image, not a different colour, since all five were tried.`,
+    )
+  }
+
+  return { ...written, luma: Number(luma.toFixed(4)), headline }
 }
 
 async function importContentImages(): Promise<ContentImageManifest['images']> {
@@ -1169,7 +1433,12 @@ async function importStill({
   log(
     `  image  ${collection.padEnd(8)}        ${slug}  ` +
       `(${kb(written.bytes)}, ${written.image.width}x${written.image.height}` +
-      `${written.image.lit ? ` + lit, luma ${written.image.lit.luma.toFixed(3)}` : ''})`,
+      `${
+        written.image.lit
+          ? ` + lit, luma ${written.image.lit.luma.toFixed(3)}, ` +
+            `headline ${written.image.lit.headline.id} ${written.image.lit.headline.contrast}:1`
+          : ''
+      })`,
   )
 
   return written.image
@@ -1680,7 +1949,7 @@ async function main(): Promise<void> {
   await mkdir(tmpDir, { recursive: true })
 
   const layers = await importLayers()
-  const objects = await importObjects()
+  const objects = await importObjects(layers)
   const contentImages = await importContentImages()
   checkPostTargets()
   const character = await importCharacter(tmpDir)

@@ -145,6 +145,85 @@ export function hex(value: string): number {
   return Number.parseInt(value.replace('#', ''), 16)
 }
 
+/**
+ * The neons a billboard headline may be set in.
+ *
+ * A set rather than a role, and deliberately not part of `PALETTES`. A palette is
+ * seven roles that answer "what is this element *for*" — ground, text, the
+ * interactive colour. This answers a different question: what colour will still be
+ * legible on top of a photograph nobody has seen yet. Its job is **coverage of the
+ * hue circle**, so that whatever a post's image turns out to look like, something
+ * here stands off it. A set that moved with the theme could leave a gap exactly
+ * where the next image lands, which is the one thing it must not do.
+ *
+ * Three of the five are the current palette's own primary, active and alert, which
+ * is not a coincidence — the palette was measured out of Henry's skyline and these
+ * are the colours a neon city is lit with. Orange and magenta fill the two gaps
+ * between them.
+ *
+ * Which one a given image gets is **measured at import**, not chosen here and not
+ * decided per frame: `npm run art` scores every neon against the part of the image
+ * the headline covers and bakes the winner into the manifest. See
+ * `scripts/import-art.ts` § `pickHeadlineNeon`.
+ */
+export const HEADLINE_NEONS = [
+  { id: 'yellow', hex: '#F9F31A' },
+  { id: 'cyan', hex: '#66F6F2' },
+  { id: 'red', hex: '#FF003C' },
+  { id: 'orange', hex: '#FF7A1A' },
+  { id: 'magenta', hex: '#FF3CC8' },
+] as const satisfies readonly { id: string; hex: string }[]
+
+export type HeadlineNeon = (typeof HEADLINE_NEONS)[number]['id']
+
+/**
+ * How far each neon is mixed toward white before the headline is set in it.
+ *
+ * The pure hues above are the colours a sign is lit in, and at full chroma over a
+ * photograph they read as louder than the picture — the type stops being a caption
+ * on the image and starts competing with it. A quarter of white pulls them back to
+ * the register of something printed on the screen rather than glowing through it,
+ * and keeps them clearly neon rather than pastel.
+ *
+ * One number, so the whole set moves together and the relationships between the
+ * five are preserved. Raising it washes them out; dropping it to 0 gives the pure
+ * hues back.
+ */
+export const HEADLINE_WHITE_MIX = 0.25
+
+/**
+ * `#RRGGBB` mixed toward white.
+ *
+ * **Hue survives this exactly, which is why the colour choice can ignore it.**
+ * Tinting adds the same proportion of the gap to white to every channel, so the
+ * differences between channels all shrink by the same factor `1 - amount` — and hue
+ * is defined by the *ratios* of those differences, which are unchanged. Only chroma
+ * drops. So `scripts/import-art.ts` can pick a neon by hue distance and tint it
+ * afterwards without the tint moving the answer.
+ */
+export function tintToward(value: string, amount: number): string {
+  const channel = (offset: number): string => {
+    const raw = Number.parseInt(value.slice(offset, offset + 2), 16)
+    return Math.round(raw + (255 - raw) * amount)
+      .toString(16)
+      .padStart(2, '0')
+  }
+  return `#${channel(1)}${channel(3)}${channel(5)}`.toUpperCase()
+}
+
+/**
+ * The colours a headline is actually set in: the neons above, tinted.
+ *
+ * Derived rather than written out, so the five listed hues stay the single place a
+ * colour is named and the mix stays a single number. This is what the import scores
+ * and bakes — scoring the untinted hue would measure a contrast the viewer never
+ * sees, since tinting raises luminance.
+ */
+export const HEADLINE_COLOURS = HEADLINE_NEONS.map((neon) => ({
+  id: neon.id,
+  hex: tintToward(neon.hex, HEADLINE_WHITE_MIX),
+}))
+
 /** Every role of a palette, as numbers, for the scene. */
 export function paletteNumbers(name: PaletteName): Record<Role, number> {
   const palette = PALETTES[name]

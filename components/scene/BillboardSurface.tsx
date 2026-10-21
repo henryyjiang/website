@@ -19,7 +19,7 @@ import { BILLBOARD_COUNT, POSTS } from '@/content/posts'
 import { byDateDesc, type Post } from '@/content/types'
 import { imageForPost } from '@/lib/content-images'
 import type { ManifestQuad, ManifestRect } from '@/lib/scene-manifest'
-import { DEFAULT_PALETTE, hex, PALETTES } from '@/lib/theme'
+import { hex } from '@/lib/theme'
 import { supportsWebP } from './useSceneAssets'
 
 extend({ Container, Sprite, Text })
@@ -41,22 +41,32 @@ const INSET = 0.08
 const TEXT_SCALE = 0.13
 
 /**
- * The headline's outline, in scene units, for a headline over an image.
+ * The headline is set in whichever neon stands off the image best, and the choice
+ * is made at import rather than here.
  *
- * A headline over a photograph needs its own ground — the surface is no longer the
- * pale peach the near-black type was chosen against, it is whatever the post's image
- * happens to be. The obvious answer is a dark bar along the bottom of the screen,
- * and it was the first thing tried; it does not survive this room. **The bottom
- * corners of the billboard are behind the bed**, because the billboard is outside
- * the window and the furniture is in front of it, so a caption bar there is half
- * eaten by a duvet. The top is no safer: the window frame crosses it.
+ * **Three attempts, and the first two are worth recording.** The original was
+ * near-white type with a thick dark outline, which worked and read as a plain white
+ * block. The second inverted the image per pixel — `difference` blending against
+ * white, the effect a video editor would call inverted text. It was verified to work
+ * (over black and white stripes the letters flipped at every stripe boundary), and
+ * it was still the wrong answer, for a reason that is obvious in hindsight: the
+ * inverse of a nearly black image is a nearly white one. Every image this carousel
+ * shows is dark, so the effect computed a colour within 7% of white on the darkest
+ * slide and the whole thing looked like plain white type again. It also cost a
+ * permanent filter, because Pixi implements the advanced blend modes as filters.
  *
- * So the type stays where it has always been, centred on the surface, where it is
- * demonstrably clear of the room, and carries its ground with it as an outline.
- * Which also leaves the image unobscured, where a bar across the middle of it
- * would not.
+ * So the colour is now chosen rather than derived, from five neons spanning the hue
+ * circle (`lib/theme.ts` § `HEADLINE_NEONS`). `npm run art` scores all five against
+ * the part of each image the headline covers and bakes the winner into the manifest.
+ * This component reads it. No blend mode, no filter, no render target — the
+ * performance exception the inversion needed is gone with it.
+ *
+ * **Why the import rather than here:** the answer is a property of a picture and
+ * cannot change after the picture is written, which is the same reason `luma` and
+ * the object masks are measured there. It is also inspectable in the manifest
+ * instead of emerging from a shader, which is how the last attempt managed to be
+ * correct and unconvincing at the same time.
  */
-const TEXT_STROKE = 8
 
 /**
  * Vertices per axis in the projection mesh.
@@ -161,7 +171,14 @@ const GLOW_SATURATE = 0.75
  */
 const GLOW_LAYERS = 2
 
-type Slide = { post: Post; src: string; fallback: string; luma: number }
+type Slide = {
+  post: Post
+  src: string
+  fallback: string
+  luma: number
+  /** The neon chosen for this image at import. See the note above. */
+  headline: number
+}
 
 /**
  * What the ticker needs to know about this surface, written straight to a ref.
@@ -206,7 +223,16 @@ export function BillboardSurface({
   reducedMotion,
   stateRef,
 }: {
-  /** The billboard's measured inner rect — where a bare headline sits. */
+  /**
+   * The billboard's measured *clear* rect — the largest part of the screen that the
+   * room's window frame does not draw over.
+   *
+   * `inner` would be the obvious choice and is the wrong one. It is the largest
+   * rectangle inside the billboard's own art, which spans the mullion running down
+   * the middle of the window at x 306..349, so a headline set at its left edge
+   * starts behind the frame and loses its first letter — which is exactly what
+   * happened when the type moved out of the centre. See `ManifestObject.clear`.
+   */
   area: ManifestRect
   /** Its four measured corners, clockwise from top-left. Where the image goes. */
   quad: ManifestQuad
@@ -233,7 +259,17 @@ export function BillboardSurface({
         .flatMap((post) => {
           // The saturated copy, which is the only reason `lit` is baked.
           const lit = imageForPost(post)?.lit
-          return lit ? [{ post, src: lit.src, fallback: lit.fallback, luma: lit.luma }] : []
+          return lit
+            ? [
+                {
+                  post,
+                  src: lit.src,
+                  fallback: lit.fallback,
+                  luma: lit.luma,
+                  headline: hex(lit.headline.hex),
+                },
+              ]
+            : []
         })
         .slice(0, BILLBOARD_COUNT),
     [],
@@ -462,8 +498,6 @@ export function BillboardSurface({
 
   if (!slide || area.width <= 0 || area.height <= 0 || !fontReady) return null
 
-  const palette = PALETTES[DEFAULT_PALETTE]
-
   // The headline's box, inset from the screen's largest solid rectangle.
   const panel = {
     x: area.x + area.width * INSET,
@@ -488,24 +522,25 @@ export function BillboardSurface({
 
       <pixiContainer ref={meshHost} label="billboard:image" />
 
+      {/* Along the top of the screen rather than across the middle of it. A headline
+          over the centre is a caption on a picture; at the top it is a billboard,
+          and it leaves the image itself unobscured. Centred horizontally, which is
+          where it sits best on a wide screen, but anchored to the top edge. The
+          inset keeps it off the quad's sloping top — see INSET. */}
       <pixiText
         text={slide.post.title.toUpperCase()}
         x={panel.x + panel.width / 2}
-        y={panel.y + panel.height / 2}
-        anchor={0.5}
+        y={panel.y}
+        anchor={{ x: 0.5, y: 0 }}
         resolution={2}
         style={{
           // The DOM's display face, named directly: the canvas cannot read a CSS
-          // variable, so this is the one place the family is written twice. The
-          // colours are not — they come from the same palette the DOM reads, so
-          // changing DEFAULT_PALETTE re-tints the billboard with everything else.
+          // variable, so this is the one place the family is written twice.
           fontFamily: 'Rajdhani, system-ui, sans-serif',
           fontSize,
           fontWeight: '700',
-          // Light type carrying its own ground as an outline, because what is behind
-          // it is a photograph and could be any colour at all.
-          fill: hex(palette.text),
-          stroke: { color: hex(palette.ground), width: TEXT_STROKE, join: 'round' },
+          // Measured against this particular image, back when it was imported.
+          fill: slide.headline,
           align: 'center',
           wordWrap: true,
           wordWrapWidth: panel.width,

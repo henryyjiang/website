@@ -101,6 +101,26 @@ export type ManifestObject = ManifestImage & {
    * a rectangle. See docs/ARCHITECTURE.md § Objects and surfaces.
    */
   quad: ManifestQuad
+  /**
+   * The largest rectangle on this object that **nothing drawn in front of it
+   * covers**, in scene units.
+   *
+   * `inner` is the largest rectangle inside the art. That is the right box for
+   * anything painted *onto* the object, and the wrong one for anything that has to
+   * be read, because it knows nothing about what is between the object and the
+   * viewer. The billboard is the case that proves it: it hangs outside the window,
+   * the room's window frame draws over it in a nearer band, and a mullion runs down
+   * x 306..349 for the full height of the screen. `inner` spans that mullion
+   * happily — it is inside the billboard's own art — so a headline set at `inner`'s
+   * left edge starts underneath the frame and loses its first letter.
+   *
+   * Measured the same way as `inner`, against the object's solid pixels minus every
+   * layer in a band that draws after this one. So it follows the art on both sides:
+   * move the billboard or redraw the window and the safe box moves with them.
+   *
+   * Equal to `inner` where nothing occludes the object, which is the usual case.
+   */
+  clear: ManifestRect
   mask: AlphaMask
   /**
    * A pre-blurred, saturation-boosted copy of this object's own art, at a quarter of
