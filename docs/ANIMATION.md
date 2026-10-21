@@ -66,15 +66,21 @@ to hold are stated here rather than discovered later:
    the fix is the drawing or the `z` — never a special case in the hit test.
 
 **Draw order between the character and the objects is one number**, `z` in the character's meta,
-defaulting to behind them. Behind is right for sitting at the desk — the desk occludes the legs and
+defaulting to behind them — **except that the number does not exist yet.** As of 2026-10-21
+`CharacterMeta` is `{ fps, anchor, scale }` and `SceneStage` renders the character before the
+objects, hardcoded. The default is the right one and nothing is blocked by this, but the in-front
+case cannot currently be authored; adding `z` is a small change and belongs with the real
+animation. `docs/ROADMAP.md` Phase 8 has the test that found it. Behind is right for sitting at the desk — the desk occludes the legs and
 the character reads as *in* the room. Lying in the bed wants the opposite, and one number cannot be
 both; if a single loop has to do both, the bed's art splits into a back and a front piece and the
 character goes between. That is a decision for whenever the real animation exists, and it is not a
 reason to complicate anything now.
 
-This is testable before Henry draws anything, and should be tested that way: a placeholder loop
-positioned to cover part of the bed and part of the desk proves clicks and glow still land, with no
-real animation involved. See `docs/ROADMAP.md` Phase 5.
+This is testable before Henry draws anything, and was tested that way on 2026-10-21: a generated
+bouncing ball, parked on each hotspot in turn and drawn over the top of it, with clicks and glow
+checked against the real masks. Both hold, and the stronger statement is structural — `hitTest`
+has no parameter through which a drawn sprite could reach it. `docs/ROADMAP.md` Phase 8 records
+what the run found, including the missing `z`.
 
 ### Required tab-visibility handling
 

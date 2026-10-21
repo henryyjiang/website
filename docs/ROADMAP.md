@@ -304,11 +304,36 @@ generated placeholder loop (24 frames at 12 fps, tested and deleted,
 What this phase owes before launch is not the animation. It is the **proof that the animation cannot
 break anything**, and that can be tested now with a placeholder:
 
-- [ ] A placeholder loop positioned to cover part of the bed and part of the desk
-- [ ] Clicks on both still land — hit testing reads the object masks and never what is drawn over a
-      point (`docs/ANIMATION.md` § The character must never swallow a click)
-- [ ] Hover glow on both still reads correctly with the character overlapping
-- [ ] The placeholder is deleted again, not committed
+- [x] A placeholder loop positioned to cover part of the bed and part of the desk — 2026-10-21, a
+      procedurally generated bouncing ball, run three ways: sweeping the room, parked on the bed,
+      parked on the desk's tabletop
+- [x] Clicks on both still land. Not "they did when tried": `hitTest` takes a list of manifest
+      objects, a transform and a camera, and there is **no parameter through which anything drawn
+      could reach it** — the character cannot affect it because it cannot be passed to it. Checked
+      against the real masks at the ball's exact scene position: `(700,1040)` and its edges return
+      `bed`, `(2100,755)` and its edges return `desk`, with the ball drawn over both
+- [x] Hover glow on both still reads correctly with the character overlapping. Glow is driven by
+      the id `hitTest` returns, not by pixels, and the bed lit normally with the ball on it
+      (`cursor: pointer`, glow on)
+- [x] The placeholder is deleted again, not committed. `manifest.character` is null on `main`
+
+**What the test found.** The loop itself is a non-event: 60 frames of a 2300 × 560 canvas packed to
+a single 1916 × 444 sheet at 52 KB, because every frame trims to the ball. Trimming is doing more
+work than the doc's "often halves the sheet count" suggests — for sparse art it is the difference
+between one sheet and twenty.
+
+**What it found that matters: the `z` knob does not exist.** `docs/ANIMATION.md` says draw order
+between the character and the objects "is one number, `z` in the character's meta, defaulting to
+behind them". `CharacterMeta` is `{ fps, anchor, scale }` and `SceneStage` renders the character
+before the objects, hardcoded. Behind is the right default and the right case for sitting at the
+desk, so nothing is broken — but **lying in the bed is currently unbuildable**, and that is the
+case the open question below is about. Testing the in-front case meant moving one JSX block by
+hand. Implementing `z` is small and belongs with the real animation, not before it.
+
+**Also worth knowing before animating:** the desk's mask is 42% solid inside its bounds and
+**hollow under the tabletop** — the clickable desk is the top surface, the monitor and the legs.
+A character sitting at it will cover mostly empty mask, which is free. The bed is 67% solid and
+clickable across its whole top.
 
 Then, when the real animation exists: drop it into `art/character/` in whichever format the software
 exports, pack it, and settle the one open question — whether the character's single `z` can serve
@@ -347,7 +372,9 @@ Tracked here so they don't get silently decided:
 - ~~**Music.**~~ Cut entirely on 2026-10-20, after being specified and documented. The strip Henry
   drew under the billboard for a now-playing readout stays as painted art with nothing rendered into
   it. If it comes back, the spec was in `docs/AUDIO.md` at commit time.
-- **Can one character `z` serve both the bed and the desk?** Depends on the animation. Phase 8.
+- **Can one character `z` serve both the bed and the desk?** Depends on the animation. Phase 8 —
+  and note there is no `z` yet to serve either: the character is hardcoded behind the objects. See
+  the Phase 8 findings above.
 - **Project dates.** The old markup carried none; they still need reconstructing.
 - ~~**Art portfolio shape.**~~ A grid of wide 16:9 cards opening a full-page popup, settled
   2026-10-21. Video pieces play in the popup; the grid shows a poster frame pulled from the video.
