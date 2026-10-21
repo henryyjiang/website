@@ -4,6 +4,7 @@ import { extend, useApplication } from '@pixi/react'
 import {
   Assets,
   BlurFilter,
+  ColorMatrixFilter,
   Container,
   PerspectiveMesh,
   Rectangle,
@@ -85,7 +86,35 @@ const GLOW_SPREAD = 90
 const GLOW_DOWNSCALE = 4
 const GLOW_BLUR = 9
 
-type Slide = { post: Post; src: string; fallback: string }
+/**
+ * How hard the slide is brightened before it is blurred into the glow.
+ *
+ * **Opacity cannot do this job.** The glow is composited additively, and adding a
+ * near-black image adds nothing however opaque it is — so a dark post simply did not
+ * light the city, and turning the alpha up could not make it. What makes a dark image
+ * emit is making the copy brighter, which is Henry's own instinct: take the dark
+ * colours and raise them for the glow.
+ *
+ * How far is a question about the particular image, so it is answered per image
+ * rather than picked once. `lit.luma` is the image's measured average brightness, and
+ * the gain is whatever brings it to `GLOW_TARGET`, bounded at both ends: a neon
+ * drawing is already there and gets `GLOW_BASE`, a mostly-black screenshot gets the
+ * ceiling. The result is that every post throws roughly the same amount of light
+ * regardless of how dark it happens to be, which is what a real screen does — its
+ * backlight does not dim because the picture is dark.
+ *
+ * The ceiling is a ceiling because the lift is a multiply: it rescues dark pixels
+ * and clips bright ones, and past a point an image stops being brightened and starts
+ * being flattened into a white rectangle. Saturation goes on afterwards to put back
+ * the colour that lifting takes out — the whole point is coloured light, and grey
+ * light would read as a lamp behind the billboard rather than the billboard being on.
+ */
+const GLOW_TARGET = 0.34
+const GLOW_BASE = 1.4
+const GLOW_MAX_GAIN = 6
+const GLOW_SATURATE = 0.5
+
+type Slide = { post: Post; src: string; fallback: string; luma: number }
 
 /**
  * What the ticker needs to know about this surface, written straight to a ref.
@@ -157,7 +186,7 @@ export function BillboardSurface({
         .flatMap((post) => {
           // The saturated copy, which is the only reason `lit` is baked.
           const lit = imageForPost(post)?.lit
-          return lit ? [{ post, src: lit.src, fallback: lit.fallback }] : []
+          return lit ? [{ post, src: lit.src, fallback: lit.fallback, luma: lit.luma }] : []
         })
         .slice(0, BILLBOARD_COUNT),
     [],
@@ -242,7 +271,7 @@ export function BillboardSurface({
     return map
   }, [textures, geometry.aspect])
 
-  const slide = slides[reducedMotion ? 0 : index % slides.length]
+  const slide = slides[reducedMotion ? 0 : index % slides.length] ?? null
   const texture = slide ? (cropped.get(slide.post.slug) ?? null) : null
 
   const meshHost = useRef<Container | null>(null)
@@ -333,11 +362,11 @@ export function BillboardSurface({
     const target = glowTexture.current
     if (!sprite || !target || !isInitialised) return
 
-    // Reported before the early return, so the ticker learns a bare slide is up and
-    // fades the baked glow back in rather than leaving the city unlit.
+    // Reported before the early return, so the ticker learns on the frame a slide
+    // goes away rather than being left lighting the city with the last one.
     stateRef.current = { lit: texture !== null, glow: sprite }
 
-    if (!texture) return
+    if (!texture || !slide) return
 
     // Inset inside the target by the margin, so the blur has somewhere to spread
     // instead of being clipped at the texture's edge — a clipped glow has a straight
@@ -347,7 +376,15 @@ export function BillboardSurface({
     source.position.set(margin, margin)
     source.width = geometry.bounds.width / GLOW_DOWNSCALE
     source.height = geometry.bounds.height / GLOW_DOWNSCALE
-    source.filters = [new BlurFilter({ strength: GLOW_BLUR, quality: 4 })]
+
+    // Lift, then colour, then spread — in that order, because brightening after a
+    // blur would raise the black the glow fades into along with the glow itself, and
+    // saturating a clipped highlight has nothing left to saturate.
+    const colour = new ColorMatrixFilter()
+    colour.brightness(glowGain(slide.luma), false)
+    colour.saturate(GLOW_SATURATE, true)
+
+    source.filters = [colour, new BlurFilter({ strength: GLOW_BLUR, quality: 4 })]
 
     const stage = new Container()
     stage.addChild(source)
@@ -359,7 +396,7 @@ export function BillboardSurface({
     sprite.scale.set(GLOW_DOWNSCALE)
     // `alpha` and `visible` belong to the ticker from here (glow.ts), which eases
     // this one up as the billboard's baked glow eases down.
-  }, [app, isInitialised, texture, geometry.bounds, stateRef])
+  }, [app, isInitialised, texture, slide, geometry.bounds, stateRef])
 
   useEffect(
     () => () => {
@@ -453,6 +490,19 @@ function quadGeometry(quad: ManifestQuad) {
       height: Math.max(...ys) - Math.min(...ys),
     },
   }
+}
+
+/**
+ * How much to brighten this slide before blurring it into the billboard's glow.
+ *
+ * Bounded at both ends on purpose. The floor keeps a bright image from being dimmed
+ * for being bright; the ceiling keeps a nearly-black one from being multiplied into
+ * a flat white rectangle, which is a different failure from the one being fixed and
+ * an uglier one. See the constants above.
+ */
+function glowGain(luma: number): number {
+  if (!Number.isFinite(luma) || luma <= 0) return GLOW_MAX_GAIN
+  return Math.min(GLOW_MAX_GAIN, Math.max(GLOW_BASE, (GLOW_TARGET / luma) * GLOW_BASE))
 }
 
 function distance(ax: number, ay: number, bx: number, by: number): number {

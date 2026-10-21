@@ -263,6 +263,28 @@ the billboard is showing the same image the Coding row or the Art grid shows, sa
 Henry's Clip Studio recipe again, but on content that changes, so this one is rendered once per slide
 rather than baked at import.
 
+**Every post throws about the same amount of light, whatever it is a picture of.**
+This is the part that is not obvious, and it is where the first version was wrong.
+The glow is composited *additively*, so adding a near-black image adds nothing at any
+opacity — a post whose picture is a dark screenshot did not light the city at all, and
+no amount of alpha could make it, because there was nothing there to be more of. The
+fix is to brighten the copy before blurring it, and how far to brighten is a question
+about the particular image: `npm run art` measures each one's average luminance into
+`lit.luma`, and the carousel multiplies it up to a target. A neon drawing is already
+there and gets the floor; a mostly-black screenshot gets up to six times. The result
+is a billboard whose backlight does not dim because the picture is dark, which is what
+a screen does.
+
+Measured across the three filler posts, whose images differ in brightness by a factor
+of five: the glow textures come out at mean luminance 67, 65 and 64.
+
+Two bounds matter. The lift is a multiply, so it rescues dark pixels and clips bright
+ones; past a point an image stops being brightened and starts being flattened into a
+white rectangle, which is a worse failure than the one being fixed. And saturation
+goes on *after* the lift, because lifting takes colour out and the whole point is
+coloured light — grey light reads as a lamp behind the billboard rather than the
+billboard being on.
+
 **And it is the only light the billboard throws.** Every object gets a pre-blurred copy of its own
 art at import (§ Lighting and glow), which for the billboard was a copy of the *unlit* peach screen —
 so while that glow was lit underneath a projected image, the building threw peach light into the city
@@ -280,7 +302,17 @@ saturation pushed well past the original and a slight brightness lift, and the c
 that one; the panel keeps the unmodified image, because the blog is a document and not a billboard.
 
 Baked at import rather than filtered at runtime, for the reason in `CLAUDE.md`: a `ColorMatrixFilter`
-on the mesh costs a render target for as long as the carousel exists, which is always. The knobs are
+on the mesh costs a render target for as long as the carousel exists, which is always. (The glow does
+use one, and that is not a contradiction — it runs once per slide into a texture, not once per frame
+onto the screen.)
+
+**What the saturation knob actually buys is less than it says**, which is worth knowing before
+turning it up again. `BILLBOARD_LOOK` multiplies saturation by 1.9, and the measured change across
+the four images posts point at is 1.13x to 1.37x. Two reasons, both inherent: a pixel that is already
+near-saturated clips at full, and a pixel that is nearly grey has almost nothing to multiply. The
+neon drawing goes 0.64 to 0.81; the near-greyscale quant screenshot goes 0.022 to 0.028 and always
+will, because saturation cannot invent a hue that was never there. For an image like that, the thing
+that makes it read as a lit screen is the glow's brightness lift, not its saturation. The knobs are
 in `scripts/import-art.ts` (`BILLBOARD_LOOK`), and the variant is written as `lit` on exactly the
 images posts point at — baking one for every screenshot in the repository would double a cost
 nothing pays.

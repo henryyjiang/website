@@ -166,7 +166,9 @@ Two things are produced beyond the pair, both because of where the image is *sho
 
 - **A `lit` variant** on whichever images a post points at, and only those — the same image with its
   saturation pushed well past the original and a slight brightness lift, which is what the billboard
-  projects. A photo at its own saturation reads as a picture on a wall rather than a screen in a neon
+  projects. It carries a `luma`: the image's average brightness, measured at import, which is what
+  tells the carousel how hard to lift this particular image before blurring it into the billboard's
+  glow (`docs/DESIGN.md` § The billboard). A photo at its own saturation reads as a picture on a wall rather than a screen in a neon
   city (`docs/DESIGN.md` § The billboard). Every panel uses the unmodified one. It is baked only for
   the referenced images because each one is a second encoding of a file this repository already
   carries.

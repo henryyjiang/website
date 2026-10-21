@@ -80,14 +80,25 @@ export type ContentVideo = {
  *   - `lit` is on whichever images a post points at, and only those. The billboard
  *     is a screen in a neon city, and a photo at its own saturation reads as a
  *     picture on a wall, so the import bakes a saturation-boosted copy and the
- *     carousel projects that one. Every panel uses the unmodified image, because a
- *     panel is a document (docs/DESIGN.md § The billboard).
+ *     carousel projects that one. It carries the image's measured brightness, which
+ *     is what tells the glow how hard to lift it. Every panel uses the unmodified
+ *     image, because a panel is a document (docs/DESIGN.md § The billboard).
  *   - `video` is pieces only. See `ContentVideo`.
  */
 export type ContentImage = ManifestImage & {
-  lit?: ManifestImage
+  lit?: LitImage
   video?: ContentVideo
 }
+
+/**
+ * The billboard's copy of an image, and how bright it is.
+ *
+ * `luma` is its average Rec. 709 luminance, 0 to 1, measured at import. The carousel
+ * uses it to decide how hard to brighten this image before blurring it into the
+ * billboard's glow: a dark screenshot emits nothing without the lift, and a neon
+ * drawing needs none (docs/DESIGN.md § The billboard).
+ */
+export type LitImage = ManifestImage & { luma: number }
 
 export type ContentImageManifest = {
   generatedAt: string

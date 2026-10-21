@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T14:16:09.923Z",
+  "generatedAt": "2026-10-21T14:30:22.454Z",
   "images": {
     "projects": {
       "automated-intersection": {
@@ -23,7 +23,8 @@
           "src": "/images/projects/darwin--lit.webp",
           "fallback": "/images/projects/darwin--lit.png",
           "width": 1130,
-          "height": 1078
+          "height": 1078,
+          "luma": 0.191
         }
       },
       "fwubbo": {
@@ -35,7 +36,8 @@
           "src": "/images/projects/fwubbo--lit.webp",
           "fallback": "/images/projects/fwubbo--lit.png",
           "width": 1600,
-          "height": 950
+          "height": 950,
+          "luma": 0.0912
         }
       },
       "kinetic-hawkes-hft": {
@@ -47,7 +49,8 @@
           "src": "/images/projects/kinetic-hawkes-hft--lit.webp",
           "fallback": "/images/projects/kinetic-hawkes-hft--lit.png",
           "width": 1600,
-          "height": 839
+          "height": 839,
+          "luma": 0.0653
         }
       },
       "mandelbrotian-volatility": {
@@ -91,7 +94,8 @@
           "src": "/images/pieces/night-window--lit.webp",
           "fallback": "/images/pieces/night-window--lit.png",
           "width": 1000,
-          "height": 1000
+          "height": 1000,
+          "luma": 0.3337
         }
       }
     }

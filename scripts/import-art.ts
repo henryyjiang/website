@@ -909,19 +909,38 @@ function extractPosterFrame(input: string, output: string): void {
 }
 
 /**
- * The saturated copy of a post image that the billboard projects.
+ * The saturated copy of a post image that the billboard projects, and how bright it
+ * is.
  *
  * Written beside the original as `<slug>--lit`, with the two dashes marking it as a
  * generated variant of the file next to it rather than a slug of its own — nothing
  * in `content/` can name it, which is the intent. See `BILLBOARD_LOOK`.
+ *
+ * **`luma` is what makes the glow work on a dark image.** The billboard's light is a
+ * blurred copy of whatever is on the screen, composited additively — and additive
+ * blending of a near-black image adds nothing at any alpha, so a dark post simply did
+ * not light the city. Turning the opacity up cannot fix that; there is nothing there
+ * to be more of. What fixes it is brightening the copy, and how far to brighten it is
+ * a question about the particular image: a neon drawing needs none, a mostly-black
+ * screenshot needs a great deal. Measured here rather than at runtime because the
+ * answer never changes, and reading a texture back from the GPU to find it would be
+ * both slow and absurd.
+ *
+ * Rec. 709 luma, averaged over the image, as a fraction of full brightness.
  */
 async function writeLitVariant(
   source: Buffer,
   dir: string,
   slug: string,
-): Promise<ManifestImage> {
+): Promise<ManifestImage & { luma: number }> {
   const lit = await sharp(source).modulate(BILLBOARD_LOOK).toBuffer()
-  return stripBytes(await writeImagePair(lit, dir, `${slug}--lit`, CONTENT_PNG))
+  const written = stripBytes(await writeImagePair(lit, dir, `${slug}--lit`, CONTENT_PNG))
+
+  const { channels } = await sharp(lit).removeAlpha().stats()
+  const [r, g, b] = channels
+  const luma = ((r?.mean ?? 0) * 0.2126 + (g?.mean ?? 0) * 0.7152 + (b?.mean ?? 0) * 0.0722) / 255
+
+  return { ...written, luma: Number(luma.toFixed(4)) }
 }
 
 async function importContentImages(): Promise<ContentImageManifest['images']> {
@@ -1069,7 +1088,7 @@ async function importStill({
   log(
     `  image  ${collection.padEnd(8)}        ${slug}  ` +
       `(${kb(written.bytes)}, ${written.image.width}x${written.image.height}` +
-      `${written.image.lit ? ' + lit' : ''})`,
+      `${written.image.lit ? ` + lit, luma ${written.image.lit.luma.toFixed(3)}` : ''})`,
   )
 
   return written.image
