@@ -45,6 +45,32 @@ import { packFrames } from './lib/pack.ts'
 const ART_DIR = 'art'
 const PUBLIC_DIR = 'public'
 
+/**
+ * Next's App Router discovers the site icon as a *file* at a fixed path, so unlike
+ * everything else this import writes, the icon's output lands in the source tree
+ * rather than under `public/`.
+ */
+const APP_DIR = 'app'
+
+/** The icon's source in the inbox. One drawing; see `importIcon`. */
+const ICON_SOURCE = join(ART_DIR, 'icon.png')
+
+/**
+ * What the icon is written as.
+ *
+ * `icon.png` is the favicon: 64 rather than the source's 256, because a browser
+ * draws it at 16 or 32 and the extra pixels are bytes on every first page view for
+ * detail no tab can show. `apple-icon.png` is the home-screen icon, where 180 is the
+ * size iOS asks for and the art is actually seen at something like it.
+ *
+ * Both are square and the source is cropped to fill rather than padded — a letterbox
+ * would read as a border around the drawing at tab size.
+ */
+const ICON_OUTPUTS = [
+  { file: 'icon.png', size: 64 },
+  { file: 'apple-icon.png', size: 180 },
+] as const
+
 /** Generated scene tree: layers, objects, glow, the character atlas, the manifest. */
 const SCENE_OUT = 'scene'
 
@@ -1490,6 +1516,57 @@ async function importCharacter(tmpDir: string): Promise<SceneManifest['character
 // --- the site's own pictures ----------------------------------------------------
 
 /**
+ * The favicon, from `art/icon.png`.
+ *
+ * In the inbox like every other drawing, for the reason the inbox exists: replacing
+ * it is dropping a new file and running this, not editing a component. It arrived as
+ * a loose `favicon.png` in the repository root on 2026-10-21, which is the usual
+ * symptom of there being nowhere obvious to put something.
+ *
+ * It replaces a generated one. `app/icon.tsx` drew a skyline out of the palette at
+ * build time, which had the nice property of following `DEFAULT_PALETTE` — but a
+ * drawing of Henry's beats a procedural placeholder, and the two cannot coexist
+ * because Next's file convention allows one `icon` per route segment.
+ *
+ * Written into `app/` rather than `public/` because that is where the convention
+ * looks; Next hashes and serves them and emits the `<link rel>` tags, so no path is
+ * written down anywhere. Missing art warns rather than fails, and leaves whatever is
+ * already committed in place — an icon is not worth failing a build over.
+ */
+async function importIcon(): Promise<void> {
+  if (!existsSync(ICON_SOURCE)) {
+    warn(
+      `No ${ICON_SOURCE}, so the site icon was left as whatever is already in ` +
+        `${APP_DIR}/. Drop a square PNG there to replace it.`,
+    )
+    return
+  }
+
+  const source = await readFile(ICON_SOURCE)
+  const meta = await sharp(source).metadata()
+  if (meta.width !== meta.height) {
+    warn(
+      `${ICON_SOURCE} is ${meta.width}x${meta.height}, not square. Cropped to fill ` +
+        `from the centre; export it square to choose what is cut.`,
+    )
+  }
+
+  const written: string[] = []
+  for (const { file, size } of ICON_OUTPUTS) {
+    const buffer = await sharp(source)
+      .resize(size, size, { fit: 'cover' })
+      .png(CONTENT_PNG)
+      .toBuffer()
+    await writeFile(join(APP_DIR, file), buffer)
+    written.push(`${file} ${size}px (${kb(buffer.length)})`)
+  }
+
+  log(`  icon   ${written.join(', ')}`)
+}
+
+
+
+/**
  * Flatten the scene onto one opaque image, and write the two things that want it.
  *
  * Nothing outside the canvas has ever seen the room whole: it exists as parallax
@@ -1609,6 +1686,7 @@ async function main(): Promise<void> {
   const character = await importCharacter(tmpDir)
   // Last: it composites the layers and objects this run just wrote.
   const site = await importSiteImages(layers, objects)
+  await importIcon()
 
   await rm(tmpDir, { recursive: true, force: true })
 

@@ -354,8 +354,12 @@ Done in the pre-deploy pass on 2026-10-21, before the Vercel project exists:
       working tree cannot, because the missing files are sitting on disk
 - [x] **The old site deleted from `main`** — `index.html`, `main.js`, `style.css`, `assets/` and the
       duplicate root `resume.pdf`, 3.4 MB, along with the local `archive/old-site` branch
-- [x] **A favicon** (`app/icon.tsx`), generated from the palette at build time rather than committed
-      as an `.ico`, so it moves with `DEFAULT_PALETTE`
+- [x] **A favicon**, which there had never been. Built twice: first as `app/icon.tsx`, a skyline
+      drawn from the palette at build time, then replaced the same day when Henry dropped a drawing
+      of the character into the repository root. It is `art/icon.png` now and `npm run art` resizes
+      it into `app/icon.png` and `app/apple-icon.png` — an inbox slot rather than a hand-placed
+      file, because a loose `favicon.png` at the root is what *no obvious place to put it* looks
+      like. 101 KB of source becomes 4 KB and 15 KB, and it still reads at 16px
 - [x] **The link preview** — `metadataBase`, Open Graph and Twitter cards, and a 1200x630 card
       composited out of the scene art by `npm run art` so it cannot go stale (`lib/scene-space.ts`
       § `CARD_FRAME`)

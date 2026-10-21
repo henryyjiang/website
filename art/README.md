@@ -9,6 +9,11 @@ converts them into optimised web assets under `public/scene/` (the scene) and `p
 (everything the written content refers to) and writes a manifest for each. Replacing a file here and
 re-running the import is the whole workflow for changing how the site looks.
 
+`icon.png` is the only file here that belongs to nothing written down — it is the site's own icon,
+the small picture a browser puts in the tab. Export it square; it gets resized into the two sizes a
+browser and a phone home screen each want, so one file is the whole job, and replacing it is
+dropping a new one and re-running the import. It need not be large: it is seen at about 16 pixels.
+
 The import also flattens the whole room onto one picture and writes it twice — as the composite the
 site falls back to where WebGL is unavailable, and cropped as the image that shows when someone
 pastes a link to the site into a chat. Both come out of whatever is in this folder, so redrawing a
@@ -188,6 +193,8 @@ art/pieces/
   walk-cycle.png         and the frame you want shown of it (optional)
 art/about/
   me.jpeg                the portrait on the blog tab
+art/
+  icon.png               the favicon
 ```
 
 `about/` holds exactly one file and will probably never hold two, which is why it is a folder

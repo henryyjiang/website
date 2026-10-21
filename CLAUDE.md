@@ -97,12 +97,15 @@ art/objects/               desk.png, bed.png — plus billboard.png, which is a 
 art/character/             frame sequence, video, or pre-packed atlas
 art/projects/              one screenshot per project, named after its slug
 art/pieces/                one drawing — or video — per art piece, named after its slug
+art/icon.png               the favicon; one square drawing
 ```
 
-The last two are **not scene art** and take none of the rules above — no canvas size, no band, no
-draw order. They are pictures belonging to something written in `content/`, joined to it by the
-filename matching the entry's `slug`, and they land in `public/images/` rather than the scene's
-tree. A piece may be a video, in which case the import also produces the thumbnail everything that
+The last three are **not scene art** and take none of the rules above — no canvas size, no band, no
+draw order. The first two are pictures belonging to something written in `content/`, joined to it by
+the filename matching the entry's `slug`, and they land in `public/images/` rather than the scene's
+tree. `icon.png` belongs to no entry at all: the import resizes it into `app/icon.png` and
+`app/apple-icon.png`, where Next's file convention finds it, hashes it and writes the `<link>` tags
+— so the favicon is a drop-in like everything else and no path is written down. A piece may be a video, in which case the import also produces the thumbnail everything that
 is not playing it shows. **Blog posts have no inbox**: a post borrows the picture of whatever it
 points at. See `docs/CONTENT.md` § Images.
 
