@@ -75,13 +75,23 @@ const MESH_VERTICES = 10
  * into a texture per slide rather than baked by `npm run art`. Once every 4.5
  * seconds, never per frame (docs/ARCHITECTURE.md § Performance policy).
  *
- * **`BLUR` is the reach, and `SPREAD` has to follow it.** The blur is what carries
- * light away from the screen; the margin only has to be wide enough that the falloff
- * has reached nothing before it hits the edge of the render texture, because a
- * gaussian that runs out of room is cut off square and a straight-edged glow is the
- * one thing this must never be. Three sigma is where a gaussian is done, so the
- * margin is derived rather than chosen — raise the blur and the texture grows to
- * match, with no second number to remember.
+ * **`BLUR` is the reach, and two other things have to follow it.** The blur is what
+ * carries light away from the screen. Everything downstream only has to be wide
+ * enough that the falloff has reached nothing before it runs out of room, because a
+ * gaussian that gets cut off is cut off *square*, and a straight-edged glow is the
+ * one thing this must never be.
+ *
+ * There are two places it can run out of room, and both bit. The render texture is
+ * the obvious one, so `SPREAD` is derived from the blur rather than chosen. The
+ * other is **the blur filter's own padding**, which Pixi sets to twice the strength
+ * — and at two sigma a gaussian is still at 8% of full, so the filter was clipping
+ * its own output to zero while it was plainly visible. That is the hard line: alpha
+ * stepped 0 → 21 at exactly 32 texture pixels out, which is 2 × 16. It was there
+ * before the glow was widened too, at 2 × 9, just dim enough to miss.
+ *
+ * So the tail length is one number, used in both places. At 3.5 sigma a gaussian is
+ * at 0.02% — zero in eight bits — which is what makes the edge disappear rather than
+ * merely get fainter.
  *
  * Widening it does *not* make it fainter, which is worth knowing because the hover
  * glow taught the opposite (docs/DESIGN.md § Lighting and glow). That lesson is about
@@ -93,7 +103,8 @@ const MESH_VERTICES = 10
  */
 const GLOW_BLUR = 16
 const GLOW_DOWNSCALE = 4
-const GLOW_SPREAD = GLOW_BLUR * GLOW_DOWNSCALE * 3
+const GLOW_TAIL = 3.5
+const GLOW_SPREAD = Math.round(GLOW_BLUR * GLOW_DOWNSCALE * GLOW_TAIL)
 
 /**
  * How hard the slide is brightened before it is blurred into the glow.
@@ -117,11 +128,19 @@ const GLOW_SPREAD = GLOW_BLUR * GLOW_DOWNSCALE * 3
  * being flattened into a white rectangle. Saturation goes on afterwards to put back
  * the colour that lifting takes out — the whole point is coloured light, and grey
  * light would read as a lamp behind the billboard rather than the billboard being on.
+ *
+ * All of these went up on 2026-10-21 when the glow was widened, because spreading
+ * light over a larger area is the same light thinner: the halo reached further and
+ * read as less. Brightness is what puts it back, and it is the only lever that can —
+ * the sprite's alpha is already 0.6 at rest and capped at 1, and raising it would
+ * spend the hover range instead (components/scene/hotspots.ts). The saturation went
+ * up with it rather than separately: a bigger multiply clips more pixels, clipping
+ * is what turns coloured light grey, and this is what pushes back.
  */
-const GLOW_TARGET = 0.34
-const GLOW_BASE = 1.4
-const GLOW_MAX_GAIN = 6
-const GLOW_SATURATE = 0.5
+const GLOW_TARGET = 0.44
+const GLOW_BASE = 1.7
+const GLOW_MAX_GAIN = 9
+const GLOW_SATURATE = 0.75
 
 type Slide = { post: Post; src: string; fallback: string; luma: number }
 
@@ -393,7 +412,13 @@ export function BillboardSurface({
     colour.brightness(glowGain(slide.luma), false)
     colour.saturate(GLOW_SATURATE, true)
 
-    source.filters = [colour, new BlurFilter({ strength: GLOW_BLUR, quality: 4 })]
+    const blur = new BlurFilter({ strength: GLOW_BLUR, quality: 4 })
+    // Pixi derives this from the strength as 2x, which truncates the glow while it is
+    // still at 8% and leaves a hard line. Set after construction, because the
+    // strength setter is what writes the default.
+    blur.padding = GLOW_BLUR * GLOW_TAIL
+
+    source.filters = [colour, blur]
 
     const stage = new Container()
     stage.addChild(source)

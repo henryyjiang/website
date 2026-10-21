@@ -226,9 +226,12 @@ copy's brightness rather than its alpha: the import measures each `lit` image's 
 carousel multiplies it up to a target, floor 1.4x and ceiling 6x. Three posts whose images differ in
 brightness by five times now produce glows within 5% of each other.
 
-**And it reaches further**, on Henry's ask the same day: blur sigma 36 to 64 scene units, with the
-render texture derived from it at three sigma so the falloff still reaches nothing before the edge.
-Light landing 90 units outside the screen went from 0.6% of full to 16.5%.
+**And it reaches further and burns brighter**, on Henry's asks the same day: blur sigma 36 to 64
+scene units, then brightness up about half again when the wider halo read as fainter than the tight
+one it replaced. The hard line he spotted at the glow's rim was `BlurFilter`'s own padding, which
+Pixi derives as twice the strength — two sigma, where a gaussian is still at 8%, so the filter was
+clipping its own output square. Both the render texture and the filter padding now come from one
+tail length of 3.5 sigma.
 
 **Verified in the browser, not assumed.** The mesh is a `PerspectiveMesh` on the manifest's four
 corners with its texture frame cropped to the quad's measured 1.682 aspect; the glow render texture

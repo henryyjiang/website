@@ -239,6 +239,15 @@ which turns the frame into a flat lit band with a hard edge where it meets the c
 rendering bug. The falloff has to finish inside the band. That is why the billboard's `blur` is 14
 and not the 26 that reaches further: reach is worth nothing if it arrives as a rectangle.
 
+**A blur has two edges, and the second one is the filter's own.** This cost two rounds to find, so
+it is worth writing down plainly: `BlurFilter` sets its `padding` to **twice** the strength, and at
+two sigma a gaussian is still at 8% of full. The filter therefore clips its own output to zero while
+it is plainly visible — a hard line, in a ring around the glow, at exactly `2 x strength` from the
+edge of the thing being blurred. It is the same symptom as the two traps above and a completely
+different cause, which is what made it confusing: alpha stepped 0 → 21 in one pixel. The render
+texture has to be big enough *and* the filter has to be told to use it, so both are derived from one
+tail length of 3.5 sigma, where a gaussian is at 0.02% and rounds to nothing in eight bits.
+
 **All three of those are about a *baked* glow, and the carousel's is not one.** Worth stating
 because the two look like the same effect and obey opposite rules. A baked glow blurs a
 *silhouette* and then re-amplifies its alpha with a gain curve, so it has a fixed amount of opacity
@@ -293,11 +302,17 @@ Measured across the three filler posts, whose images differ in brightness by a f
 of five: the glow textures come out at mean luminance 67, 65 and 64.
 
 **How far it reaches is a separate knob from how bright it is**, and on 2026-10-21 Henry
-asked for more of the first. The blur sigma went from 36 scene units to 64 and the
-render texture grew with it, which roughly doubles the reach and — because this glow
-blurs a filled rectangle rather than a silhouette — also raises the light everywhere
-outside the screen rather than thinning it. The skirt now runs 51% of full at the
-screen's edge, 16.5% at 90 units out, 9% at 120, and nothing by 160.
+asked for more of both in turn. The blur sigma went from 36 scene units to 64, which
+roughly doubles the reach. That turned out to read as *less* glow rather than more —
+the same light spread over a larger area is thinner everywhere you look, even though
+the value at any given distance went up — so the brightness went up with it by about
+half again, and the saturation with that, because a bigger multiply clips more pixels
+and clipping is what turns coloured light grey.
+
+The skirt that results, as light actually added to the frame at rest, for a blue
+image: 15/42/74 at the screen's edge, 10/28/49 at 40 units out, 5/13/23 at 90, 1/4/6
+at 140, nothing by 190 — with saturation holding at 0.79 the whole way out rather
+than washing toward white.
 
 Two bounds matter. The lift is a multiply, so it rescues dark pixels and clips bright
 ones; past a point an image stops being brightened and starts being flattened into a
