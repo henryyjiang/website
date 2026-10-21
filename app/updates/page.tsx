@@ -20,6 +20,11 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * this tab and the Coding one. Anything that wants a paragraph is a project or a
  * piece, and the post points at it.
  *
+ * Henry asked for more height on 2026-10-21 and it is the thumbnail that gives it:
+ * the row is as tall as its picture, so a larger square makes the entry more of a
+ * thing to look at without adding a word to it. Condensed is still the point; a row
+ * that is one line taller is not an article.
+ *
  * **And they point inward.** `target` names the Coding entry or the Art piece the
  * post is about; `lib/post-target.ts` turns that into the URL the other panel
  * implements, which is also the only coupling between two panels on the site. A post
@@ -92,7 +97,7 @@ function PostRow({ post }: { post: Post }) {
   const body = (
     <>
       {image ? (
-        <picture className="u-notch block size-16 shrink-0 overflow-hidden border border-dim/25 sm:size-20">
+        <picture className="u-notch block size-20 shrink-0 overflow-hidden border border-dim/25 sm:size-24">
           <source srcSet={image.src} type="image/webp" />
           <img
             src={image.fallback}
@@ -110,7 +115,7 @@ function PostRow({ post }: { post: Post }) {
            same column so the rows still line up. */
         <span
           aria-hidden="true"
-          className="u-notch grid size-16 shrink-0 place-items-center border border-dim/20 bg-ground/40 sm:size-20"
+          className="u-notch grid size-20 shrink-0 place-items-center border border-dim/20 bg-ground/40 sm:size-24"
         >
           <span className="u-telemetry text-dim">◢</span>
         </span>
@@ -134,7 +139,7 @@ function PostRow({ post }: { post: Post }) {
   )
 
   const shell =
-    'u-notch flex w-full items-center gap-4 border border-dim/25 bg-ground/40 p-3 transition-colors duration-150'
+    'u-notch flex w-full items-center gap-4 border border-dim/25 bg-ground/40 p-4 transition-colors duration-150'
 
   if (!target) {
     return <div className={shell}>{body}</div>

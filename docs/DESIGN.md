@@ -535,10 +535,16 @@ then favourites as a dense readout. It is the one place on the site that is abou
 about work, and a blog is where a reader expects to meet the person. The skills grid stayed on
 Coding, next to the socials, because it is a credential about the work rather than a personal note.
 
-**Below it the posts are news links, not articles.** Far more condensed than Coding: a small
+**Below it the posts are news links, not articles.** Far more condensed than Coding: a square
 thumbnail, the date, a headline, one line of body at most. The density is the point — a reader
 should take in the whole feed at a glance, and anything that wants a paragraph is a Coding entry or
 an Art piece, not a post.
+
+The row is as tall as its thumbnail, so the thumbnail is the dial for how much presence an entry
+has; it was turned up on 2026-10-21 because the rows read as a table of contents rather than as
+things worth clicking. Note what did *not* change: the body is still one truncated line. Height
+bought with a bigger picture keeps the feed scannable, where height bought with more text would
+have made it the article list this tab exists not to be.
 
 **The thumbnail is borrowed, not exported.** A post shows the picture of whatever it points at, so
 the feed is a column of the same images the other two tabs show at full size — which is what makes
@@ -553,16 +559,21 @@ a post with no target at all reads as plain text. `docs/CONTENT.md` § `posts.ts
 
 ### Art — a grid of wide cards, and a popup
 
-A **grid of 16:9 cards**: four across on a desktop, three at laptop width, two at tablet, one on a
-phone. The art is cropped to fill, because a grid of mixed aspects cannot be scanned — this is the
-one place cropping is right, and it is cropping the *thumbnail*, never the piece.
+A **grid of 16:9 cards**, three across, two at tablet width, one on a phone. The art is cropped to
+fill, because a grid of mixed aspects cannot be scanned — this is the one place cropping is right,
+and it is cropping the *thumbnail*, never the piece.
 
-**Shaped like a video index**, reworked 2026-10-21. It was square cells three across, which made
-each thumbnail the size of a poster: two pieces filled the panel, and the grid was doing the
-popup's job instead of its own. Wide cells at four across, a row gap twice the column gap, and the
-title and its line of metadata stacked underneath rather than squeezed onto one line with it. Half
-of these pieces are videos and the other half are drawings of a lit street, so the shape a reader
-already scans video thumbnails in is the right one.
+**Shaped like a video index**, reworked 2026-10-21. It was square cells, which made each thumbnail
+the size of a poster: two pieces filled the panel, and the grid was doing the popup's job instead
+of its own. Wide cells, and the title and its medium stacked underneath rather than squeezed onto
+one line with it. Half of these pieces are videos and the other half are drawings of a lit street,
+so the shape a reader already scans video thumbnails in is the right one.
+
+**Three across, and the gaps carry the air.** Four was tried the same day and the cards came out
+smaller than the shape wants — a 16:9 cell has to be wide enough that the art in it is still a
+picture rather than a strip. So the count stops at three and the spacing does the work instead:
+the row gap is wider than the column gap, which is what makes the eye group a row before it groups
+a column, and is most of why a video index reads the way it does.
 
 **Clicking a cell opens the piece in a popup over the whole page**, nav included. The popup is the
 same chrome as a panel — near-black ground, hairline border, cut corner, scanlines, telemetry

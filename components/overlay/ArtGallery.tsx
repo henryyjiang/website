@@ -55,7 +55,7 @@ export function ArtGallery({ pieces }: { pieces: readonly GalleryPiece[] }) {
 
   return (
     <>
-      <ul className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ul className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
         {pieces.map((item) => (
           <li key={item.slug}>
             <GridCell piece={item} onOpen={open} />
@@ -105,11 +105,17 @@ function Escape({ children }: { children: React.ReactNode }) {
  * and it is cropping the *thumbnail* rather than the piece. A grid of mixed aspects
  * cannot be scanned, which is the only thing a grid is for.
  *
- * **Shaped like a video index, because half of these are videos.** Wide cells, four
- * across on a desktop, a generous row gap and the text stacked under the image
- * rather than squeezed onto one line with it. Square cells at three across made each
- * piece the size of a poster, which is the popup's job; the grid's job is to be
- * scanned.
+ * **Shaped like a video index, because half of these are videos.** Wide cells, a
+ * generous row gap and the text stacked under the image rather than squeezed onto
+ * one line with it. Square cells made each piece the size of a poster, which is the
+ * popup's job; the grid's job is to be scanned.
+ *
+ * **Three across, not four.** Four was tried on 2026-10-21 and the cards came out
+ * smaller than the shape wanted — a 16:9 cell has to be wide enough for the art in
+ * it to still be a picture rather than a strip. So the count stops at three and the
+ * gaps carry the airiness instead, which is also where a video index gets its
+ * rhythm: the row gap is wider than the column gap, so the eye groups a row before
+ * it groups a column.
  */
 function GridCell({
   piece,
