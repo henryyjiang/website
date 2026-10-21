@@ -134,14 +134,16 @@ working, and `content/nav.ts` labels it **Blog**, which is what a reader calls i
 
 ### `links.ts`
 
-Socials, GitHub, résumé. Surfaced in the **desk** panel.
+Socials and GitHub. Surfaced in the **desk** panel.
 
 ```ts
 type Link = { label: string; href: string; icon?: string }
 ```
 
-Known so far: LinkedIn (`henryyjiang`), GitHub (`henryyjiang`), TikTok (`@atrxiy`), résumé
-(`resume.pdf`), email.
+Known so far: LinkedIn (`henryyjiang`), GitHub (`henryyjiang`), TikTok (`@atrxiy`). The résumé
+(`resume.pdf`) and the email address are still in the module and are **not surfaced** — Henry took
+them out of both rows on 2026-10-21. Putting one back in `CODING_LINKS` or `ART_LINKS` is the whole
+change; the row reads its glyph and its displayed address off the `href`.
 
 ### `about.ts`
 
@@ -224,5 +226,7 @@ where it is reported, because that is where someone can act on it.
 
 ## Résumé
 
-`resume.pdf` is carried over from the old site and lives in `public/`. It is linked from the desk
-panel. Keep the filename stable — it may already be linked externally.
+`resume.pdf` is carried over from the old site and lives in `public/`. **Nothing links to it as of
+2026-10-21** — it came out of the desk panel's row along with the email address — but it is still
+served, and `RESUME` is still written in `content/links.ts`. Keep the filename stable: it may
+already be linked externally.

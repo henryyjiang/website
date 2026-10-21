@@ -5,12 +5,12 @@ import type { Link } from '@/content/types'
  * The outward links at the top of a tab: one per line, address and all.
  *
  * Which links appear is `content/links.ts`'s decision, not this component's — the
- * Coding tab points at code and a résumé, the Art tab at where the animation gets
- * posted. This only knows how a link looks when it is a control rather than prose.
+ * Coding tab points at the code, the Art tab at where the animation gets posted.
+ * This only knows how a link looks when it is a control rather than prose.
  *
- * **A list, not a row of pills.** It was four small dimmed buttons side by side
- * until 2026-10-21, which is the shape a site uses for links it is obliged to carry
- * rather than ones it wants followed — and these are the ones it wants followed.
+ * **A list, not a row of pills.** It was a strip of small dimmed buttons until
+ * 2026-10-21, which is the shape a site uses for links it is obliged to carry rather
+ * than ones it wants followed — and these are the ones it wants followed.
  * So each gets its own line, reading `mark · GITHUB: github.com/henryyjiang`: the
  * address is shown rather than hidden behind a word, which is both more to look at
  * and more to act on. Someone reading on a phone can see the handle without tapping,

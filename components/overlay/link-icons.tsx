@@ -14,6 +14,12 @@
  * envelope and a sheet with its corner turned, stroked at the weight of the chrome's
  * own hairlines so they sit in the same drawing as everything else.
  *
+ * **Those last two currently draw nothing**, because Henry took the résumé and the
+ * email address out of both rows on 2026-10-21. They stay anyway: `content/links.ts`
+ * is content, and the rule there is that adding an entry back must not mean touching
+ * a component. A `mailto:` or a `.pdf` dropped into either list is drawn correctly
+ * the moment it lands.
+ *
  * Every glyph is one 24 x 24 box painted in `currentColor`, so the row it sits in
  * decides its colour and no component here names one.
  */

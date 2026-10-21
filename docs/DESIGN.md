@@ -508,13 +508,14 @@ slug and has to be able to scroll to one entry (§ Blog below). The arriving ent
 rather than permanently — a 1.2 s rule in `--primary` down its left edge, which says "this one" and
 then gets out of the way.
 
-Socials, résumé and email sit at the top, above the list. They were their own hotspots on the old
-site and then lived in the about section; they belong at the top of the tab that is about the work
-they point at.
+The socials sit at the top, above the list. They were their own hotspots on the old site and then
+lived in the about section; they belong at the top of the tab that is about the work they point at.
+The résumé and the email address were in this row until 2026-10-21 and are not any more — the row
+is where the work is, not how to file a request about it.
 
 **They are a list with the addresses showing, not a row of pills** (2026-10-21, and the Art tab's
-row is the same component). Four small dimmed buttons side by side is the shape a site uses for
-links it is obliged to carry; these are the ones it wants followed. So each takes its own line,
+row is the same component). A row of small dimmed buttons is the shape a site uses for links it is
+obliged to carry; these are the ones it wants followed. So each takes its own line,
 `mark · GITHUB: github.com/henryyjiang`, with the address visible rather than hidden behind a word
 — more to look at, and legible to someone who is not going to click. The label column has a floor
 so the addresses line up as a column of their own, and the whole line is the target.
