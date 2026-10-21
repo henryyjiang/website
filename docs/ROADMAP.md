@@ -282,12 +282,16 @@ interiors — the short version and the state:
 - [ ] Replace the filler entries with real ones. One per tab is in `content/` to prove the shapes,
       each marked `FILLER`
 
-**Filler, not seed.** Three entries exist only to exercise the layouts and are meant to be deleted:
-a post, an art piece drawn from existing scene art, and a video piece standing in with a clip from
-`art/reference/` — which is gitignored and must never ship, so that one file is gitignored by name
-too (`.gitignore`, and `docs/DESIGN.md` § Visual direction on why the reference is not an asset
-source). The eight Coding entries are **not** filler; they are the real projects carried over from
-the old site, with their screenshots.
+**Filler, not seed.** Two entries exist only to exercise the layouts and are meant to be deleted: a
+post, and an art piece drawn from existing scene art. The eight Coding entries are **not** filler;
+they are the real projects carried over from the old site, with their screenshots.
+
+A third — a video piece standing in with a clip from `art/reference/` — was deleted on 2026-10-21,
+during the pre-deploy pass. It had proved the video path end to end locally and could never have
+shipped: the clip and its derivatives were gitignored by name, but `public/images/manifest.json` is
+committed and still named all three files, so **a clean checkout built an Art card that 404'd**
+while `npm run build` stayed green. Found by building `git archive HEAD` in an empty directory,
+which is the only check that sees what Vercel sees.
 
 **Done when:** each tab reads correctly with real content in it, the blog's links land on the right
 Coding row and open the right Art piece, and no filler entry is left in `content/`.
@@ -341,13 +345,35 @@ both lying in the bed and sitting at the desk, or whether the bed's art has to s
 
 ---
 
-## Phase 9 — Launch
+## Phase 9 — Launch *(in progress)*
 
-- Lighthouse and real-device passes
-- Accessibility audit against the commitments in `docs/DESIGN.md`
-- New Vercel project on `henryyjiang/website`
-- Move the domain off the old deployment
-- Retire the old project (`docs/DEPLOYMENT.md`)
+Done in the pre-deploy pass on 2026-10-21, before the Vercel project exists:
+
+- [x] **A clean-checkout build**, `git archive HEAD` into an empty directory then `npm ci` and
+      `npm run build`. Green, and it is what found the 404ing filler card above — building in the
+      working tree cannot, because the missing files are sitting on disk
+- [x] **The old site deleted from `main`** — `index.html`, `main.js`, `style.css`, `assets/` and the
+      duplicate root `resume.pdf`, 3.4 MB, along with the local `archive/old-site` branch
+- [x] **A favicon** (`app/icon.tsx`), generated from the palette at build time rather than committed
+      as an `.ico`, so it moves with `DEFAULT_PALETTE`
+- [x] **The link preview** — `metadataBase`, Open Graph and Twitter cards, and a 1200x630 card
+      composited out of the scene art by `npm run art` so it cannot go stale (`lib/scene-space.ts`
+      § `CARD_FRAME`)
+- [x] **The static fallback is finally the real scene**, which Phase 3 left outstanding: the same
+      composite, flattened from the same layers in the renderer's own draw order
+
+Left:
+
+- [ ] Confirm the old Vercel integration is disabled — still Phase 0's open box
+- [ ] New Vercel project on `henryyjiang/website`
+- [ ] `MAL_CLIENT_ID` in the project's environment, and `MAL_USERNAME` in `content/about.ts`, if the
+      watchlist rows are wanted. Both or neither
+- [ ] `NEXT_PUBLIC_SITE_URL` once a custom domain is attached, so the card stops naming the
+      `.vercel.app` host (`lib/site.ts`)
+- [ ] Lighthouse and real-device passes
+- [ ] Accessibility audit against the commitments in `docs/DESIGN.md`
+- [ ] Move the domain off the old deployment
+- [ ] Retire the old project (`docs/DEPLOYMENT.md`)
 
 Shippable without Phase 8.
 

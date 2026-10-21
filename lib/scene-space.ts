@@ -64,6 +64,28 @@ export const NARROW_WIDTH = 768
 export const FOCAL_POINT = { x: 1500, y: 760 } as const
 
 /**
+ * The slice of the canvas the social card is cropped from, in scene units.
+ *
+ * A second framing decision, and a separate one from `FOCAL_POINT` for a reason
+ * that is not obvious: **the card is composited without the carousel**, because the
+ * carousel is a Pixi mesh that only exists once WebGL is running, and a link preview
+ * is a flat JPEG built at import time. The billboard therefore reads as a black
+ * rectangle in the flattened scene — correctly, since that is also what it looks
+ * like where WebGL is unavailable — and it is nearly half the canvas wide
+ * (x 141..1393).
+ *
+ * So the card is framed to the right of it: the window, the city through it, the
+ * desk and the dresser. It is the same room and the same art, cropped to the part
+ * that is complete without anything drawn at runtime. Centring on `FOCAL_POINT`
+ * instead would put that black rectangle across the left half of every link anyone
+ * ever shares.
+ *
+ * `height` is derived from the card's aspect by the importer rather than written
+ * here, so the two cannot disagree.
+ */
+export const CARD_FRAME = { x: 1340, y: 420, width: 1220 } as const
+
+/**
  * How the scene is currently sitting on the screen.
  *
  * `scale` and the origin describe the scene at camera centre; the camera is applied

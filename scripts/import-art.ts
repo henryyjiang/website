@@ -23,7 +23,7 @@ import process from 'node:process'
 import sharp, { type PngOptions } from 'sharp'
 
 import { BAND_IDS, BANDS, type BandId } from '../components/scene/bands.ts'
-import { HOTSPOTS } from '../components/scene/hotspots.ts'
+import { HOTSPOTS, isDrawnObject } from '../components/scene/hotspots.ts'
 import { PORTRAIT } from '../content/about.ts'
 import { ART_PIECES } from '../content/art.ts'
 import { POSTS } from '../content/posts.ts'
@@ -36,7 +36,8 @@ import {
   type ManifestQuad,
   type SceneManifest,
 } from '../lib/scene-manifest.ts'
-import { SCENE_H, SCENE_W } from '../lib/scene-space.ts'
+import { CARD_FRAME, SCENE_H, SCENE_W } from '../lib/scene-space.ts'
+import { DEFAULT_PALETTE, PALETTES } from '../lib/theme.ts'
 import { packFrames } from './lib/pack.ts'
 
 // --- configuration --------------------------------------------------------------
@@ -285,6 +286,25 @@ const BILLBOARD_LOOK = { saturation: 1.9, brightness: 1.06 } as const
 
 /** Where the poster frame is pulled from, in seconds. Past any fade-in, before much happens. */
 const POSTER_AT_SECONDS = 1
+
+/**
+ * Width of the flattened composite, three quarters of the design canvas.
+ *
+ * It is only ever shown where WebGL is unavailable, stretched over the viewport with
+ * no camera on it, so it needs to hold up at full width but not to carry the detail
+ * the canvas pans around inside. Full canvas would roughly triple the bytes for a
+ * picture most visitors never fetch.
+ */
+const COMPOSITE_W = 1920
+
+/**
+ * The social card, at the size every scraper crops to.
+ *
+ * 1.905:1 against the scene's 1.778:1, so a centre crop trims a little off the top
+ * and bottom of the room rather than pillarboxing it.
+ */
+const OG_W = 1200
+const OG_H = 630
 
 // --- reporting ------------------------------------------------------------------
 
@@ -1051,7 +1071,7 @@ async function importContentImages(): Promise<ContentImageManifest['images']> {
  * pairing is the only way to choose what a video piece looks like at rest: the grid
  * needs a square cell, the feed needs a 64px square and the billboard needs
  * something to project, and the frame a machine picks one second in is a guess. Drop
- * `motion-test.png` next to `motion-test.mp4` and it wins; drop nothing and the
+ * `walk-cycle.png` next to `walk-cycle.mp4` and it wins; drop nothing and the
  * import keeps guessing, which is what makes the thumbnail optional rather than a
  * chore attached to every animation.
  *
@@ -1467,6 +1487,93 @@ async function importCharacter(tmpDir: string): Promise<SceneManifest['character
 
 // --- plumbing -------------------------------------------------------------------
 
+// --- the site's own pictures ----------------------------------------------------
+
+/**
+ * Flatten the scene onto one opaque image, and write the two things that want it.
+ *
+ * Nothing outside the canvas has ever seen the room whole: it exists as parallax
+ * bands that Pixi stacks at runtime, so every consumer that is not the canvas needs
+ * it pre-assembled. Two are. `StaticSceneFallback` shows it where WebGL is
+ * unavailable, which until now was a hand-written gradient standing in for a painted
+ * room (docs/ROADMAP.md Phase 3). And the social card is the same picture cropped —
+ * a link to a portfolio should preview as the portfolio.
+ *
+ * Compositing here rather than exporting a screenshot by hand is the whole point:
+ * both are rebuilt by the same `npm run art` that wrote the layers, so neither can
+ * quietly describe a room that no longer looks like this.
+ *
+ * The stack is assembled by the renderer's own rules — band order, then `z` within
+ * the band, with objects in front of their band's layer art — and an object is
+ * included only if `isDrawnObject` says the canvas draws it. That keeps the
+ * billboard's shape-only file out of the picture exactly as it stays out of the
+ * scene (components/scene/hotspots.ts § `drawn`), without a second list to maintain.
+ */
+async function importSiteImages(
+  layers: SceneManifest['layers'],
+  objects: SceneManifest['objects'],
+): Promise<ContentImageManifest['site']> {
+  const ground = PALETTES[DEFAULT_PALETTE].ground
+
+  const stack = [...layers, ...objects.filter((object) => isDrawnObject(object.id))].sort(
+    (a, b) => BANDS[a.band].z - BANDS[b.band].z || a.z - b.z || a.id.localeCompare(b.id),
+  )
+
+  // Read back what this run already wrote, rather than re-reading `art/`: these are
+  // normalised to the canvas and the manifest names them, so there is no second
+  // place for the draw order or the geometry to be decided.
+  const inputs = await Promise.all(
+    stack.map(async (item) => ({ input: await readFile(join(PUBLIC_DIR, item.fallback)) })),
+  )
+
+  // `flatten` rather than an opaque base canvas: the room's window is transparent and
+  // so is everything above the roofline, and a social card with an alpha channel is
+  // rendered against whatever colour the platform feels like.
+  const flat = await sharp({
+    create: {
+      width: SCENE_W,
+      height: SCENE_H,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite(inputs)
+    .flatten({ background: ground })
+    .png()
+    .toBuffer()
+
+  const composite = await writeImagePair(
+    await sharp(flat).resize({ width: COMPOSITE_W }).png().toBuffer(),
+    SCENE_OUT,
+    'composite',
+  )
+
+  // Cropped rather than scaled down whole: the flattened scene has no carousel on
+  // the billboard, so the card is framed off it (lib/scene-space.ts § CARD_FRAME).
+  const og = await sharp(flat)
+    .extract({
+      left: CARD_FRAME.x,
+      top: CARD_FRAME.y,
+      width: CARD_FRAME.width,
+      height: Math.round((CARD_FRAME.width * OG_H) / OG_W),
+    })
+    .resize(OG_W, OG_H)
+    .jpeg(CONTENT_JPEG)
+    .toBuffer()
+  await writeFile(join(IMAGES_DIR, 'og.jpg'), og)
+
+  log(
+    `  site   composite  ${COMPOSITE_W}x${Math.round((COMPOSITE_W * SCENE_H) / SCENE_W)}  ` +
+      `(${kb(composite.bytes)}), card ${OG_W}x${OG_H} (${kb(og.length)}), ` +
+      `${stack.length} layer(s) deep`,
+  )
+
+  return {
+    composite: stripBytes(composite),
+    og: { src: `/${IMAGES_OUT}/og.jpg`, width: OG_W, height: OG_H },
+  }
+}
+
 function stripBytes<T extends { bytes: number }>(value: T): Omit<T, 'bytes'> {
   const { bytes, ...rest } = value
   void bytes
@@ -1500,6 +1607,8 @@ async function main(): Promise<void> {
   const contentImages = await importContentImages()
   checkPostTargets()
   const character = await importCharacter(tmpDir)
+  // Last: it composites the layers and objects this run just wrote.
+  const site = await importSiteImages(layers, objects)
 
   await rm(tmpDir, { recursive: true, force: true })
 
@@ -1521,6 +1630,7 @@ async function main(): Promise<void> {
   const contentImageManifest: ContentImageManifest = {
     generatedAt,
     images: contentImages,
+    site,
   }
 
   await writeFile(join(OUT_DIR, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)

@@ -354,7 +354,12 @@ Treating content as data is the single biggest maintainability win available her
 - **Textures are loaded through `Assets.load`**, which resolves after GPU upload, so the first frame
   never draws a half-ready scene.
 - **WebGL unavailable** → render a static composite of the layers and skip the character. The site
-  must still function as a portfolio.
+  must still function as a portfolio. The composite is **generated, not drawn**: `npm run art`
+  stacks the same layers and drawn objects in the renderer's own band-then-`z` order and writes
+  `site.composite`, so the fallback cannot describe a room the canvas no longer paints. It carries
+  no carousel, which is correct rather than missing — the carousel is a Pixi mesh, and without WebGL
+  there isn't one. Only mounted when WebGL is absent or the manifest failed, never while assets are
+  in flight, so its bytes are off the common path.
 - Layer art exported as WebP with a PNG fallback; budget in `docs/ANIMATION.md`.
 - **Blur happens at import, not at runtime.** Object glow is a pre-blurred texture, so hovering costs
   one extra quad rather than a multi-pass filter every frame. The two runtime blurs that remain — the

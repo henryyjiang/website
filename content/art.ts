@@ -32,16 +32,4 @@ export const ART_PIECES: readonly ArtPiece[] = [
     medium: '2D',
     caption: 'FILLER — a crop of the scene art, standing in for a real piece.',
   },
-  {
-    // FILLER, and the file behind it does not ship. `art/pieces/motion-test.mp4` is
-    // a clip of the Cyberpunk 2077 reference footage, which is gitignored for the
-    // reason in docs/DESIGN.md § Visual direction — the reference is a style
-    // register, not an asset source. It is here to prove a *video* piece works end
-    // to end: transcode, poster frame, play in the popup. Delete both.
-    slug: 'motion-test',
-    title: 'Motion test',
-    date: '2026-10-19',
-    medium: 'animation',
-    caption: 'FILLER — reference footage standing in for an animation. Not shipped.',
-  },
 ]

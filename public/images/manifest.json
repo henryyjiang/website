@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T16:33:42.955Z",
+  "generatedAt": "2026-10-21T19:15:08.335Z",
   "images": {
     "projects": {
       "automated-intersection": {
@@ -73,18 +73,6 @@
       }
     },
     "pieces": {
-      "motion-test": {
-        "src": "/images/pieces/motion-test.webp",
-        "fallback": "/images/pieces/motion-test.png",
-        "width": 1600,
-        "height": 900,
-        "video": {
-          "src": "/images/pieces/motion-test.mp4",
-          "type": "video/mp4",
-          "width": 1600,
-          "height": 900
-        }
-      },
       "night-window": {
         "src": "/images/pieces/night-window.webp",
         "fallback": "/images/pieces/night-window.png",
@@ -106,6 +94,19 @@
         "width": 1600,
         "height": 1600
       }
+    }
+  },
+  "site": {
+    "composite": {
+      "src": "/scene/composite.webp",
+      "fallback": "/scene/composite.png",
+      "width": 1920,
+      "height": 1080
+    },
+    "og": {
+      "src": "/images/og.jpg",
+      "width": 1200,
+      "height": 630
     }
   }
 }

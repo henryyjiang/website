@@ -108,10 +108,46 @@ export type ContentImage = ManifestImage & {
  */
 export type LitImage = ManifestImage & { luma: number }
 
+/**
+ * The social card: one flat JPEG, no WebP pair.
+ *
+ * A link preview is fetched by a scraper rather than by a browser, so the
+ * negotiation a `<picture>` does cannot happen — the crawler takes the one URL the
+ * metadata names. JPEG because that is what every scraper decodes, where WebP is
+ * still refused by some.
+ */
+export type OgImage = {
+  /** Path under public/, so browser-absolute. */
+  src: string
+  width: number
+  height: number
+}
+
 export type ContentImageManifest = {
   generatedAt: string
   /** Keyed by collection, then by slug. A collection with no images is `{}`. */
   images: Record<ImageCollection, Record<string, ContentImage>>
+  /**
+   * Pictures *of* the site, as opposed to pictures belonging to something in
+   * `content/`. Both are the scene flattened to one image by `npm run art`, which is
+   * the only way either can exist: the room is assembled from parallax layers by
+   * Pixi at runtime, so nothing outside the canvas has ever seen it whole.
+   *
+   * They are in this manifest rather than the scene's because this one is imported
+   * at build time and that one is fetched by the canvas. Their two consumers — the
+   * no-WebGL fallback and the page metadata — are both DOM, and the metadata in
+   * particular has to resolve before a request is served.
+   */
+  site: {
+    /**
+     * What the room looks like with no WebGL: the whole scene, flattened and
+     * opaque. Regenerated with the art, so it cannot drift from what the canvas
+     * draws the way a hand-exported screenshot would.
+     */
+    composite: ManifestImage
+    /** The same picture cropped to the social card's aspect. */
+    og: OgImage
+  }
 }
 
 /**
@@ -161,6 +197,25 @@ export function imageForPost(post: Post): ContentImage | null {
       return null
   }
 }
+
+/**
+ * The flattened room, for `StaticSceneFallback`.
+ *
+ * Where WebGL is unavailable the site still has to be a portfolio, and this is what
+ * stands in for the canvas (docs/ARCHITECTURE.md § Performance policy). It is the
+ * real scene rather than an approximation of it, because it is composited from the
+ * same files the canvas loads.
+ */
+export const SITE_COMPOSITE = MANIFEST.site.composite
+
+/**
+ * The social card, for the root layout's `openGraph` metadata.
+ *
+ * Resolved from the manifest for the reason nothing else here writes a path: the
+ * import names the file and this reads the name back, so re-cropping the card or
+ * changing its format stays a one-sided change.
+ */
+export const OG_IMAGE = MANIFEST.site.og
 
 /** When `npm run art` last wrote the manifest. For debugging a stale import. */
 export const GENERATED_AT = MANIFEST.generatedAt

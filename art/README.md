@@ -9,6 +9,12 @@ converts them into optimised web assets under `public/scene/` (the scene) and `p
 (everything the written content refers to) and writes a manifest for each. Replacing a file here and
 re-running the import is the whole workflow for changing how the site looks.
 
+The import also flattens the whole room onto one picture and writes it twice — as the composite the
+site falls back to where WebGL is unavailable, and cropped as the image that shows when someone
+pastes a link to the site into a chat. Both come out of whatever is in this folder, so redrawing a
+layer updates them with everything else and neither is a screenshot anyone has to remember to
+retake.
+
 ```
 art/
   background/        Behind the glass — seen through the window
@@ -178,8 +184,8 @@ art/projects/
   darwin.png
 art/pieces/
   night-window.png
-  motion-test.mp4        a video piece
-  motion-test.png        and the frame you want shown of it (optional)
+  walk-cycle.mp4         a video piece
+  walk-cycle.png         and the frame you want shown of it (optional)
 art/about/
   me.jpeg                the portrait on the blog tab
 ```
@@ -227,7 +233,7 @@ it to one MP4 every browser plays; the popup plays it, muted until a reader says
 **A video still needs a thumbnail**, in three places that never play it: the grid's square cell, the
 blog feed, and the billboard. One is always produced — a frame from a second in — so an animation
 costs you exactly one file. To choose it instead, drop a still beside the video under the same slug
-(`motion-test.mp4` + `motion-test.png`) and that wins. Two files of the *same kind* under one slug
+(`walk-cycle.mp4` + `walk-cycle.png`) and that wins. Two files of the *same kind* under one slug
 is still a collision and still warns.
 
 ## `character/`

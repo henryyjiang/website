@@ -5,6 +5,9 @@ import { TopNav } from '@/components/nav/TopNav'
 import { OverlaySync } from '@/components/scene/OverlaySync'
 import { SceneMount } from '@/components/scene/SceneMount'
 import { RouteTransition } from '@/components/theme/RouteTransition'
+import { CARD_ALT, DESCRIPTION, TITLE } from '@/content/site'
+import { OG_IMAGE } from '@/lib/content-images'
+import { SITE_ORIGIN } from '@/lib/site'
 import { DEFAULT_PALETTE, PALETTES, paletteCss } from '@/lib/theme'
 import './globals.css'
 
@@ -30,9 +33,46 @@ const shareTechMono = Share_Tech_Mono({
   display: 'swap',
 })
 
+/**
+ * Page metadata, and the link preview.
+ *
+ * `metadataBase` is what makes the rest of this work: the card image is named by
+ * the manifest as a path under `public/`, and a scraper cannot resolve a path. Next
+ * makes it absolute against this origin, which is read from the environment rather
+ * than written down (lib/site.ts).
+ *
+ * The card image is the room, composited out of the same art the scene is drawn
+ * from by `npm run art`, so it is regenerated whenever the art changes instead of
+ * being a screenshot somebody has to remember to retake (lib/content-images.ts
+ * § `OG_IMAGE`). Its dimensions are passed through because several scrapers lay the
+ * card out before they have fetched the image, and a card with unknown dimensions
+ * is given the small square treatment rather than the wide one.
+ */
 export const metadata: Metadata = {
-  title: 'Henry Jiang',
-  description: 'Software, AI research, and drawing.',
+  metadataBase: new URL(SITE_ORIGIN),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    type: 'website',
+    siteName: TITLE,
+    title: TITLE,
+    description: DESCRIPTION,
+    url: '/',
+    images: [
+      {
+        url: OG_IMAGE.src,
+        width: OG_IMAGE.width,
+        height: OG_IMAGE.height,
+        alt: CARD_ALT,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{ url: OG_IMAGE.src, alt: CARD_ALT }],
+  },
 }
 
 export const viewport: Viewport = {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 import { getSceneState } from '@/lib/store'
+import { DEFAULT_PALETTE, hex, PALETTES } from '@/lib/theme'
 import { HOTSPOTS } from './hotspots'
 import { SceneStage } from './SceneStage'
 import { StaticSceneFallback } from './StaticSceneFallback'
@@ -68,7 +69,10 @@ export default function SceneCanvas() {
         resolution={resolution}
         autoDensity
         antialias={false}
-        background={0x0b1020}
+        // The page's own background, so the one-frame gap before the sky layer
+        // uploads is the colour the DOM is already painted rather than a navy that
+        // belongs to no palette. No component names a colour (lib/theme.ts).
+        background={hex(PALETTES[DEFAULT_PALETTE].ground)}
         // Pointer input is read from window listeners in SceneStage, and hit testing
         // runs against the art's alpha mask there. Pixi's own event system would only
         // give bounding-box hits on full-canvas sprites, which is useless here.

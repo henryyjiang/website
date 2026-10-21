@@ -245,7 +245,7 @@ Two things are produced beyond the pair, both because of where the image is *sho
 **A video gets a thumbnail whether or not you make one.** Three surfaces show a piece without
 playing it — the grid's square cell, the blog feed, and the billboard — so the import always
 produces a still: a frame from a second in by default, or, if a file of the same slug sits beside
-the video (`motion-test.mp4` + `motion-test.png`), that one. The automatic frame is still extracted
+the video (`walk-cycle.mp4` + `walk-cycle.png`), that one. The automatic frame is still extracted
 either way, because it is also how the video's own dimensions are measured, and a chosen thumbnail
 may be any shape. Two files of the *same kind* under one slug remain a collision and still warn.
 `lib/content-images.ts` reads that manifest and hands back the pair. Adding a picture is therefore:

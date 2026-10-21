@@ -29,16 +29,6 @@ art/character/video/*
 art/reference/*
 !art/reference/.gitkeep
 
-# FILLER, and it must never ship. art/pieces/motion-test.mp4 is a clip of the
-# Cyberpunk 2077 reference footage, standing in for a real animation so that the
-# video path through `npm run art` and the Art popup can be exercised before Henry
-# has one. The reference is a style register, not an asset source (docs/DESIGN.md
-# § Visual direction), so neither the input nor what the import makes of it is
-# tracked. Deleting both, dropping the entry from content/art.ts and re-running
-# `npm run art` is the whole clean-up. Real video pieces ARE committed.
-art/pieces/motion-test.*
-public/images/pieces/motion-test.*
-
 # Source art files, wherever they land
 *.psd
 *.psb
@@ -47,14 +37,6 @@ public/images/pieces/motion-test.*
 *.blend
 *.blend1
 *.clip
-
-# Legacy assets from the previous site, kept on disk as reference but not tracked.
-# assets/video/ is the 173-frame PNG character sequence (34 MB) whose loose-frame
-# approach caused the old animation bug and inflated the old repo to 100 MB; it is
-# replaced by a packed atlas in Phase 5. glitch.mp4 is the retro intro, dropped per
-# docs/DESIGN.md. See docs/ANIMATION.md.
-assets/video/
-assets/glitch.mp4
 
 # Env
 .env

@@ -202,7 +202,13 @@ the environment and `MAL_USERNAME` in `content/about.ts`, and with either missin
 absent and everything else renders — which is the state of a fresh clone, so do not "fix" a build
 that is not showing them. Everything else on the site is a content module.
 
-**What is in `content/` is filler in three places and real everywhere else.** One post, one art piece
-and one video piece exist only to exercise those layouts and are marked `FILLER`; the eight Coding
-projects are the real ones carried over from the old site. The video piece's file is reference
-footage, is gitignored by name, and must never ship.
+**What is in `content/` is filler in two places and real everywhere else.** One post and one art
+piece exist only to exercise those layouts and are marked `FILLER`; the eight Coding projects are
+the real ones carried over from the old site.
+
+The third filler, a *video* piece standing in with a clip of the reference footage, was deleted on
+2026-10-21 because it could not ship: its files were gitignored by name, but the generated
+`public/images/manifest.json` naming them was committed, so a clean clone — which is what Vercel
+builds — served an Art card whose poster and video both 404'd, with a green build and no warning.
+The video path through `npm run art` is still exercised the moment a real `.mp4` lands in
+`art/pieces/`. **Never gitignore an output the committed manifest names.**
