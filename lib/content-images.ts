@@ -45,8 +45,16 @@ import type { ManifestImage } from './scene-manifest'
 
 import manifest from '../public/images/manifest.json'
 
-/** One per collection in `content/` that has images. The inbox folder names match. */
-export type ImageCollection = 'projects' | 'pieces'
+/**
+ * One per collection in `content/` that has images. The inbox folder names match.
+ *
+ * `about` holds exactly one picture, the portrait on the Blog tab, and is a
+ * collection rather than a file in `public/` so that it is optimised, carries a
+ * WebP pair, and is reached by slug like everything else. A one-off `/me.jpg`
+ * typed into a component would be the second source of truth this whole module
+ * exists to prevent.
+ */
+export type ImageCollection = 'projects' | 'pieces' | 'about'
 
 /**
  * A piece that arrived as a video rather than as a drawing.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T14:30:22.454Z",
+  "generatedAt": "2026-10-21T16:33:42.955Z",
   "images": {
     "projects": {
       "automated-intersection": {
@@ -97,6 +97,14 @@
           "height": 1000,
           "luma": 0.3337
         }
+      }
+    },
+    "about": {
+      "me": {
+        "src": "/images/about/me.webp",
+        "fallback": "/images/about/me.jpg",
+        "width": 1600,
+        "height": 1600
       }
     }
   }

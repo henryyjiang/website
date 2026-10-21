@@ -24,6 +24,7 @@ import sharp, { type PngOptions } from 'sharp'
 
 import { BAND_IDS, BANDS, type BandId } from '../components/scene/bands.ts'
 import { HOTSPOTS } from '../components/scene/hotspots.ts'
+import { PORTRAIT } from '../content/about.ts'
 import { ART_PIECES } from '../content/art.ts'
 import { POSTS } from '../content/posts.ts'
 import { PROJECTS } from '../content/projects.ts'
@@ -75,6 +76,26 @@ const PNG = { compressionLevel: 9 } as const
  * in WebGL, where a quantised gradient bands visibly, and there are three of them.
  */
 const CONTENT_PNG = { compressionLevel: 9, palette: true, quality: 90, effort: 8 } as const
+
+/**
+ * The fallback encoding for a *photograph*, and which sources count as one.
+ *
+ * PNG is the right fallback for everything this site draws — flat colour, hard
+ * edges, a palette that quantises to nothing — and it is the wrong one for a
+ * camera. The portrait went in at 1600 x 1600 and came out a 1.1 MB PNG beside a
+ * 177 KB WebP, five times the largest other file in `public/images/`, for a
+ * fallback that only a browser without WebP will ever fetch. That is the kind of
+ * weight `docs/ANIMATION.md` has a budget to stop.
+ *
+ * So the fallback keeps the source's own format family: a lossy input was never
+ * going to be improved by lossless output. Decided by extension rather than by
+ * inspecting the pixels, because the extension is the author's own statement of
+ * what kind of image this is and is right every time it matters.
+ */
+const CONTENT_JPEG = { quality: 82, mozjpeg: true } as const
+
+/** Sources whose fallback is JPEG rather than PNG — see `CONTENT_JPEG`. */
+const PHOTO_EXT = new Set(['.jpg', '.jpeg'])
 
 /** Mask cell size in scene units. 8 gives 320 x 180 cells over the canvas. */
 const MASK_SCALE = 8
@@ -191,6 +212,11 @@ const IMAGE_COLLECTIONS: readonly {
     source: 'content/art.ts',
     slugs: ART_PIECES.map((piece) => piece.slug),
     videos: true,
+  },
+  {
+    id: 'about',
+    source: 'content/about.ts',
+    slugs: [PORTRAIT.slug],
   },
 ]
 
@@ -371,19 +397,26 @@ async function writeImagePair(
   dir: string,
   id: string,
   pngEncoding: PngOptions = PNG,
+  /** JPEG for a photographic source. See `CONTENT_JPEG`. */
+  fallbackFormat: 'png' | 'jpeg' = 'png',
 ): Promise<{ src: string; fallback: string; width: number; height: number; bytes: number }> {
   await mkdir(join(PUBLIC_DIR, dir), { recursive: true })
 
+  const jpeg = fallbackFormat === 'jpeg'
+  const ext = jpeg ? 'jpg' : 'png'
+
   const webp = await sharp(buffer).webp(WEBP).toBuffer()
-  const png = await sharp(buffer).png(pngEncoding).toBuffer()
+  const fallback = jpeg
+    ? await sharp(buffer).jpeg(CONTENT_JPEG).toBuffer()
+    : await sharp(buffer).png(pngEncoding).toBuffer()
   const meta = await sharp(buffer).metadata()
 
   await writeFile(join(PUBLIC_DIR, dir, `${id}.webp`), webp)
-  await writeFile(join(PUBLIC_DIR, dir, `${id}.png`), png)
+  await writeFile(join(PUBLIC_DIR, dir, `${id}.${ext}`), fallback)
 
   return {
     src: `/${dir}/${id}.webp`,
-    fallback: `/${dir}/${id}.png`,
+    fallback: `/${dir}/${id}.${ext}`,
     // sharp reports both for anything it could decode, and throws above for anything
     // it could not, so these fallbacks are unreachable; the types allow undefined.
     width: meta.width ?? 0,
@@ -932,9 +965,11 @@ async function writeLitVariant(
   source: Buffer,
   dir: string,
   slug: string,
+  /** Matched to the image it is a copy of, so the pair never disagrees. */
+  format: 'png' | 'jpeg',
 ): Promise<ManifestImage & { luma: number }> {
   const lit = await sharp(source).modulate(BILLBOARD_LOOK).toBuffer()
-  const written = stripBytes(await writeImagePair(lit, dir, `${slug}--lit`, CONTENT_PNG))
+  const written = stripBytes(await writeImagePair(lit, dir, `${slug}--lit`, CONTENT_PNG, format))
 
   const { channels } = await sharp(lit).removeAlpha().stats()
   const [r, g, b] = channels
@@ -944,7 +979,7 @@ async function writeLitVariant(
 }
 
 async function importContentImages(): Promise<ContentImageManifest['images']> {
-  const images: ContentImageManifest['images'] = { projects: {}, pieces: {} }
+  const images: ContentImageManifest['images'] = { projects: {}, pieces: {}, about: {} }
 
   for (const collection of IMAGE_COLLECTIONS) {
     const dir = join(ART_DIR, collection.id)
@@ -1123,7 +1158,11 @@ async function writeStill(
     })
     .toBuffer()
 
-  const written = await writeImagePair(source, outDir, slug, CONTENT_PNG)
+  // The author's own extension decides, so a drawing exported as a JPEG gets a
+  // JPEG fallback too. That is correct rather than a near miss: it was already
+  // through one lossy encode before it reached the inbox.
+  const format = PHOTO_EXT.has(extname(path).toLowerCase()) ? 'jpeg' : 'png'
+  const written = await writeImagePair(source, outDir, slug, CONTENT_PNG, format)
 
   if (written.bytes > CONTENT_BUDGET_BYTES) {
     warn(
@@ -1133,7 +1172,7 @@ async function writeStill(
   }
 
   const image: ContentImage = stripBytes(written)
-  if (lit) image.lit = await writeLitVariant(source, outDir, slug)
+  if (lit) image.lit = await writeLitVariant(source, outDir, slug, format)
 
   return { image, bytes: written.bytes }
 }

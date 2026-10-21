@@ -25,8 +25,12 @@ import { DESTINATIONS } from '@/content/nav'
  * it is set to clear the tabs by a hair rather than to float the title in the middle
  * of the frame — 64/80px left 40-odd pixels of nothing above every headline. One
  * value at both sizes, because the viewport's own margin is what differs (8px
- * against 12px) and the nav is 4px taller once its label is, so a single 48px lands
- * about ten pixels under the tabs either way.
+ * against 12px) and the nav is 4px taller once its label is, so a single number
+ * lands the same distance under the tabs either way.
+ *
+ * **44px is the floor.** It clears the tabs by 7px, and the next step down puts the
+ * telemetry line inside the notch cut out of a tab's bottom corner — which does not
+ * read as a tight layout, it reads as a rendering fault.
  *
  * The *behaviour* is deliberately that of a page rather than of a dialog. Each panel
  * is a real route with its own URL, so there is no focus trap and no `aria-modal`:
@@ -73,7 +77,7 @@ export function OverlayPanel({ children }: { children?: React.ReactNode }) {
         aria-labelledby="overlay-title"
         className="u-notch u-scanlines pointer-events-auto relative flex h-full w-full flex-col overflow-hidden border border-dim/30 bg-panel/92 backdrop-blur-md"
       >
-        <header className="flex shrink-0 items-end justify-between gap-4 border-b border-dim/25 px-5 pt-12 pb-3 sm:px-8">
+        <header className="flex shrink-0 items-end justify-between gap-4 border-b border-dim/25 px-5 pt-11 pb-3 sm:px-8">
           <div className="min-w-0">
             {/* The reference labels its live row with a part number. It is decoration,
                 but technical decoration: it implies a machine with more going on than

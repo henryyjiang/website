@@ -161,15 +161,16 @@ Everything, from its alpha. There is no config file anywhere holding a rectangle
 hold a now-playing readout for a music player that has been cut, so it stays as painted art. If
 something goes there later, it becomes its own object then.
 
-## `projects/`, `pieces/` — pictures for the writing
+## `projects/`, `pieces/`, `about/` — pictures for the writing
 
-These two are not scene art and none of the rules above apply to them. No canvas size, no
+These three are not scene art and none of the rules above apply to them. No canvas size, no
 transparency, no band, no draw order. They are the pictures that belong to something you wrote:
 
 | Folder | One file per | Named after its slug in |
 | --- | --- | --- |
 | `projects/` | project | `content/projects.ts` |
 | `pieces/` | art portfolio piece | `content/art.ts` |
+| `about/` | the one portrait | `content/about.ts` (`PORTRAIT`) |
 
 ```
 art/projects/
@@ -179,7 +180,14 @@ art/pieces/
   night-window.png
   motion-test.mp4        a video piece
   motion-test.png        and the frame you want shown of it (optional)
+art/about/
+  me.jpeg                the portrait on the blog tab
 ```
+
+`about/` holds exactly one file and will probably never hold two, which is why it is a folder
+rather than something dropped straight into `public/`: it gets the same optimising, the same WebP
+pair and the same resolve-by-slug as everything else, and replacing the photograph stays a matter
+of dropping in a file rather than editing a component.
 
 **There is no `posts/` folder, on purpose.** A blog post is a notice that something already on the
 site happened, so it borrows that thing's picture: a post pointing at a project shows the project's

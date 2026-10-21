@@ -156,16 +156,44 @@ change; the row reads its glyph and its displayed address off the `href`.
 
 ### `about.ts`
 
-The about-me copy for the desk panel. Prose, kept as structured fields rather than one blob so the
-panel can lay it out.
+The about-me copy, surfaced at the top of the **blog** panel. Structured fields rather than one
+blob, so the panel can lay it out.
 
-The old site's about section mixed a short bio with a list of favourite anime, manga, songs, games
-and a currently-watching list. Worth keeping — it gives the page personality that a project list
-can't — but it should be a deliberate, structured section rather than `<br>`-separated lines.
+The old site's about section mixed a short bio with a list of favourites and a currently-watching
+list, all `<br>`-separated.
+
+`NAME` is the heading: a first name, because this is the part of the site that is a person rather
+than a portfolio.
+
+`BIO` is **not surfaced** as of 2026-10-21. Both lines are still in the module; the section is a
+photograph, a name and a list now, and shows rather than states.
+
+`PORTRAIT` is the photograph that sat beside that block on the old site. It is a slug, not a path:
+the file lives at `art/about/me.jpeg` and resolves through the manifest like every other picture.
+Replacing it is dropping a new `art/about/me.*` and running `npm run art`.
+
+`FAVOURITES` is rendered under a heading that says **Favourites**, which is also the rule for what
+belongs in it: a row that is a *status* rather than a favourite does not.
+
+**Why `Currently watching` and `Last completed` are gone** (2026-10-21). They were stale on the old
+site and stale here, because the only thing keeping them true is Henry remembering to edit this
+file after finishing an episode. A list that is wrong is worse than no list.
+
+They can come back, but only attached to something that fetches them, and that is a feature rather
+than a content edit:
+
+- **MyAnimeList's own API v2** (`api.myanimelist.net/v2/users/{user}/animelist`) is the route. It
+  needs an app registered on MAL for a client ID, and the list has to be public.
+- **Jikan**, the unofficial MAL API, is not: it is read-only and dropped user-list endpoints in
+  v3. Don't plan around it.
+- Where the fetch runs is the real decision. At build time it is one request and no runtime cost,
+  but it is only as fresh as the last deploy — which, for a site that deploys when Henry pushes,
+  is no better than the hand-typed rows unless something redeploys it on a schedule. A route
+  handler or a client fetch is always current and puts a third-party request in the page's path.
 
 ## Images
 
-Three collections, one rule: **the slug is the join, and no content module writes a path.**
+Four collections, one rule: **the slug is the join, and no content module writes a path.**
 
 | Collection | Inbox | Output | Resolved with |
 | --- | --- | --- | --- |

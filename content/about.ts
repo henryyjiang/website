@@ -11,6 +11,35 @@
  * asked for it to be there. Add it back if you actually want it public.
  */
 
+/**
+ * What the about section calls him.
+ *
+ * First name only, which is the register the rest of the tab is written in — the
+ * site says who it belongs to in the page title and the Coding tab's links, and
+ * this is the part that is a person rather than a portfolio.
+ */
+export const NAME = 'Henry'
+
+/**
+ * The portrait beside the about section, as a slug rather than a path.
+ *
+ * It is the photograph from the old site's about block (`assets/me.jpeg`), and it
+ * comes in through `art/about/` like every other picture — named after this slug,
+ * optimised by `npm run art`, resolved by `lib/content-images.ts`. One image in its
+ * own collection rather than a file dropped in `public/`, because a path typed into
+ * a component is the second source of truth this project keeps out of `content/`.
+ */
+export const PORTRAIT = { slug: 'me', alt: NAME } as const
+
+/**
+ * NOT SURFACED. Both lines were at the top of the about section until 2026-10-21,
+ * when Henry took them out — the first for being a list of what he likes that the
+ * three tabs underneath already demonstrate, the second with it.
+ *
+ * What is left is a photograph and a list of favourites, and that is the section:
+ * it shows rather than states. Kept here because the copy is his and an about page
+ * that wants a sentence again should start from what he actually wrote.
+ */
 export const BIO = [
   'I like coding, art, and animation, and I work on AI and 2D/3D animation projects in my free time.',
   'I hope to get better each and every day to create incredible works.',
@@ -20,17 +49,23 @@ export const BIO = [
  * The favourites list. Kept as pairs so the panel can render it as a definition
  * list rather than guessing at structure.
  *
- * `Currently watching` and `Last completed` go stale — they were stale on the old
- * site. Either keep them current or drop them.
+ * **Every row here is a favourite, and the panel says so** — the section is headed
+ * `Favourites` rather than leaving a reader to infer it from `Anime: Blue Lock`.
+ * That heading is also the rule for what belongs: a row that is a *status* rather
+ * than a favourite does not.
+ *
+ * Which is why `Currently watching` and `Last completed` are gone (2026-10-21).
+ * They were stale on the old site and stale here, because the only thing that keeps
+ * them true is Henry remembering to edit a file after finishing an episode. They
+ * come back when something fetches them — MyAnimeList's own API can, and
+ * `docs/CONTENT.md` § About records what that would take.
  */
 export const FAVOURITES: readonly { label: string; value: string }[] = [
   { label: 'Anime', value: 'Blue Lock' },
   { label: 'Manga', value: 'Tokyo Ghoul' },
-  { label: 'Currently watching', value: 'Witch Hat Atelier, Re:Zero, Dorohedoro' },
-  { label: 'Last completed', value: 'Fire Force — 6.9/10' },
   { label: 'Song', value: 'Shelter — Porter Robinson' },
   { label: 'Music artist', value: 'Ado' },
-  { label: 'Games', value: 'Nier: Automata, Overwatch, Limbus Company' },
+  { label: 'Games', value: 'Nier: Automata' },
 ]
 
 /**

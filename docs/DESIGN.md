@@ -449,11 +449,15 @@ and a body of text at once, and a centred column three-quarters of the way up th
 hold both without cramping one. The header's top padding is what keeps the title clear of the tabs;
 it is the one measurement that has to agree with the nav's height.
 
-**It clears the tabs by about ten pixels, and no more.** Tightened 2026-10-21, twice. The padding
-was set to float the title comfortably under the nav and ended up leaving forty-odd pixels of
-nothing above every headline — the first thing a reader met on each of the three tabs was empty
+**It clears the tabs by seven pixels, and no more.** Tightened over 2026-10-21, in three goes. The
+padding was set to float the title comfortably under the nav and ended up leaving forty-odd pixels
+of nothing above every headline — the first thing a reader met on each of the three tabs was empty
 panel. A headline sitting just under the tabs reads as the top of the thing they are attached to,
 which is what they are.
+
+44px is the floor, not a preference. The next step down puts the telemetry line inside the notch
+cut out of a tab's bottom corner, and a headline tucked into that notch does not read as a tight
+layout — it reads as a rendering fault.
 
 It is **one value at both sizes**, where the rest of the frame takes a breakpoint. The two things it
 has to clear move in opposite directions: the panel's own margin grows from 8px to 12px while the
@@ -530,8 +534,24 @@ because an email and a résumé have no brand to be faithful to.
 
 Two parts, and the first is short.
 
-**The about-me section lives here**, moved off the Coding tab on 2026-10-21 and kept brief: the bio,
-then favourites as a dense readout. It is the one place on the site that is about Henry rather than
+**The about-me section lives here**, moved off the Coding tab on 2026-10-21: a portrait, a first
+name, and favourites as a dense readout under their own rule. **No prose at all** — the two lines
+of bio went the same day. A list of what someone likes is a claim the three tabs around it already
+demonstrate, and a photograph with a name under it says the thing the bio was reaching for.
+
+**The list is headed `Favourites`.** Without it a reader has to work out what `Anime: Blue Lock` is
+asserting — and that heading is also the rule for what may go in the list. `Currently watching` and
+`Last completed` were in it and are not any more: they are *statuses*, true only for as long as
+nobody watches anything, and they were stale on the old site for exactly that reason. They belong
+back the day something fetches them rather than Henry remembering to edit a file.
+
+**The portrait is as tall as the section beside it.** Its *width* is a feed thumbnail's
+(`--post-shot`), so the tab has one picture size rather than three; its height is whatever the name
+and the favourites come to, taken from the grid row rather than set. So the block reads as one
+object at any width, and adding a favourite makes the photograph taller rather than leaving a
+notch of empty panel beside the list. The square photograph is cropped to fill whatever that
+leaves. It is the one from the old site's about block, and it enters through `art/about/` like
+every other picture here. It is the one place on the site that is about Henry rather than
 about work, and a blog is where a reader expects to meet the person. The skills grid stayed on
 Coding, next to the socials, because it is a credential about the work rather than a personal note.
 

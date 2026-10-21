@@ -2,10 +2,10 @@ import Link from 'next/link'
 
 import { OverlayPanel } from '@/components/overlay/OverlayPanel'
 import { SectionRule } from '@/components/overlay/SectionRule'
-import { BIO, FAVOURITES } from '@/content/about'
+import { FAVOURITES, NAME, PORTRAIT } from '@/content/about'
 import { POSTS } from '@/content/posts'
 import { byDateDesc, type Post, type PostTarget } from '@/content/types'
-import { imageForPost } from '@/lib/content-images'
+import { imageFor, imageForPost } from '@/lib/content-images'
 import { isExternalTarget, postHref } from '@/lib/post-target'
 
 /**
@@ -14,6 +14,12 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * **About sits here**, moved off the Coding tab on 2026-10-21 and kept brief. It is
  * the one part of the site that is about Henry rather than about work, and a blog is
  * where a reader expects to meet the person (docs/DESIGN.md § Panel interiors).
+ *
+ * It is a portrait, a name and a list of favourites, and no prose at all — the bio
+ * went on 2026-10-21 (`content/about.ts` § BIO). The list is *headed* Favourites rather
+ * than leaving a reader to work out what `Anime: Blue Lock` is asserting, and the
+ * portrait is the width the feed's thumbnails are (`--post-shot`), so the tab has
+ * one picture size rather than three.
  *
  * **The posts are news links, not articles.** A thumbnail, a date and a headline —
  * no prose at all, which is the whole difference between this tab and the Coding
@@ -55,25 +61,32 @@ export default function UpdatesPage() {
       <section aria-labelledby="about-heading" className="flex flex-col gap-4">
         <SectionRule id="about-heading">About</SectionRule>
 
-        <div className="flex flex-col gap-2">
-          {BIO.map((line) => (
-            <p key={line} className="max-w-prose leading-relaxed sm:text-lg">
-              {line}
-            </p>
-          ))}
-        </div>
+        <div className="grid gap-5 sm:grid-cols-[var(--post-shot)_minmax(0,1fr)] sm:gap-8">
+          <Portrait />
 
-        <dl className="grid gap-x-8 sm:grid-cols-2">
-          {FAVOURITES.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-baseline gap-3 border-b border-dim/15 py-1.5"
-            >
-              <dt className="u-telemetry w-32 shrink-0 text-dim">{item.label}</dt>
-              <dd className="min-w-0 text-sm">{item.value}</dd>
-            </div>
-          ))}
-        </dl>
+          <div className="flex flex-col gap-4">
+            {/* Set like a feed headline rather than as a heading element: the
+                section already has one ("About") and the list below has another,
+                and a third in between would be structure that says nothing. */}
+            <p className="text-2xl leading-tight font-semibold tracking-[0.03em] text-active uppercase sm:text-4xl">
+              {NAME}
+            </p>
+
+            <SectionRule>Favourites</SectionRule>
+
+            <dl className="grid">
+              {FAVOURITES.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-baseline gap-3 border-b border-dim/15 py-1.5"
+                >
+                  <dt className="u-telemetry w-32 shrink-0 text-dim">{item.label}</dt>
+                  <dd className="min-w-0 text-sm">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
       </section>
 
       <section aria-labelledby="feed-heading" className="mt-10 flex flex-col gap-4">
@@ -88,6 +101,42 @@ export default function UpdatesPage() {
         </ol>
       </section>
     </OverlayPanel>
+  )
+}
+
+/**
+ * Henry, from the old site's about block.
+ *
+ * Resolved by slug out of the import manifest like every other picture on the site,
+ * so this component names no path and the file can be replaced by dropping a new
+ * one into `art/about/`. It renders nothing at all if there is none — the about
+ * section reads perfectly well without it, and an empty frame apologising for a
+ * missing photograph does not.
+ *
+ * **It is as tall as the section beside it**, rather than a square of its own. The
+ * column is `--post-shot` wide and the height comes from the grid: the name and the
+ * favourites decide the row, and this stretches to it. Which is why the `img` is
+ * absolutely positioned — in flow, its own height would be part of what sizes the
+ * row it is supposed to be measuring itself against, and the two would settle at
+ * whichever the browser resolved first. Out of flow it contributes nothing, the
+ * right-hand column sets the height alone, and `object-cover` crops the square
+ * photograph to whatever shape that leaves.
+ */
+function Portrait() {
+  const image = imageFor('about', PORTRAIT.slug)
+  if (!image) return null
+
+  return (
+    <picture className="u-notch relative block h-32 w-32 overflow-hidden border border-dim/25 sm:h-auto sm:w-[var(--post-shot)]">
+      <source srcSet={image.src} type="image/webp" />
+      <img
+        src={image.fallback}
+        alt={PORTRAIT.alt}
+        width={image.width}
+        height={image.height}
+        className="absolute inset-0 size-full object-cover"
+      />
+    </picture>
   )
 }
 
