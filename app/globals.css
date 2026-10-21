@@ -31,6 +31,26 @@
    * than as several things that happen to have a bevel.
    */
   --notch: 10px;
+
+  /*
+   * A project screenshot's size on the Coding tab, as one number.
+   *
+   * It is the grid track's width *and* the image's height ceiling, which is what
+   * makes a square screenshot fill its column exactly while the 684 x 1490 phone
+   * capture is bounded by that same square instead of running three times the
+   * height of the text beside it. Two numbers here would drift apart and the
+   * squares — five of the eight are square — would quietly stop filling.
+   *
+   * Viewport-relative because the brief was "between a quarter and a third of the
+   * screen", and that is a fraction of the screen rather than of the panel. 29vw
+   * sits in the middle of the band and stays there from a laptop to a 1440p
+   * display; the floor keeps a tablet from showing a thumbnail, and the ceiling
+   * keeps a very wide display from handing one screenshot half the panel.
+   *
+   * It applies from `sm` up only. Below that the row stacks into one column and
+   * there is nothing for the width half of it to do — see app/desk/page.tsx.
+   */
+  --shot: clamp(16rem, 29vw, 40rem);
 }
 
 html,

@@ -11,10 +11,10 @@ import { projectAnchorId } from '@/lib/post-target'
  * Software and AI research: the project list, newest first.
  *
  * **A row is an image and a text box beside it** (docs/DESIGN.md § Panel interiors).
- * The image column has a fixed width and the image's own height, because the import
- * deliberately does not crop — `art/projects/` holds square screenshots and 16:9 ones
- * and both are the shape they were exported at. Forcing a ratio here would crop a
- * screenshot whose content runs to its edges, which is most of them.
+ * The image column is `--shot` wide and the image keeps its own height, because the
+ * import deliberately does not crop — `art/projects/` holds square screenshots and
+ * 16:9 ones and both are the shape they were exported at. Forcing a ratio here would
+ * crop a screenshot whose content runs to its edges, which is most of them.
  *
  * **Every row is an anchor.** The blog links into this list by slug, so the id has to
  * be derivable from the content rather than typed — `projectAnchorId` is the one
@@ -53,7 +53,7 @@ export default function DeskPage() {
             >
               <article
                 className={`grid items-start gap-4 sm:gap-6 ${
-                  image ? 'sm:grid-cols-[minmax(0,19rem)_minmax(0,1fr)]' : ''
+                  image ? 'sm:grid-cols-[var(--shot)_minmax(0,1fr)]' : ''
                 }`}
               >
                 {image ? (
@@ -65,11 +65,19 @@ export default function DeskPage() {
                    * decodes — which also keeps the scroll-to-anchor above from landing
                    * at an offset that is about to move.
                    *
-                   * Width-led with a ceiling on the height: a wide screenshot fills
-                   * the column, while a portrait one — the phone capture is 684x1490 —
-                   * would otherwise make its row three times the height of the text
-                   * beside it. The cap bounds the row without cropping anything; a
-                   * tall image simply sits narrower than the column.
+                   * Width-led with a ceiling on the height, and from `sm` up both are
+                   * `--shot` (app/globals.css). One number means a square screenshot —
+                   * two of the eight are square — fills the column exactly, while a
+                   * portrait one, the phone capture is 684x1490, is bounded by that
+                   * same square instead of making its row three times the height of
+                   * the text beside it. Nothing is cropped either way; a tall image
+                   * simply sits narrower than the column.
+                   *
+                   * Below `sm` the row stacks and there is no column, so the width
+                   * half of that number has nothing to do and `--shot` would only be
+                   * imposing a laptop's fraction of the screen on a phone — where it
+                   * is smaller than the ceiling this always had. So the plain 22rem
+                   * stays underneath, and a phone's images are the size they were.
                    */
                   <picture className="u-notch flex justify-center overflow-hidden border border-dim/25 bg-ground/60">
                     <source srcSet={image.src} type="image/webp" />
@@ -80,7 +88,7 @@ export default function DeskPage() {
                       height={image.height}
                       loading="lazy"
                       decoding="async"
-                      className="block h-auto max-h-[22rem] w-auto max-w-full"
+                      className="block h-auto max-h-[22rem] w-auto max-w-full sm:max-h-[var(--shot)]"
                     />
                   </picture>
                 ) : null}

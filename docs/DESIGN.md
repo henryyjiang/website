@@ -482,10 +482,19 @@ date, body, then its links.
 
 The image is whatever shape it was exported — square screenshots and wide ones both occur in
 `art/projects/`, and the pipeline deliberately does not crop (`docs/CONTENT.md` § Images). So the
-row gives the image a **fixed column width and a ceiling on its height**, rather than forcing a
-ratio and cropping a screenshot whose content reaches its edges. The ceiling is what stops a
-portrait phone capture — one of them is 684 x 1490 — from making its row three times the height of
-the text beside it; a tall image simply sits narrower than the column, and nothing is cropped.
+row gives the image a **column width and a ceiling on its height**, rather than forcing a ratio and
+cropping a screenshot whose content reaches its edges. The ceiling is what stops a portrait phone
+capture — one of them is 684 x 1490 — from making its row three times the height of the text beside
+it; a tall image simply sits narrower than the column, and nothing is cropped.
+
+**Both are one number, `--shot`, and it is a fraction of the screen.** Set on 2026-10-21 to the
+brief "between a quarter and a third of the screen", which is a fraction of the *viewport* rather
+than of the panel, so it is written in `vw`: `clamp(16rem, 29vw, 40rem)` in `app/globals.css`. It
+was a flat 19rem column against a 22rem ceiling, two numbers that disagreed — a 600 x 600
+screenshot came out 304 wide and the ceiling above it went unused. One number means a square
+screenshot fills its column exactly and a portrait one is bounded by that same square. It governs
+from `sm` up; below that the row stacks, there is no column, and the plain 22rem ceiling it always
+had is what remains.
 
 **No tag row and no skills grid.** Both were there and both were cut on 2026-10-21. A list of
 languages above the list, and `#ml #quant` under every entry, are claims the eight projects
@@ -502,6 +511,18 @@ then gets out of the way.
 Socials, résumé and email sit at the top, above the list. They were their own hotspots on the old
 site and then lived in the about section; they belong at the top of the tab that is about the work
 they point at.
+
+**They are a list with the addresses showing, not a row of pills** (2026-10-21, and the Art tab's
+row is the same component). Four small dimmed buttons side by side is the shape a site uses for
+links it is obliged to carry; these are the ones it wants followed. So each takes its own line,
+`mark · GITHUB: github.com/henryyjiang`, with the address visible rather than hidden behind a word
+— more to look at, and legible to someone who is not going to click. The label column has a floor
+so the addresses line up as a column of their own, and the whole line is the target.
+
+**The mark and the address text are read off the `href`**, never declared per link, for the reason
+the whole of `content/` avoids second sources of truth. The three brand glyphs are inlined
+simple-icons paths (CC0); an envelope and a sheet are drawn in `components/overlay/link-icons.tsx`,
+because an email and a résumé have no brand to be faithful to.
 
 ### Blog — about at the top, then condensed news links
 
