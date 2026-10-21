@@ -209,7 +209,10 @@ the rest of the painting.
 **How strongly a thing emits is per object**, in `components/scene/hotspots.ts` beside its band and
 its route, because it is a statement about what the thing *is*. A bedside table and a floodlit
 billboard the size of a building should not share a constant. Furniture emits nothing until pointed
-at; the billboard sits at 0.7 of full and hovering takes it to 1.
+at; the billboard sits at 0.6 of full and hovering takes it to 1. That gap is the whole hover
+affordance and alpha stops at 1, so widening it means lowering the resting level rather than raising
+the hovered one — which the brightness-normalised carousel glow left room for, since the screen now
+reads as lit well below where it used to have to sit (§ The billboard).
 
 **The counter-intuitive part is `gain`.** Blurring spreads a fixed amount of opacity over a much
 larger area, so raising `blur` on its own buys reach by making the halo fainter everywhere — turning
@@ -235,6 +238,17 @@ which turns the frame into a flat lit band with a hard edge where it meets the c
 "outline" failure arriving by a different route, and the one that is easiest to mistake for a
 rendering bug. The falloff has to finish inside the band. That is why the billboard's `blur` is 14
 and not the 26 that reaches further: reach is worth nothing if it arrives as a rectangle.
+
+**All three of those are about a *baked* glow, and the carousel's is not one.** Worth stating
+because the two look like the same effect and obey opposite rules. A baked glow blurs a
+*silhouette* and then re-amplifies its alpha with a gain curve, so it has a fixed amount of opacity
+to spend: spreading it further makes it fainter everywhere, and the gain that puts the strength back
+is what clips into a hard ring. The carousel's glow blurs a large *filled rectangle* with no gain
+curve at all, so its middle stays saturated however far the edges smear, and widening it makes the
+surroundings brighter rather than dimmer — going from sigma 36 to sigma 64 takes the light landing 90
+units out from 0.6% of full to 16.5%. There is only one rule it shares: the render texture has to be
+big enough for the falloff to reach nothing before the edge, because a gaussian that runs out of room
+is cut off square. That is why its margin is derived from its blur (three sigma) rather than picked.
 
 Three consequences worth stating:
 
@@ -278,6 +292,13 @@ a screen does.
 Measured across the three filler posts, whose images differ in brightness by a factor
 of five: the glow textures come out at mean luminance 67, 65 and 64.
 
+**How far it reaches is a separate knob from how bright it is**, and on 2026-10-21 Henry
+asked for more of the first. The blur sigma went from 36 scene units to 64 and the
+render texture grew with it, which roughly doubles the reach and — because this glow
+blurs a filled rectangle rather than a silhouette — also raises the light everywhere
+outside the screen rather than thinning it. The skirt now runs 51% of full at the
+screen's edge, 16.5% at 90 units out, 9% at 120, and nothing by 160.
+
 Two bounds matter. The lift is a multiply, so it rescues dark pixels and clips bright
 ones; past a point an image stops being brightened and starts being flattened into a
 white rectangle, which is a worse failure than the one being fixed. And saturation
@@ -293,6 +314,10 @@ thing Henry noticed about the finished carousel. Now that the object is not draw
 not either, and the slide's own glow carries the billboard's `GlowSpec` — 0.7 at rest, 1 when pointed
 at. It still fades with the slide, because there is a moment on load before an image is up, and the
 city should not be lit by one that is not there.
+
+The resting level came down from 0.7 to 0.6 on 2026-10-21, which is the same decision read from the
+other end: a brighter texture needs less opacity to look lit, and the opacity it gives back is
+hover range.
 
 **And the image is saturated hard before it is projected** — settled 2026-10-21. A photograph or a
 screenshot pasted onto the billboard at its own saturation reads as a picture hung on a wall, not as

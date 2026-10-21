@@ -131,7 +131,8 @@ So hover emits too, by the same method Henry paints with. Full reasoning in `doc
 - `HotspotGlow` is an additive sprite behind the object with an eased alpha, not a filter
 - Glow strength is a `GlowSpec` per hotspot (`hotspots.ts`) — blur, brightness, saturation, alpha
   gain, resting alpha, hover alpha — because it is a decision about what a thing *is*. Furniture
-  emits nothing at rest; the billboard sits at 0.7 of full and hovering takes it to 1
+  emits nothing at rest; the billboard sat at 0.7 of full and hovering took it to 1 (0.6 since
+  2026-10-21, for a wider hover gap)
 - The import also measures each object's four extreme corners into `quad`, which Phase 6 needs
 
 **Verified in the browser, not assumed.** Hovering the desk takes its glow sprite from 0 to 0.9 and
@@ -224,6 +225,10 @@ dark posts. Additive blending of a near-black image adds nothing at any opacity,
 copy's brightness rather than its alpha: the import measures each `lit` image's luminance and the
 carousel multiplies it up to a target, floor 1.4x and ceiling 6x. Three posts whose images differ in
 brightness by five times now produce glows within 5% of each other.
+
+**And it reaches further**, on Henry's ask the same day: blur sigma 36 to 64 scene units, with the
+render texture derived from it at three sigma so the falloff still reaches nothing before the edge.
+Light landing 90 units outside the screen went from 0.6% of full to 16.5%.
 
 **Verified in the browser, not assumed.** The mesh is a `PerspectiveMesh` on the manifest's four
 corners with its texture frame cropped to the quad's measured 1.682 aspect; the glow render texture

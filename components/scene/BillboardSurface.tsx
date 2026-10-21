@@ -68,23 +68,32 @@ const TEXT_STROKE = 8
 const MESH_VERTICES = 10
 
 /**
- * The glow behind the projected image, in scene units and at bake-like settings.
+ * The glow behind the projected image.
  *
  * Same recipe as the hover glow — Henry's Clip Studio one, blur a copy and put it
  * underneath — but the content changes every few seconds, so this one is rendered
  * into a texture per slide rather than baked by `npm run art`. Once every 4.5
  * seconds, never per frame (docs/ARCHITECTURE.md § Performance policy).
  *
- * `SPREAD` is the lesson from the object glow, in a new place: Henry drew a black
- * frame roughly 90 scene units wide around the lit surface, and a falloff longer than
- * that lights the whole frame evenly, which reads as a rectangle drawn around the
- * billboard rather than as light coming off it. The falloff has to finish inside the
- * frame, so the margin is the frame's width and the blur is sized to fade out well
- * within it.
+ * **`BLUR` is the reach, and `SPREAD` has to follow it.** The blur is what carries
+ * light away from the screen; the margin only has to be wide enough that the falloff
+ * has reached nothing before it hits the edge of the render texture, because a
+ * gaussian that runs out of room is cut off square and a straight-edged glow is the
+ * one thing this must never be. Three sigma is where a gaussian is done, so the
+ * margin is derived rather than chosen — raise the blur and the texture grows to
+ * match, with no second number to remember.
+ *
+ * Widening it does *not* make it fainter, which is worth knowing because the hover
+ * glow taught the opposite (docs/DESIGN.md § Lighting and glow). That lesson is about
+ * blurring a *silhouette*, where a fixed amount of opacity gets spread thinner the
+ * further it travels. This blurs a large filled rectangle, whose middle stays
+ * saturated however far the edges are smeared, so a bigger sigma only stretches the
+ * skirt outward — at 90 units past the screen, going from sigma 36 to sigma 64 takes
+ * the glow from 0.6% of full to 8%. Reach and strength happen to move together here.
  */
-const GLOW_SPREAD = 90
+const GLOW_BLUR = 16
 const GLOW_DOWNSCALE = 4
-const GLOW_BLUR = 9
+const GLOW_SPREAD = GLOW_BLUR * GLOW_DOWNSCALE * 3
 
 /**
  * How hard the slide is brightened before it is blurred into the glow.

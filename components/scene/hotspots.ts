@@ -161,11 +161,14 @@ export const HOTSPOTS: readonly Hotspot[] = [
       boost: 1.15,
       saturation: 2,
       gain: 4,
-      // Not so close to `peak` that hovering stops registering. The texture is now
-      // strong enough that 0.7 is already far brighter than the old 0.3 was, and the
-      // gap left above it is what makes pointing at the billboard still say
-      // something.
-      standing: 0.7,
+      // The gap between these two is the whole hover affordance, and alpha cannot go
+      // above 1 — so widening it means lowering the resting level, not raising the
+      // hovered one. There is room to: the carousel's glow is brightness-normalised
+      // per image now (BillboardSurface.tsx), which left the screen reading as lit at
+      // rest well below where it used to need to be. 0.6 to 1 is two thirds again on
+      // hover where 0.7 to 1 was two fifths, and the screen is still plainly on when
+      // nobody is pointing at it.
+      standing: 0.6,
       peak: 1,
     },
   },
