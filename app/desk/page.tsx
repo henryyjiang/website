@@ -22,7 +22,7 @@ import { projectAnchorId } from '@/lib/post-target'
  * project names one that exists.
  *
  * The about-me section used to be at the bottom of this tab and the skills grid at
- * the top of it. Both are gone — about moved to the Blog panel on 2026-10-21 and
+ * the top of it. Both are gone — about moved to the News panel on 2026-10-21 and
  * skills were cut the same day, along with each project's tag row. A list of
  * languages and a row of `#ml #quant` under every entry are both claims the work
  * itself already makes, and they were crowding the thing a reader came for. The data

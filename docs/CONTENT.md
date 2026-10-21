@@ -141,8 +141,9 @@ the aspect it is given and the mesh covers the quad, which means a tall image lo
 bottom. Full-bleed, roughly 16:9, is the shape to export.
 
 This file was `updates.ts` through Phase 2, when it was a changelog of three-line entries. It is a
-blog now — same two-surface rule, more per entry. The route stays `/updates` so shared links keep
-working, and `content/nav.ts` labels it **Blog**, which is what a reader calls it.
+feed of notices now — same two-surface rule, more per entry. The route stays `/updates` so shared
+links keep working, and `content/nav.ts` labels it **News**, renamed from "Blog" on 2026-10-21
+because an entry here is a one-line notice pointing elsewhere rather than an article.
 
 ### `links.ts`
 

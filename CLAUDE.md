@@ -63,7 +63,7 @@ app/                  Next routes. Scene mounts once in the root layout and neve
   page.tsx            Room, no overlay open
   desk/               Software + AI research overlay
   art/                Drawing portfolio overlay
-  updates/            Blog overlay (route name kept; the nav labels it Blog)
+  updates/            News overlay (route name kept; the nav labels it News)
 components/
   scene/              Pixi: layers, parallax camera, character, hotspots, glow
   overlay/            React: the three tab panels and shared chrome
@@ -106,7 +106,7 @@ the filename matching the entry's `slug`, and they land in `public/images/` rath
 tree. `icon.png` belongs to no entry at all: the import resizes it into `app/icon.png` and
 `app/apple-icon.png`, where Next's file convention finds it, hashes it and writes the `<link>` tags
 — so the favicon is a drop-in like everything else and no path is written down. A piece may be a video, in which case the import also produces the thumbnail everything that
-is not playing it shows. **Blog posts have no inbox**: a post borrows the picture of whatever it
+is not playing it shows. **Posts have no inbox**: a post borrows the picture of whatever it
 points at. See `docs/CONTENT.md` § Images.
 
 Rules enforced by this layout, all of them read from `art/README.md` rather than hardcoded:
@@ -195,13 +195,13 @@ with a glitch as the route transition and a palette measured out of Henry's own 
 does not rule out this glitch, which is the clean digital kind.
 
 **Panel interiors are settled, one shape per tab** (2026-10-21, `docs/DESIGN.md` § Panel interiors).
-Coding is chronological rows of image-plus-text box; Blog is a brief about section over condensed
+Coding is chronological rows of image-plus-text box; News is a brief about section over condensed
 news links that point *into* the site; Art is a grid of wide 16:9 cards opening a full-page popup
 on the glitch.
 Each tab is arranged differently on purpose — the three work areas are peers but they are not the
 same kind of thing to read.
 
-**One thing on the site is fetched rather than written: the blog tab's watchlist rows**, from
+**One thing on the site is fetched rather than written: the News tab's watchlist rows**, from
 MyAnimeList (`lib/myanimelist.ts`, `docs/CONTENT.md` § The watchlist). It needs `MAL_CLIENT_ID` in
 the environment and `MAL_USERNAME` in `content/about.ts`, and with either missing the rows are
 absent and everything else renders — which is the state of a fresh clone, so do not "fix" a build
@@ -213,7 +213,7 @@ QuantConnect strategies into one row, and the POTS predictor — and the Art tab
 since 2026-10-21 — `my-first-animation` and `current-wip-animation`, both 2D animations, which are
 also the first things to exercise the video path in anger. What is left is the blog post pointing
 at the first of them: its `target` is right and its copy is a placeholder, to be written when the
-Blog tab gets its pass.
+News tab gets its pass.
 
 **A piece's `date` is when the animation was made, not when it was added.** Both were read off the
 source files' `creation_time` rather than typed, which is why `my-first-animation` is dated

@@ -516,7 +516,7 @@ Tracked here so they don't get silently decided:
 - ~~**Which palette.**~~ `arasaka`, settled in Phase 5. Four others stay in `lib/theme.ts` and a
   swap is one constant, so this is reopenable at any time without it being a rebuild.
 - ~~**Panel interiors.**~~ Settled 2026-10-21, one shape per tab: Coding is rows of image-plus-text,
-  Blog is a brief about section over condensed inward-pointing news links, Art is a grid of wide
+  News is a brief about section over condensed inward-pointing links, Art is a grid of wide
   cards with a popup. `docs/DESIGN.md` § Panel interiors.
 - ~~**Do blog posts get their own routes?**~~ No. Settled 2026-10-20: the blog is a series of posts
   read in the panel, not a set of individually addressable pages. `slug` stays as the join to a

@@ -26,7 +26,8 @@
  * posts, so `slug` is a join key and never a route segment — it ties a post to its
  * image at `art/posts/<slug>.png` and has to stay stable for that reason alone.
  * The route stays /updates so links already shared keep working; the nav labels it
- * Blog, which is what a reader calls it.
+ * News, renamed from "Blog" on 2026-10-21 because an entry here is a notice
+ * pointing elsewhere rather than an article.
  *
  * SEED CONTENT. These entries describe the rebuild itself, because the feed needs
  * something real to render before Henry writes his own. Replace them.
@@ -38,7 +39,7 @@ import type { Post } from './types'
 
 export const POSTS: readonly Post[] = [
   {
-    // Rewrite this when the Blog tab gets its pass — the copy is a placeholder, the
+    // Rewrite this when the News tab gets its pass — the copy is a placeholder, the
     // piece it points at is not. It is also the one link the blog has that nothing
     // else does: a post opening a piece in the Art popup rather than navigating to
     // a page, so keep a post pointing at a piece here.

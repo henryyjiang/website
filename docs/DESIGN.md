@@ -44,10 +44,14 @@ The carousel on the billboard surface and the `/updates` page are **two views of
 the billboard shows the newest three posts, image and headline; the route lists them all. Neither
 holds its own copy. See `docs/CONTENT.md` § `posts.ts`.
 
-The nav calls that destination **Blog**, because that is what it is to a reader. The route keeps its
+The nav calls that destination **News**. It was **Blog** until 2026-10-21, and the rename is Henry's,
+on the grounds that it fits what the tab actually turned out to be: the entries are not articles, they
+are one-line notices pointing at a project or a drawing elsewhere on the site, and a reader who clicks
+"Blog" is promised prose this tab deliberately does not have (§ Panel interiors). The route keeps its
 original `/updates` name so links already shared keep working, and the hotspot keeps the id
 `billboard` because ids name what is in the room. Three names for one thing, each of them the right
-name in its own place — `content/nav.ts` explains the split.
+name in its own place — `content/nav.ts` explains the split, and is the only place the label is
+written.
 
 ## Visual direction
 
@@ -524,7 +528,7 @@ nothing surfaces it.
 Below 768px the row stacks: image above, text below, same order.
 
 **Each row is an anchor.** `#project-<slug>` on the row, because the blog links into this list by
-slug and has to be able to scroll to one entry (§ Blog below). The arriving entry is marked briefly
+slug and has to be able to scroll to one entry (§ News below). The arriving entry is marked briefly
 rather than permanently — a 1.2 s rule in `--primary` down its left edge, which says "this one" and
 then gets out of the way.
 
@@ -545,7 +549,7 @@ the whole of `content/` avoids second sources of truth. The three brand glyphs a
 simple-icons paths (CC0); an envelope and a sheet are drawn in `components/overlay/link-icons.tsx`,
 because an email and a résumé have no brand to be faithful to.
 
-### Blog — about at the top, then condensed news links
+### News — about at the top, then condensed news links
 
 Two parts, and the first is short.
 

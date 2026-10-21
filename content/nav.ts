@@ -10,6 +10,12 @@
  * An object is how you get somewhere in the room; this is the list of somewheres.
  * The routes keep their original names so that links already shared keep working,
  * which is also why a label can be reworded here without anything else moving.
+ *
+ * **This is the only place a destination is named.** `OverlayPanel` reads its
+ * heading back out of this list by pathname rather than taking a title prop, so the
+ * tab and the panel it opens cannot disagree — they did once, which is why it works
+ * this way. Renaming a destination is editing one string here. `/updates` went from
+ * "Blog" to "News" on 2026-10-21 and nothing else moved.
  */
 
 export type Destination = {
@@ -19,7 +25,7 @@ export type Destination = {
 
 export const DESTINATIONS: readonly Destination[] = [
   { href: '/', label: 'Home' },
-  { href: '/updates', label: 'Blog' },
+  { href: '/updates', label: 'News' },
   { href: '/desk', label: 'Coding' },
   { href: '/art', label: 'Art' },
 ]

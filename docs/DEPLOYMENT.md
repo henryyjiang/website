@@ -84,7 +84,7 @@ absent. `.env.example` is the full list with the reasoning.
 
 | Variable | Where | Effect if unset |
 | --- | --- | --- |
-| `MAL_CLIENT_ID` | Vercel project settings | The Blog tab's watchlist rows do not render |
+| `MAL_CLIENT_ID` | Vercel project settings | The News tab's watchlist rows do not render |
 | `NEXT_PUBLIC_SITE_URL` | Vercel project settings | The link preview names Vercel's own production host |
 
 `MAL_CLIENT_ID` has a second half that is **not** an environment variable: `MAL_USERNAME` in

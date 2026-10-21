@@ -371,5 +371,5 @@ Treating content as data is the single biggest maintainability win available her
   life of the page rather than the life of an effect. It was dropped for a design reason rather than
   that one, but the rule held either way. The headline's colour is now chosen at import from a fixed
   set of neons and arrives as a plain fill (`components/scene/BillboardSurface.tsx`).
-- **Blog post images are fetched for the three the carousel shows**, not for the whole archive. The
+- **Post images are fetched for the three the carousel shows**, not for the whole archive. The
   rest load with the panel that lists them.

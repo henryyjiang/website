@@ -1,5 +1,5 @@
 /**
- * The two rows on the Blog tab that are true rather than remembered.
+ * The two rows on the News tab that are true rather than remembered.
  *
  * `Currently watching` and `Last completed` were hand-typed in `content/about.ts`
  * until 2026-10-21, and they were wrong — on the old site and here — because the
