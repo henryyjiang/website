@@ -449,11 +449,17 @@ and a body of text at once, and a centred column three-quarters of the way up th
 hold both without cramping one. The header's top padding is what keeps the title clear of the tabs;
 it is the one measurement that has to agree with the nav's height.
 
-**It clears the tabs by about a line, and no more.** Tightened 2026-10-21. The padding was set to
-float the title comfortably under the nav and ended up leaving forty-odd pixels of nothing above
-every headline — the first thing a reader met on each of the three tabs was empty panel. A headline
-sitting just under the tabs reads as the top of the thing they are attached to, which is what they
-are.
+**It clears the tabs by about ten pixels, and no more.** Tightened 2026-10-21, twice. The padding
+was set to float the title comfortably under the nav and ended up leaving forty-odd pixels of
+nothing above every headline — the first thing a reader met on each of the three tabs was empty
+panel. A headline sitting just under the tabs reads as the top of the thing they are attached to,
+which is what they are.
+
+It is **one value at both sizes**, where the rest of the frame takes a breakpoint. The two things it
+has to clear move in opposite directions: the panel's own margin grows from 8px to 12px while the
+nav grows by 4px with its label. They cancel, so a single 48px lands about ten pixels under the tabs
+on a phone and on a desktop alike, and a `sm:` variant here would only be describing a difference
+that is not there.
 
 **The panel's title is the nav's label**, read from `content/nav.ts` rather than typed into the
 page. They name the same destination, so a page that carried its own title could disagree with the
