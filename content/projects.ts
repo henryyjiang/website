@@ -106,7 +106,7 @@ export const PROJECTS: readonly Project[] = [
   },
   {
     slug: 'quantconnect-models',
-    title: 'QuantConnect Models',
+    title: 'QuantConnect Models - #3 on Leaderboard',
     // Ties with pots-flareup-predictor; this entry is first in the file and so
     // first on the tab. See the note on dates above before reordering.
     date: '2026-05-11',
