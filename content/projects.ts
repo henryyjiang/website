@@ -65,22 +65,29 @@ export const PROJECTS: readonly Project[] = [
     links: [],
   },
   {
-    // The blurb is still FILLER — Henry is writing it. The title and date are his,
-    // and as of 2026-10-21 the links and the screenshot are real.
+    // Henry's own prose, written 2026-10-21. Nothing on this entry is filler now.
     //
     // The screenshot is the two Blender screenshots stacked vertically into one
     // image, which is why it is portrait (1683x2027) where the others are square or
     // wide. The row bounds it by height and it sits narrower than its column; that
     // is the same path the POTS phone capture takes and nothing is cropped.
+    //
+    // The two captures are the two addons the first paragraph names — FK/IK snapping
+    // on top, selection propagation below — so the picture and the words have to be
+    // changed together. Replacing one addon in the prose means re-stacking the image.
     slug: 'gsoc-blender-contributions',
     title: 'GSoC and Blender Contributions',
     date: '2026-08-01',
     blurb:
-      'FILLER — Google Summer of Code, and contributions to Blender. Replace this with what the work actually is.',
+      "I've been using Blender for many years as a hobbyist and was interested in becoming an open source contributor myself. I had some addons that I had created for personal use, and uploaded those to the public for others to use as well. Those were an IK/FK bone snapping tool, and a selection propagation tool, which have over 10,000 downloads as a whole. From there, I started fixing some bugs and found out about Google Summer of Code.",
+    detail: [
+      "I submitted a proposal for modeling for edge editing and was very happy to be accepted. My PRs for my project were a port of the Edge Flow addon to native Blender, a clone and slide toggle for edge sliding, and a follow curvature toggle for loop cut. The experience was very interesting as I was coding with minimal agent based assistance, navigating a large codebase and learning to follow Blender's coding conventions. I drastically improved my knowledge of C++, linear algebra, and low level operations through my time working on my GSoC project.",
+      'I continue to contribute and I hope that my completed PRs will be merged for an upcoming Blender release soon. :D',
+    ],
     tags: ['open-source', 'graphics'],
     links: [
       {
-        label: 'GSoC Final Project',
+        label: 'GSoC Submission',
         href: 'https://devtalk.blender.org/t/gsoc-2026-new-edge-editing-operations/45200',
       },
       {

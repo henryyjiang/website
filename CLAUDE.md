@@ -222,11 +222,16 @@ The Art tab is entirely real: `my-first-animation` and `current-wip-animation`, 
 which are also the first things to exercise the video path in anger. The Coding tab was cut from
 eight entries to two on 2026-10-21 — `quantconnect-models`, which merges the two QuantConnect
 strategies into one row, and the POTS predictor — and then two filler entries were added the same
-day: `cortex-rdm-paper` and `gsoc-blender-contributions`. Both carry Henry's titles and dates and a
-placeholder blurb. `cortex-rdm-paper` still shows a generated stand-in screenshot; drop a real one
-at `art/projects/cortex-rdm-paper.png` to replace it. `gsoc-blender-contributions` is no longer
-filler apart from its blurb — it has its real links and, since 2026-10-21, a real screenshot, two
-Blender captures stacked into one portrait image. In `content/posts.ts` every title and date is Henry's and
+day: `cortex-rdm-paper` and `gsoc-blender-contributions`. **Only the first of those is still
+filler**: it carries Henry's title and date, a placeholder blurb and a generated stand-in
+screenshot, and a real one dropped at `art/projects/cortex-rdm-paper.png` replaces the stand-in.
+`gsoc-blender-contributions` was finished on 2026-10-21 — Henry's prose, his two links, and a real
+screenshot made of two Blender captures stacked into one portrait image. **Those two captures are
+the two addons its first paragraph names**, so its words and its picture have to change together.
+
+Three of the four Coding entries are now Henry's own prose, written on 2026-10-21 and pasted in
+rather than drafted here: the POTS predictor, QuantConnect and this one. Treat the wording as his —
+fix a typo, but do not rewrite a sentence to read better. In `content/posts.ts` every title and date is Henry's and
 every `body` is a placeholder, which shows nowhere because `body` is not rendered.
 
 **A piece's `date` is when the animation was made, not when it was added.** Both were read off the
