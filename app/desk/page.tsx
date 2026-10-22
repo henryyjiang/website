@@ -10,8 +10,8 @@ import { projectAnchorId } from '@/lib/post-target'
 /**
  * Software and AI research: the project list, newest first.
  *
- * **A row is an image and a text box beside it** (docs/DESIGN.md § Panel interiors).
- * The image column is `--shot` wide and the image keeps its own height, because the
+ * **A row is one box with the image floated inside it** (docs/DESIGN.md § Panel
+ * interiors). The image is `--shot` wide and keeps its own height, because the
  * import deliberately does not crop — `art/projects/` holds square screenshots and
  * 16:9 ones and both are the shape they were exported at. Forcing a ratio here would
  * crop a screenshot whose content runs to its edges, which is most of them.
@@ -28,6 +28,9 @@ import { projectAnchorId } from '@/lib/post-target'
  * itself already makes, and they were crowding the thing a reader came for. The data
  * stays in `content/`; nothing surfaces it.
  */
+/** Body copy in a row's text box. Every paragraph of it, at one weight. */
+const PARAGRAPH = 'text-sm leading-relaxed sm:text-base'
+
 export default function DeskPage() {
   const projects = byDateDesc(PROJECTS)
 
@@ -51,11 +54,36 @@ export default function DeskPage() {
               tabIndex={-1}
               className="scroll-mt-1 pl-3 outline-none"
             >
-              <article
-                className={`grid items-start gap-4 sm:gap-6 ${
-                  image ? 'sm:grid-cols-[var(--shot)_minmax(0,1fr)]' : ''
-                }`}
-              >
+              {/*
+               * **One box per row, with the image floated inside it**, so that the
+               * prose wraps beside the image and then runs the full width of the row
+               * once it is past the bottom of it.
+               *
+               * This was two boxes in a two-column grid until 2026-10-21. A grid item
+               * is a rectangle, and the text column therefore stayed narrow for its
+               * whole height no matter how far past the image it ran — a long entry
+               * was a tall thin column of text beside a large empty space. Nothing in
+               * grid or flex fixes that: both lay out rectangles, and text running
+               * beside an image and then under it is an L-shape. A float is the one
+               * thing in CSS that does it, and a float only affects line boxes, so
+               * the text cannot be a box of its own any more — hence one border
+               * around the pair rather than one around each.
+               *
+               * `flow-root` is load-bearing: it makes this box contain the float, so
+               * the border wraps the image on a row whose image is taller than its
+               * text. Without it the image hangs out of the bottom of its own row.
+               *
+               * **`max-w` is on the row, and it has to be.** The measure needs
+               * capping — the panel is nearly full-screen, so prose running the full
+               * width of a row reached ~264 characters a line at 1920px against the
+               * 45–75 that reads comfortably. The obvious place for that cap is the
+               * paragraph, and it is the wrong one: a `max-width` on a paragraph is
+               * measured from the container's left content edge, which is *behind*
+               * the float, so it shortens the lines running beside the image and
+               * leaves the lines below it exactly as long. Capping the row caps
+               * both. 56rem is the dial — lower it for shorter lines.
+               */}
+              <article className="u-notch flow-root border border-dim/25 bg-ground/40 p-4 sm:max-w-[56rem] sm:p-5">
                 {image ? (
                   /*
                    * <picture> rather than a bare <img> because the manifest carries a
@@ -66,20 +94,28 @@ export default function DeskPage() {
                    * at an offset that is about to move.
                    *
                    * Width-led with a ceiling on the height, and from `sm` up both are
-                   * `--shot` (app/globals.css). One number means a square screenshot —
-                   * two of the eight are square — fills the column exactly, while a
+                   * `--shot` (app/globals.css). The width is set here rather than by a
+                   * grid column now, because a float shrink-wraps its contents and
+                   * would otherwise be as wide as whatever image it happens to hold.
+                   * One number means a square screenshot fills it exactly, while a
                    * portrait one, the phone capture is 684x1490, is bounded by that
-                   * same square instead of making its row three times the height of
-                   * the text beside it. Nothing is cropped either way; a tall image
-                   * simply sits narrower than the column.
+                   * same square and centred in it. Nothing is cropped either way.
                    *
-                   * Below `sm` the row stacks and there is no column, so the width
-                   * half of that number has nothing to do and `--shot` would only be
+                   * `min(var(--shot), 38%)` because the row is now capped and
+                   * `--shot` is a fraction of the *viewport*: past the cap the
+                   * viewport keeps growing and the row does not, so the unclamped
+                   * value would eventually be wider than the row holding it. The
+                   * percentage is of the row, so the image stays in proportion to the
+                   * text beside it at every width. At the cap the two agree almost
+                   * exactly, which is why this is not visible as a change in size.
+                   *
+                   * Below `sm` there is no float and the row stacks, so the width half
+                   * of that number has nothing to do and `--shot` would only be
                    * imposing a laptop's fraction of the screen on a phone — where it
                    * is smaller than the ceiling this always had. So the plain 22rem
                    * stays underneath, and a phone's images are the size they were.
                    */
-                  <picture className="u-notch flex justify-center overflow-hidden border border-dim/25 bg-ground/60">
+                  <picture className="u-notch mb-4 flex justify-center overflow-hidden border border-dim/25 bg-ground/60 sm:float-left sm:mr-6 sm:mb-3 sm:w-[min(var(--shot),38%)]">
                     <source srcSet={image.src} type="image/webp" />
                     <img
                       src={image.fallback}
@@ -93,7 +129,15 @@ export default function DeskPage() {
                   </picture>
                 ) : null}
 
-                <div className="u-notch flex flex-col gap-3 border border-dim/25 bg-ground/40 p-4 sm:p-5">
+                {/*
+                 * A plain block, deliberately: `space-y-3` spaces the children with
+                 * margins, where the `flex flex-col gap-3` this replaced would have
+                 * made this a flex container, and a flex container ignores floats
+                 * entirely — the image would have sat *under* the text rather than
+                 * beside it. Nothing here may establish a block formatting context
+                 * for the same reason.
+                 */}
+                <div className="space-y-3">
                   <p className="u-telemetry flex flex-wrap items-center gap-x-3 text-dim">
                     <span aria-hidden="true">
                       ◢ prj.{String(projects.length - index).padStart(2, '0')}
@@ -103,10 +147,18 @@ export default function DeskPage() {
 
                   <h2 className="text-xl text-active sm:text-2xl">{project.title}</h2>
 
-                  <p className="text-sm leading-relaxed sm:text-base">{project.blurb}</p>
-                  {project.detail ? (
-                    <p className="text-sm leading-relaxed opacity-70">{project.detail}</p>
-                  ) : null}
+                  {/*
+                   * `blurb` and `detail` are consecutive paragraphs of one piece of
+                   * prose, so they render identically — same size, same opacity, the
+                   * gap between them the only thing marking the break.
+                   *
+                   * `detail` was a dimmer, smaller second tier until 2026-10-21, when
+                   * the first entry to actually use it got a two-paragraph write-up
+                   * and the second half read as fine print under the first. One
+                   * class, named once, is why they cannot drift apart again.
+                   */}
+                  <p className={PARAGRAPH}>{project.blurb}</p>
+                  {project.detail ? <p className={PARAGRAPH}>{project.detail}</p> : null}
 
                   {project.links.length > 0 ? (
                     <div className="mt-1 flex flex-wrap gap-2">

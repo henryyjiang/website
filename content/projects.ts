@@ -96,11 +96,23 @@ export const PROJECTS: readonly Project[] = [
     ],
   },
   {
+    // Henry's own prose, written 2026-10-21, replacing the one-sentence spec blurb
+    // carried over from the old site. Two paragraphs, so `blurb` carries the first
+    // and `detail` the second. This is the first entry to use `detail` at all, and
+    // using it is what showed that it was styled wrong: it was a dimmer, smaller
+    // second tier, which turned the back half of a write-up into fine print. Both
+    // paragraphs render at one weight now (`app/desk/page.tsx` § `PARAGRAPH`).
+    //
+    // The accuracy figure is 27%, and it is deliberate. The blurb this replaced
+    // claimed "70%+ flareup detection accuracy 15 minutes in advance"; that number
+    // lived nowhere else in the repo and is gone with it. Do not restore it.
     slug: 'pots-flareup-predictor',
     title: 'ML POTS Flareup Predictor',
     date: '2026-05-11',
     blurb:
-      'Full-stack iOS app connecting over BLE to collect 1M+ entries of live heart rate and ECG data, with a boosted tree classifier reaching 70%+ flareup detection accuracy 15 minutes in advance.',
+      "My girlfriend has POTS and used to use this app to track her heart rate and detect flareups that cost her $5 a month. I coded her one for FREE and got her a new heart rate monitor since she always complained that the old one was uncomfortable. What's nice about the Polar H10 is that it also collects ECG data and other useful advanced metrics like time between heartbeats, perfect for training an ML model to not only alert when a POTS flareup is occurring, but also predict when one's likely to happen before it ever does.",
+    detail:
+      'I got the idea from a paper on heart rate monitors having a high flareup prediction likelihood for diabetes and thought, "Why not try it for POTS?" The model I used is a BoostedTreeClassifier built into Apple\'s XCode, and I collected 1M+ data entries for about 2 months on the heart monitor before training the model. After some tweaking and optimization I managed to get the prediction accuracy up to a rather unimpressive 27%, which shows just how complex POTS is as a bodily process and certainly increases my appreciation of service dogs! With more data it might be more accurate in testing, and in practice it\'s hard to know just how many flareups it\'s prevented by alerting when likelihood of flareup is high after all. Either way, I think it\'s better to have the app\'s notifications than to not.',
     tags: ['ml', 'ios', 'health'],
     links: [{ label: 'GitHub', href: 'https://github.com/henryyjiang/potsmonitor' }],
   },

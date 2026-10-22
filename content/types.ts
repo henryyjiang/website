@@ -27,6 +27,15 @@ export type Project = {
   /** ISO date. Required: the list is timestamped and sorts on this, never on array position. */
   date: string
   blurb: string
+  /**
+   * A second paragraph, for an entry that wants one. It renders exactly as `blurb`
+   * does — same size, same opacity (`app/desk/page.tsx` § `PARAGRAPH`) — so the two
+   * are one piece of prose broken in two, not a summary and its small print. It was
+   * the small print until 2026-10-21, when the first entry to use it arrived.
+   *
+   * Prose only. There is no third slot: a write-up needing more than two paragraphs
+   * wants this field to become an array, not a `detail2`.
+   */
   detail?: string
   /**
    * NOT SURFACED. The Coding rows showed these as `#ml #quant` under each entry
