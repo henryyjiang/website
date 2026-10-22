@@ -52,7 +52,7 @@ export const revalidate = 3600
  * one. Anything that wants a paragraph is a project or a piece, and the post points
  * at it.
  *
- * **The thumbnail is `--post-shot`, a fifth of the screen**, where a Coding
+ * **The thumbnail is `--post-shot`, a sixth of the screen**, where a Coding
  * screenshot is `--shot` and gets a third (app/globals.css). The row is exactly as
  * tall as its picture, so that one number is the feed's height as well, and the two
  * tabs hold their proportion to each other at every window width rather than only
@@ -60,7 +60,8 @@ export const revalidate = 3600
  * 96px square turned out to read as a table of contents rather than as a feed.
  *
  * **The headline carries the row.** A 288px picture beside 16px type read as a
- * caption next to a photograph rather than as an entry, so the title is display
+ * caption next to a photograph rather than as an entry — that was the thumbnail at
+ * 1440 while it was a fifth of the screen, and it is 230px now — so the title is display
  * type that scales with the breakpoints and the date is the large readout. The one
  * line of body went at the same time (2026-10-21): with the headline at this size
  * it was the small print under a poster, and a feed of five posts does not need a
@@ -328,7 +329,9 @@ function PostRow({ post }: { post: Post }) {
   // The gutter widens with the thumbnail. At 16px a 288px picture and a 48px
   // headline were touching, which made the row read as one block rather than as a
   // picture and the thing it is about; on a phone, where the picture is 80px, the
-  // same 16px is right and anything more eats the headline's width.
+  // same 16px is right and anything more eats the headline's width. The picture is
+  // 230px at 1440 since the feed came down to a sixth, so the wide gutters have
+  // more room than they were set with rather than less — left alone on purpose.
   const shell =
     'u-notch flex w-full items-center gap-4 border border-dim/25 bg-ground/40 p-4 transition-colors duration-150 sm:gap-6 lg:gap-8'
 

@@ -593,8 +593,9 @@ Coding, next to the socials, because it is a credential about the work rather th
 no prose at all. A reader should take in the whole feed at a glance, and anything that wants a
 paragraph is a Coding entry or an Art piece, not a post.
 
-**The thumbnail is a fifth of the screen, where a Coding screenshot is a third** — `--post-shot`
-against `--shot` in `app/globals.css`, settled 2026-10-21. The row is exactly as tall as its
+**The thumbnail is a sixth of the screen, where a Coding screenshot is a third** — `--post-shot`
+against `--shot` in `app/globals.css`, settled 2026-10-21 at a fifth and brought down to a sixth
+the same day, when the feed wanted to be smaller. The row is exactly as tall as its
 thumbnail, so that one number is the feed's height as well, and the ratio is the real decision: a
 post is a notice about something shown at full size one tab over, so it is drawn at a fixed
 fraction of the size that thing gets, and the two tabs keep their proportion to each other at every
@@ -602,7 +603,8 @@ window width rather than only at the one they were judged at. A fixed pixel squa
 and read as a table of contents.
 
 **The headline is display type, set in caps, and it is what carries the row.** A 288px picture next
-to a 16px title read as a caption beside a photograph rather than as an entry, so the title scales
+to a 16px title — 288px being the thumbnail at 1440 while it was still a fifth, where it is 230px
+now — read as a caption beside a photograph rather than as an entry, so the title scales
 with the breakpoints to 48px at 1440 and the date line goes up with it. The caps came last and put
 the feed in the same voice as the panel titles and the nav; they take 0.03em of tracking for the
 reason every uppercase run on this site does — Rajdhani is condensed and closes up without it. That is also what retired the one

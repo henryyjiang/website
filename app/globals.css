@@ -56,20 +56,27 @@
   --shot: clamp(16rem, 33vw, 46rem);
 
   /*
-   * The same idea for the blog feed's thumbnail, at a fifth of the screen where a
+   * The same idea for the blog feed's thumbnail, at a sixth of the screen where a
    * project screenshot gets a third. The ratio is the point: a post is a notice
    * about something that is shown at full size one tab over, so it is drawn at a
    * fraction of the size that thing gets, and the two tabs stay in proportion as
    * the window changes rather than only at the width they were eyeballed at.
    *
    * A feed row is exactly as tall as its thumbnail, so this is the row's height
-   * too. The floor and ceiling are `--shot`'s, scaled by the same 20/33, so both
-   * stop growing at about the same very wide display.
+   * too — **shrinking this shrinks the rows, and it is the only thing that does.**
+   * The type does not move with it: the headline is `text-3xl` upwards in
+   * `app/updates/page.tsx` and set in its own steps, so a smaller picture means a
+   * row of the same words in less space, not a quieter one.
+   *
+   * It was 20vw until 2026-10-21, when Henry asked for the feed a fifth smaller;
+   * 20 x 0.8 is 16. The floor and ceiling come down with it, as `--shot`'s scaled
+   * by roughly the same 16/33, so everything still stops growing at about the same
+   * very wide display.
    *
    * `sm` and up, for the reason `--shot` is: below that the text beside it has
-   * nowhere to go, and a fifth of a phone is most of the row.
+   * nowhere to go, and a sixth of a phone is most of the row.
    */
-  --post-shot: clamp(10rem, 20vw, 28rem);
+  --post-shot: clamp(8rem, 16vw, 22rem);
 }
 
 html,
