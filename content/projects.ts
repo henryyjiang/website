@@ -16,9 +16,21 @@
  * DATES NEED REVIEW. The old site's markup carried no dates at all, so these were
  * derived from the archived git history — the date each entry first appeared in
  * `index.html` on the `archive/old-site` branch. That is an *upper bound* on when
- * the work was done, not the work's date. `quantconnect-models` is the exception and
- * is right: Henry dated it June 2026 himself on 2026-10-21. Only the month and year
- * are ever shown, so the day is filler.
+ * the work was done, not the work's date. Only the month and year are ever shown,
+ * so the day is filler throughout.
+ *
+ * `quantconnect-models` is the one Henry has set himself: June 2026 on 2026-10-21,
+ * then **May 2026 later the same day**, so that it agrees with the post announcing
+ * it in `content/posts.ts`, which is dated 2026-05-11. A project that postdates its
+ * own announcement reads as an error to anyone comparing the two tabs.
+ *
+ * That gives it the same date as `pots-flareup-predictor`. The two therefore tie,
+ * and a tie is settled by array position, because `byDateDesc` sorts stably and
+ * `localeCompare` returns 0 for equal strings. QuantConnect is above POTS in this
+ * file and so appears above it on the tab. **Reordering these two objects would
+ * silently reorder the Coding tab**, which is the hazard `content/types.ts` warns
+ * about: the date decides the order and is displayed nowhere precise enough to show
+ * you that it did.
  *
  * Its screenshot is the two backtests stacked into one square image — both strategies
  * are in one row now, so one picture has to show both.
@@ -66,7 +78,9 @@ export const PROJECTS: readonly Project[] = [
   {
     slug: 'quantconnect-models',
     title: 'QuantConnect Models',
-    date: '2026-06-11',
+    // Ties with pots-flareup-predictor; this entry is first in the file and so
+    // first on the tab. See the note on dates above before reordering.
+    date: '2026-05-11',
     blurb:
       'Two systematic strategies published on QuantConnect. A mid-cap macro equity model combining BQP and discrete quantum walk strategies reaches 80%+ CAGR and 1.29 Sharpe, sizing positions by quantum stochastic walk asset correlation. A fractal regime-detection OTM options strategy classifies volatility regimes with Hurst exponents (DFA), Hill tail-index and multifractal spectral width, reaching 60%+ CAGR and 1.18 Sharpe across 105 trades from 2020–2025.',
     tags: ['quant', 'quantum', 'ml', 'options'],
