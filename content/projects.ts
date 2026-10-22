@@ -48,19 +48,27 @@ import type { Project } from './types'
 
 export const PROJECTS: readonly Project[] = [
   {
-    // FILLER, added 2026-10-21. The title and the date are Henry's; everything else
-    // is a placeholder written to hold the row's shape until he fills it in. It has
-    // no screenshot yet, which the import warns about and the row renders without —
-    // drop one at art/projects/cortex-rdm-paper.png to give it a picture.
+    // Henry's own prose, written 2026-10-21. No links yet — the paper is not out.
     //
     // Dated ahead of today on purpose: the paper is in progress and November is when
     // he expects it. The list sorts on `date`, so it leads until something newer
     // lands.
+    //
+    // **Its screenshot is the one bright image in `art/projects/`** — an architecture
+    // diagram on white, luma 0.969. That is fine in the row, which just shows it, but
+    // the billboard draws a post's headline over this image and the best of the five
+    // headline colours manages 1.34:1 against it, well under the 4.5:1 the import
+    // wants. `npm run art` warns about it on every run, and `custom-models-trained`
+    // in `content/posts.ts` is the post that points here, so the billboard does show
+    // it. The fix is a darker diagram, not a different colour — all five were tried.
     slug: 'cortex-rdm-paper',
     title: 'Cortex RDM Architecture WIP Paper',
     date: '2026-11-01',
     blurb:
-      'FILLER — a paper in progress on the Cortex RDM architecture. Replace this with what the work actually is.',
+      "I'm currently working on a novel approach to integrating memory into the latent space of a recurrent depth model, approaching from a computational modeling perspective.",
+    detail: [
+      "After extensive iteration and collaboration with professors, I've just trained the final model and control and will have results published in a paper in the coming months, targeting an ICML conference paper. Stay tuned!",
+    ],
     tags: ['research', 'ml', 'architecture'],
     links: [],
   },

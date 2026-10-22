@@ -1,22 +1,22 @@
 {
-  "generatedAt": "2026-10-22T01:57:10.248Z",
+  "generatedAt": "2026-10-22T02:15:38.314Z",
   "images": {
     "projects": {
       "cortex-rdm-paper": {
         "src": "/images/projects/cortex-rdm-paper.webp",
         "fallback": "/images/projects/cortex-rdm-paper.png",
-        "width": 1600,
-        "height": 900,
+        "width": 1422,
+        "height": 824,
         "lit": {
           "src": "/images/projects/cortex-rdm-paper--lit.webp",
           "fallback": "/images/projects/cortex-rdm-paper--lit.png",
-          "width": 1600,
-          "height": 900,
-          "luma": 0.0738,
+          "width": 1422,
+          "height": 824,
+          "luma": 0.9688,
           "headline": {
-            "id": "orange",
-            "hex": "#FF9B53",
-            "contrast": 9.02
+            "id": "yellow",
+            "hex": "#FBF653",
+            "contrast": 1.34
           }
         }
       },
