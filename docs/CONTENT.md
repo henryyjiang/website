@@ -214,19 +214,26 @@ is an account setting on AniList and the panel renders `x/10`.
 **With the username missing the rows are simply absent**, which is the state of a fresh clone and
 renders correctly — the `Watchlist` heading and two dashed rows the height of the real ones stay on
 the page in their place (`app/updates/page.tsx` § `WatchlistPending`), because Henry wanted the
-section the rows will land in visible while AniList is off rather than the clean absence it had
+section the rows would land in visible while AniList was off rather than the clean absence it had
 before 2026-10-21. So does a 403, a 404, a timeout, or a response whose shape has changed:
 `parseWatchlist` validates every row and anything unrecognised is skipped rather than rendered.
 Nothing in that module throws, and nothing in it can fail a build — a portfolio that will not
 deploy because someone else's API is having an afternoon is the worse outcome.
 
-**AniList's API is switched off as of 2026-10-21**, answering every query with HTTP 403 and `The
-AniList API has been temporarily disabled due to severe stability issues.` So this pipeline is
-written but **unverified against live data**, and the rows will not appear until AniList turns it
-back on. `parseWatchlist` is exported and pure, and that half — ours — is checked against recorded
-payloads; the query itself has never met the real schema, so the field names and enums are from
-AniList's documented schema rather than from a response. When the rows stay missing, the log line
-says which side is at fault: `lib/anilist.ts` § `hint` spells the status codes out.
+**It is on, and verified against live data as of 2026-10-22.** AniList had their API switched off
+when this was written — every query answered with HTTP 403 and `The AniList API has been temporarily
+disabled due to severe stability issues` — so the pipeline shipped untested, with its field names and
+enums taken from AniList's documented schema rather than from a response. The API came back on
+2026-10-22, `ANILIST_USERNAME` went in, and the query met the real schema for the first time. It
+resolved as written, and **no code changed**: both aliases, the fragment and `POINT_10_DECIMAL`
+reading back a `9.2` all behaved as the recorded payloads had asserted. Two of those assertions
+turned out to matter on the real list — `media.title.english` is genuinely `null` on entries with no
+English title, so `titleOf`'s romaji fallback is load-bearing rather than defensive, and a decimal
+score does arrive as a float that wants rounding.
+
+`parseWatchlist` stays exported and pure, and `lib/anilist.ts` § `hint` keeps its 403 case: an API
+that has been off once can be off again, and when the rows go missing the log line is what says
+which side is at fault.
 
 **It is fetched hourly, not per request.** `export const revalidate = 3600` in
 `app/updates/page.tsx` keeps the route prerendered and makes it ISR: the hit happens on

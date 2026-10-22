@@ -44,6 +44,19 @@ The carousel on the billboard surface and the `/updates` page are **two views of
 the billboard shows the newest three posts, image and headline; the route lists them all. Neither
 holds its own copy. See `docs/CONTENT.md` § `posts.ts`.
 
+**And clicking it lands on the post it was showing**, not at the top of the tab (2026-10-22). The
+billboard is the one hotspot that is not a whole subject — the desk means all of the coding work and
+the bed means all of the drawings, but the billboard means *this post, right now*, and sending a
+reader to the top of News made them hunt for what they had just been looking at. The About section
+above the feed is tall enough that the post is off-screen when the panel opens, which is what made it
+obvious. So the carousel publishes the slug of the slide that is up (`lib/store.ts` § `billboard`),
+the click handler turns it into `/updates#post-<slug>`, and the panel scrolls to that row and focuses
+it — the same arrival the blog already gets when it links into the Coding list, run by the same
+`ScrollToAnchor`.
+
+The nav's **News** tab still goes to the top of the tab, and should: a tab is a place, and the reader
+who picked it from the nav has not expressed an interest in one post. The billboard has.
+
 The nav calls that destination **News**. It was **Blog** until 2026-10-21, and the rename is Henry's,
 on the grounds that it fits what the tab actually turned out to be: the entries are not articles, they
 are one-line notices pointing at a project or a drawing elsewhere on the site, and a reader who clicks

@@ -4,6 +4,7 @@ import { Application } from '@pixi/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
+import { postAnchorId } from '@/lib/post-target'
 import { getSceneState } from '@/lib/store'
 import { DEFAULT_PALETTE, hex, PALETTES } from '@/lib/theme'
 import { HOTSPOTS } from './hotspots'
@@ -109,11 +110,24 @@ function useSceneClickNavigation(): void {
         return
       }
 
-      const { hovered, overlay } = getSceneState()
+      const { hovered, overlay, billboard } = getSceneState()
       if (!hovered || overlay) return
 
       const hotspot = HOTSPOTS.find((h) => h.id === hovered)
-      if (hotspot) router.push(hotspot.href)
+      if (!hotspot) return
+
+      // The billboard is showing one post, so it goes to that post rather than to
+      // the top of the tab (Henry, 2026-10-22: the About section above the feed is
+      // tall enough that the top of the tab is nowhere near what he clicked). Every
+      // other hotspot is an object that means a whole panel.
+      //
+      // `billboard` is null when there is no carousel to ask — no WebGL, or no post
+      // with a picture — and the plain route the hotspot carries is then exactly the
+      // right answer rather than a degraded one.
+      const anchor =
+        hotspot.id === 'billboard' && billboard ? `#${postAnchorId(billboard)}` : ''
+
+      router.push(`${hotspot.href}${anchor}`)
     }
 
     window.addEventListener('click', onClick)

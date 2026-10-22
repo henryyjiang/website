@@ -8,9 +8,15 @@ const MARK_MS = 2000
 /**
  * Scroll the panel to the row named in the URL's hash, and say which one it is.
  *
- * The blog links into the Coding list by slug (`/desk#project-fwubbo`), so arriving
- * at the tab is only half of it — the reader has to land on the entry they clicked,
- * and then be told which of several similar-looking rows it was.
+ * The blog links into the Coding list by slug (`/desk#project-fwubbo`), and the
+ * billboard links into the blog's own feed the same way (`/updates#post-<slug>`), so
+ * arriving at the tab is only half of it — the reader has to land on the entry they
+ * clicked, and then be told which of several similar-looking rows it was.
+ *
+ * It mounts on both of those tabs and reads the hash once, which is all either of
+ * them needs: both arrivals are route changes that mount the panel. Changing only
+ * the hash on a tab that is already open would not re-run this, and nothing on the
+ * site does that — the scene's hotspots are unhoverable while a panel is open.
  *
  * Done here rather than left to the browser because the panel body is its own scroll
  * container inside a fixed layout, and because the arrival is a client-side route

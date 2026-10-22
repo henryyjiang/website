@@ -41,9 +41,24 @@ export type SceneState = {
   overlay: HotspotId | null
   /** Non-null while a route change is glitching. Written by React. */
   transition: Transition | null
+  /**
+   * The slug of the post currently up on the billboard, if there is one. Written by
+   * the carousel, read by the click handler that navigates.
+   *
+   * It is here because clicking the billboard goes to *that post* rather than to the
+   * top of the News tab, and the two halves of that live on opposite sides of the
+   * boundary: the carousel knows which slide is up, and the window-level click
+   * listener in `components/scene/SceneCanvas.tsx` is what turns a hotspot into a
+   * route. Passing the slug through here is the sanctioned way for them to meet.
+   *
+   * `null` is an ordinary state, not a failure: no WebGL and there is no carousel to
+   * ask, and a post with no picture never reaches the billboard at all. The click
+   * falls back to the plain `/updates` the hotspot already carries.
+   */
+  billboard: string | null
 }
 
-let state: SceneState = { hovered: null, overlay: null, transition: null }
+let state: SceneState = { hovered: null, overlay: null, transition: null, billboard: null }
 
 const listeners = new Set<() => void>()
 
@@ -73,6 +88,12 @@ export function setTransition(transition: Transition | null): void {
   emit()
 }
 
+export function setBillboardPost(billboard: string | null): void {
+  if (state.billboard === billboard) return
+  state = { ...state, billboard }
+  emit()
+}
+
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener)
@@ -80,7 +101,12 @@ function subscribe(listener: () => void): () => void {
 }
 
 /** Server snapshot is the initial state: nothing hovered, nothing open, nothing moving. */
-const SERVER_STATE: SceneState = { hovered: null, overlay: null, transition: null }
+const SERVER_STATE: SceneState = {
+  hovered: null,
+  overlay: null,
+  transition: null,
+  billboard: null,
+}
 
 export function useSceneState(): SceneState {
   return useSyncExternalStore(subscribe, getSceneState, () => SERVER_STATE)

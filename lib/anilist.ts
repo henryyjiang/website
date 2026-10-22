@@ -24,18 +24,31 @@
  *
  * **It can always fail, and failing is not an error.** No username, AniList down,
  * the list set to private, a shape that has changed under us: every one of those
- * returns `null` and the about section renders without those two rows, exactly as it
- * does today. Nothing here throws, and nothing here is allowed to fail a build — a
+ * returns `null` and the about section renders with the space held open where the
+ * two rows go, which is what it did for the whole of the day before the rows went
+ * live. Nothing here throws, and nothing here is allowed to fail a build — a
  * portfolio that will not deploy because someone else's API is having an afternoon
  * is a worse outcome than a missing line.
  *
- * **Which is not hypothetical: AniList's API is switched off as of 2026-10-21.** It
- * answers every query with HTTP 403 and `The AniList API has been temporarily
- * disabled due to severe stability issues.` That is why this went in untested
- * against live data, and it is why `hint()` spells that status out — when the rows
- * do not appear, the question is whether the fault is here or there, and a 403 is the
- * answer "there". `parseWatchlist` is exported and pure so the half that is ours can
- * be checked without a network, which is how it was.
+ * **Which was not hypothetical: AniList's API was switched off when this was
+ * written** (2026-10-21), answering every query with HTTP 403 and `The AniList API
+ * has been temporarily disabled due to severe stability issues.` So it went in
+ * untested against live data, with the field names and enums below taken from
+ * AniList's documented schema rather than from a response.
+ *
+ * **It came back on 2026-10-22 and the query met the real schema for the first
+ * time.** It resolved as written: both aliases, the fragment, and
+ * `POINT_10_DECIMAL` reading back a `9.2`. Two things the recorded payloads had only
+ * asserted turned out to be true of the live list as well — `media.title.english`
+ * is genuinely `null` on entries that have no English title, so `titleOf`'s fallback
+ * is load-bearing rather than defensive, and a decimal score does arrive as a float
+ * that wants rounding. Nothing here changed when it came back, which is the useful
+ * part of the report.
+ *
+ * `hint()` stays, and so does the 403 case: an API that has been off once can be off
+ * again, and when the rows do not appear the only question worth answering from a
+ * log line is whether the fault is here or there. `parseWatchlist` is exported and
+ * pure so the half that is ours can still be checked without a network.
  *
  * **One request, two lists.** The query asks for both lists in one POST under two
  * aliases. GraphQL resolves aliases independently and returns partial `data`
@@ -259,8 +272,9 @@ function hint(status: number): string {
   switch (status) {
     case 403:
       return (
-        ' A 403 is AniList refusing the API outright, which is what it has been doing' +
-        ' since before this was written — not anything about this list or this code.'
+        ' A 403 is AniList refusing the API outright — not anything about this list' +
+        ' or this code. They did exactly that from 2026-10-21 until 2026-10-22, so it' +
+        ' is a state they have been in before and can be in again.'
       )
     case 404:
       return ' A 404 is the username: either it is misspelled, or the list is not public.'

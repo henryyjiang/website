@@ -206,9 +206,17 @@ the billboard carousel and its perspective mesh, the ticker.
 **React owns:** the three overlay panels, routing, focusable navigation, all text content, and the
 DOM half of the glitch transition.
 
-**They talk through `lib/store.ts`** and nothing else. Pixi publishes hover state and click intent;
-React publishes which overlay is open and whether a transition is running. Neither side queries the
-other's internals.
+**They talk through `lib/store.ts`** and nothing else. Pixi publishes hover state and which post the
+billboard is currently showing; React publishes which overlay is open and whether a transition is
+running. Neither side queries the other's internals.
+
+That second field is worth naming, because it is the one that carries *content* across the boundary
+rather than interaction state. Clicking the billboard goes to the post that was on it
+(`docs/DESIGN.md` § The destinations), and the two halves of that sit on opposite sides: the carousel
+is a Pixi component and knows which slide is up, while the thing that navigates is a window-level
+click listener in React, because the canvas is `pointer-events: none` and never sees a pointer. The
+slug crosses through the store, and nothing in the scene reaches into the DOM to scroll anything —
+it writes a route, and the panel does the rest.
 
 The store has grown past hover state, and the rule it was built on still holds: **anything written
 every frame is owned by the ticker, and anything written occasionally goes through the store.** A

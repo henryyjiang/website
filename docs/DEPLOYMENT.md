@@ -89,8 +89,9 @@ absent. `.env.example` is the full list with the reasoning.
 **There is one variable, and the watchlist is not it.** The News tab's watchlist reads AniList,
 which serves a public list unauthenticated, so its one setting is `ANILIST_USERNAME` in
 `content/about.ts` — content rather than configuration, because a username is public and is a fact
-about Henry. It is `null` on `main`. Nothing about that feature belongs in Vercel's project
-settings; a `MAL_CLIENT_ID` lived here until 2026-10-21, when the integration moved to AniList and
+about Henry. It is set on `main` and the rows are live (2026-10-22). Nothing about that feature
+belongs in Vercel's project settings; a `MAL_CLIENT_ID` lived here until 2026-10-21, when the
+integration moved to AniList and
 the credential stopped existing, and that is the only reason anyone would come looking for a key
 (`docs/CONTENT.md` § The watchlist).
 

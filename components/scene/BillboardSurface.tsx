@@ -19,6 +19,7 @@ import { BILLBOARD_COUNT, POSTS } from '@/content/posts'
 import { byDateDesc, type Post } from '@/content/types'
 import { imageForPost } from '@/lib/content-images'
 import type { ManifestQuad, ManifestRect } from '@/lib/scene-manifest'
+import { setBillboardPost } from '@/lib/store'
 import { hex } from '@/lib/theme'
 import { supportsWebP } from './useSceneAssets'
 
@@ -340,6 +341,23 @@ export function BillboardSurface({
 
     return () => clearInterval(timer)
   }, [reducedMotion, slides.length])
+
+  /*
+   * Say which post is up, so that clicking the billboard can go to it.
+   *
+   * The click itself is a window listener in `components/scene/SceneCanvas.tsx` —
+   * the canvas is `pointer-events: none` and never sees a pointer — so the slug has
+   * to cross the Pixi/React boundary to reach it, and it crosses through the store
+   * like everything else (`lib/store.ts` § `billboard`).
+   *
+   * Cleared on unmount, which is the no-WebGL and reduced-asset paths tearing the
+   * carousel down: a stale slug would send the next click to a post that is no
+   * longer on the screen, and no slug sends it to `/updates`, which is right.
+   */
+  useEffect(() => {
+    setBillboardPost(slides[index]?.post.slug ?? null)
+    return () => setBillboardPost(null)
+  }, [slides, index])
 
   const geometry = useMemo(() => quadGeometry(quad), [quad])
 

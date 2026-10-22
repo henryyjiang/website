@@ -387,11 +387,21 @@ Left:
 - [ ] Write the one remaining placeholder post (`content/posts.ts`). It is live on the site right
       now and points at a real piece; only its words are stand-ins. The art piece it replaced is
       done — `content/art.ts` is two real animations as of 2026-10-21
-- [ ] `ANILIST_USERNAME` in `content/about.ts`, if the watchlist rows are wanted — the whole of that
-      integration's configuration, since AniList needs no credential. **Blocked at AniList's end**:
-      its API answers everything with 403 `temporarily disabled due to severe stability issues`, and
-      has since before the pipeline was rewritten from MyAnimeList to AniList on 2026-10-21. The
-      username can go in now; the rows appear when they switch the API back on
+- [x] **The billboard opens the post it is showing**, 2026-10-22 — `/updates#post-<slug>` rather
+      than `/updates`. The About section at the top of News is tall enough that opening the tab put
+      the post the reader had just clicked off-screen, which is what surfaced it. The carousel
+      publishes its current slug through the store and the feed's rows carry anchors; the arrival is
+      the `ScrollToAnchor` the Coding tab already used. `docs/DESIGN.md` § The destinations
+- [x] **The watchlist's watching row stacks one title per line**, 2026-10-22. Comma-joining them was
+      fine against test data and unreadable against real titles, which carry their own colons and
+      commas — see `app/updates/page.tsx` § `Readout`
+- [x] **The watchlist rows are live**, 2026-10-22. This was blocked at AniList's end — their API
+      answered everything with 403 `temporarily disabled due to severe stability issues`, and had
+      since before the pipeline was rewritten from MyAnimeList to AniList on 2026-10-21. It came
+      back; `ANILIST_USERNAME` in `content/about.ts` went in, which is the whole of that
+      integration's configuration since AniList needs no credential, and the query met the real
+      schema for the first time. **It resolved as written and no code changed** — the one report
+      worth having from a pipeline that shipped untested. `docs/CONTENT.md` § The watchlist
 - [x] **Accessibility audit against the commitments in `docs/DESIGN.md`**, 2026-10-21. Walked
       keyboard-only, then again with reduced motion forced, then with WebGL refused; contrast
       measured off the rendered page rather than off the palette table. Five of the six

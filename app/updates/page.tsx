@@ -1,13 +1,14 @@
 import Link from 'next/link'
 
 import { OverlayPanel } from '@/components/overlay/OverlayPanel'
+import { ScrollToAnchor } from '@/components/overlay/ScrollToAnchor'
 import { SectionRule } from '@/components/overlay/SectionRule'
 import { FAVOURITES, NAME, PORTRAIT } from '@/content/about'
 import { POSTS } from '@/content/posts'
 import { byDateDesc, type Post, type PostTarget } from '@/content/types'
 import { imageFor, imageForPost } from '@/lib/content-images'
 import { fetchWatchlist, type Watchlist } from '@/lib/anilist'
-import { isExternalTarget, postHref } from '@/lib/post-target'
+import { isExternalTarget, postAnchorId, postHref } from '@/lib/post-target'
 
 /**
  * Regenerated hourly, which is how often the watchlist is re-read (`lib/anilist.ts`).
@@ -42,10 +43,11 @@ export const revalidate = 3600
  * was filing them next to things that do not change.
  *
  * **Its space is held open when the fetch has nothing** (`WatchlistPending`), which
- * is a fresh clone's state and, since 2026-10-21, everyone's: AniList have switched
- * their API off. Henry asked for the gap rather than the clean absence the block
- * used to have, so that the section the rows will land in is already on the page and
- * turning them on is not a layout change.
+ * is a fresh clone's state and was briefly everyone's, while AniList had their API
+ * switched off. Henry asked for the gap rather than the clean absence the block used
+ * to have, so that the section the rows would land in was already on the page and
+ * turning them on was not a layout change — which is what happened on 2026-10-22,
+ * when the API came back and the username went in.
  *
  * **The posts are news links, not articles.** A thumbnail, a date and a headline —
  * no prose at all, which is the whole difference between this tab and the Coding
@@ -72,6 +74,11 @@ export const revalidate = 3600
  * implements, which is also the only coupling between two panels on the site. A post
  * with no target is plain text rather than a dead link.
  *
+ * **And they are linked *into*, by the billboard.** Every row carries `post-<slug>`
+ * so that clicking the carousel lands on the post it was showing rather than at the
+ * top of the tab, which is a long way above it (2026-10-22, `docs/DESIGN.md` § The
+ * destinations). `ScrollToAnchor` does the arrival, the same as on the Coding tab.
+ *
  * **A post has no picture of its own**: its thumbnail is the picture belonging to
  * whatever it points at, resolved by `imageForPost`. One image per thing, shown
  * here, in its own panel, and on the billboard.
@@ -86,6 +93,8 @@ export default async function UpdatesPage() {
 
   return (
     <OverlayPanel>
+      <ScrollToAnchor />
+
       <section aria-labelledby="about-heading" className="flex flex-col gap-4">
         <SectionRule id="about-heading">About</SectionRule>
 
@@ -116,7 +125,23 @@ export default async function UpdatesPage() {
 
         <ol className="flex flex-col gap-2">
           {posts.map((post) => (
-            <li key={post.slug}>
+            <li
+              key={post.slug}
+              // Every row is an anchor, the same way every Coding row is — the
+              // billboard links in here by slug (`lib/post-target.ts`).
+              id={postAnchorId(post.slug)}
+              // Focusable so arriving from the billboard puts the reader *on* the
+              // post rather than merely scrolling it into view. -1 keeps it out of
+              // the tab order, where a stop on a row that is already a link would
+              // mean pressing Tab twice to get past each entry.
+              tabIndex={-1}
+              // The arrival marker is an inset bar on the left (app/globals.css),
+              // so the row needs somewhere to put it. Padding reserves the space and
+              // the matching negative margin gives it back, which keeps the boxes
+              // flush with the About section above rather than stepping right by
+              // 12px for a marker that is only visible for two seconds.
+              className="-ml-3 scroll-mt-1 pl-3 outline-none"
+            >
               <PostRow post={post} />
             </li>
           ))}
@@ -135,6 +160,15 @@ export default async function UpdatesPage() {
  * column is one width in both layouts rather than narrowing when it has half the
  * room: the favourites' left-hand column and the watchlist's rows line up.
  *
+ * **A value may be several lines rather than one string**, which is what the
+ * watching row is. Three titles joined with commas was how it read until 2026-10-22,
+ * when live data arrived and showed why that could not hold: real anime titles carry
+ * their own punctuation — `Made in Abyss: Mezameru Shinpi`, `JoJo's Bizarre
+ * Adventure 2nd - 3rd STAGE` — so the commas separating them are no louder than the
+ * commas and colons inside them, and at phone width the row wrapped to five lines of
+ * what read as a sentence. One title per line is the same information with the
+ * boundaries drawn by the layout instead of by punctuation.
+ *
  * **`columns={2}` pairs the rows up**, which is how the favourites are set — five of
  * them down a column was a lot of height for five short facts (Henry, 2026-10-21).
  * It pairs them only from `lg`, because narrower than that the value gets about a
@@ -147,7 +181,7 @@ function Readout({
   rows,
   columns = 1,
 }: {
-  rows: readonly { label: string; value: string }[]
+  rows: readonly ReadoutRow[]
   columns?: 1 | 2
 }) {
   return (
@@ -155,20 +189,39 @@ function Readout({
       {rows.map((row) => (
         <div key={row.label} className="flex items-baseline gap-3 border-b border-dim/15 py-1.5">
           <dt className="u-telemetry w-32 shrink-0 text-muted">{row.label}</dt>
-          <dd className="min-w-0 text-sm">{row.value}</dd>
+          <dd className="min-w-0 text-sm">
+            {typeof row.value === 'string' ? (
+              row.value
+            ) : (
+              /* `items-baseline` on the row above aligns the label with the first
+                 line, which is where a reader looks for it — so a row that grows
+                 downwards still reads as one entry rather than drifting away from
+                 its own label. */
+              <span className="flex flex-col gap-0.5">
+                {row.value.map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </span>
+            )}
+          </dd>
         </div>
       ))}
     </dl>
   )
 }
 
+/** One row. A list value stacks; a string is the single line it has always been. */
+type ReadoutRow = { label: string; value: string | readonly string[] }
+
 /**
  * The watchlist's space, held open while there is no watchlist.
  *
- * Two rows the height the real ones will be, labelled, with a dash where the value
- * goes. It is not a failure notice: AniList's API being off (2026-10-21) and Henry
- * being between shows look identical from here, and neither is worth an apology on
- * a portfolio — the dash says "nothing yet" and the row says where it will appear.
+ * Two rows the height the real ones are, labelled, with a dash where the value goes.
+ * It is not a failure notice: AniList refusing the API, as they did for a day over
+ * 2026-10-21, and Henry being between shows look identical from here, and neither is
+ * worth an apology on a portfolio — the dash says "nothing yet" and the row says
+ * where it will appear. The rows are live as of 2026-10-22, so this is the fallback
+ * rather than the usual state, and it is still the one a fresh clone renders.
  *
  * `aria-hidden`, because an empty row is a fact about the layout rather than about
  * Henry and there is nothing in it to read out. The heading above it stays in the
@@ -209,12 +262,15 @@ const WATCHLIST_LABELS = {
  * between shows" and "the API did not answer" look identical in an empty row, and
  * only one of them is worth a line. A score of 0 is AniList for "not rated", so
  * it is a missing rating rather than a bad one and the slash-ten is left off.
+ *
+ * The watching titles are handed over as the list they are, and `Readout` stacks
+ * them. Joining them into one string here is what made them unreadable.
  */
-function watchlistRows(watchlist: Watchlist): { label: string; value: string }[] {
-  const rows: { label: string; value: string }[] = []
+function watchlistRows(watchlist: Watchlist): ReadoutRow[] {
+  const rows: ReadoutRow[] = []
 
   if (watchlist.watching.length > 0) {
-    rows.push({ label: WATCHLIST_LABELS.watching, value: watchlist.watching.join(', ') })
+    rows.push({ label: WATCHLIST_LABELS.watching, value: watchlist.watching })
   }
 
   const last = watchlist.lastCompleted

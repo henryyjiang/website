@@ -204,18 +204,18 @@ same kind of thing to read.
 **One thing on the site is fetched rather than written: the News tab's watchlist rows**, from
 AniList (`lib/anilist.ts`, `docs/CONTENT.md` § The watchlist). It needs **no credential** — AniList
 serves a public list unauthenticated, so `ANILIST_USERNAME` in `content/about.ts` is the whole
-configuration and there is nothing to set in the environment. It is `null` on `main`, so the rows
-are absent and everything else renders — which is the state of a fresh clone, so do not "fix" a
-build that is not showing them. The News tab keeps the heading and two empty rows where they will
-go (2026-10-21), so an absent watchlist now looks like a section waiting for data rather than
-nothing at all. Everything else on the site is a content module.
+configuration and there is nothing to set in the environment. It is **set on `main` and the rows are
+live** as of 2026-10-22. A fresh clone with it back at `null` renders everything else fine, and the
+News tab keeps the heading and two dashed rows where the real ones go (2026-10-21), so a missing
+watchlist looks like a section waiting for data rather than nothing at all — do not "fix" a build
+that is not showing them. Everything else on the site is a content module.
 
 It was written against MyAnimeList until 2026-10-21 and rewritten for AniList, which is where
-Henry's list actually is; that rewrite deleted `MAL_CLIENT_ID` rather than replacing it. **AniList's
-API is disabled at their end as of 2026-10-21** (403, "temporarily disabled due to severe stability
-issues"), so the pipeline is written but unverified against live data and the rows cannot appear
-yet. Do not take the missing rows as a bug here, and do not reintroduce an environment variable
-for it.
+Henry's list actually is; that rewrite deleted `MAL_CLIENT_ID` rather than replacing it. **Do not
+reintroduce an environment variable for it.** AniList had the API disabled at their end over
+2026-10-21 (403, "temporarily disabled due to severe stability issues"), so the pipeline shipped
+unverified against live data; it came back on 2026-10-22 and the query resolved as written, with no
+code change. The 403 path and `hint()` stay because that state can recur.
 
 **What is in `content/` is a mix of real work and placeholders, and the placeholders are marked.**
 The Art tab is entirely real: `my-first-animation` and `current-wip-animation`, both 2D animations,

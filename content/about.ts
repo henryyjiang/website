@@ -29,14 +29,19 @@ export const NAME = 'Henry'
  * `.env.local` entry and nothing to set in Vercel. (It was written against
  * MyAnimeList first, which did want a registered application; Henry uses AniList.)
  *
- * **`null` turns the feature off**, which is the state of a fresh clone and has to
- * keep rendering. Fill it in and the watchlist rows appear; the list must be public
- * on AniList, or the API answers 404 and they stay away. Either way the News tab
- * holds the space open under its `Watchlist` heading, so switching the rows on is
- * not a layout change (`app/updates/page.tsx` § `WatchlistPending`). See
- * `lib/anilist.ts` and `docs/CONTENT.md` § The watchlist.
+ * **`null` turns the feature off**, and it was `null` from the day the pipeline
+ * landed until 2026-10-22, because AniList had their API switched off and there was
+ * nothing a username could have done. It is on now: the list at
+ * `anilist.co/user/7345230` is public, the rows are live, and this one line is still
+ * the whole of it.
+ *
+ * Set it back to `null` to turn the feature off — that is a fresh clone's state and
+ * has to keep rendering, so the News tab holds the space open under its `Watchlist`
+ * heading either way (`app/updates/page.tsx` § `WatchlistPending`). A misspelling
+ * here, or the list going private, is a 404 rather than an error: the rows go back
+ * to dashes. See `lib/anilist.ts` and `docs/CONTENT.md` § The watchlist.
  */
-export const ANILIST_USERNAME: string | null = null
+export const ANILIST_USERNAME: string | null = 'hennyneph'
 
 /**
  * The portrait beside the about section, as a slug rather than a path.
