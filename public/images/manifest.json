@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T00:11:09.386Z",
+  "generatedAt": "2026-10-22T01:57:10.248Z",
   "images": {
     "projects": {
       "cortex-rdm-paper": {
@@ -23,18 +23,18 @@
       "gsoc-blender-contributions": {
         "src": "/images/projects/gsoc-blender-contributions.webp",
         "fallback": "/images/projects/gsoc-blender-contributions.png",
-        "width": 1600,
-        "height": 900,
+        "width": 1328,
+        "height": 1600,
         "lit": {
           "src": "/images/projects/gsoc-blender-contributions--lit.webp",
           "fallback": "/images/projects/gsoc-blender-contributions--lit.png",
-          "width": 1600,
-          "height": 900,
-          "luma": 0.0745,
+          "width": 1328,
+          "height": 1600,
+          "luma": 0.3178,
           "headline": {
             "id": "orange",
             "hex": "#FF9B53",
-            "contrast": 9.02
+            "contrast": 4.88
           }
         }
       },

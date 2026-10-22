@@ -222,9 +222,11 @@ The Art tab is entirely real: `my-first-animation` and `current-wip-animation`, 
 which are also the first things to exercise the video path in anger. The Coding tab was cut from
 eight entries to two on 2026-10-21 — `quantconnect-models`, which merges the two QuantConnect
 strategies into one row, and the POTS predictor — and then two filler entries were added the same
-day: `cortex-rdm-paper` and `gsoc-blender-contributions`. Those two carry Henry's titles and dates
-and a placeholder blurb, and neither has a screenshot in `art/projects/` yet, so the import warns
-and the rows render without a picture. In `content/posts.ts` every title and date is Henry's and
+day: `cortex-rdm-paper` and `gsoc-blender-contributions`. Both carry Henry's titles and dates and a
+placeholder blurb. `cortex-rdm-paper` still shows a generated stand-in screenshot; drop a real one
+at `art/projects/cortex-rdm-paper.png` to replace it. `gsoc-blender-contributions` is no longer
+filler apart from its blurb — it has its real links and, since 2026-10-21, a real screenshot, two
+Blender captures stacked into one portrait image. In `content/posts.ts` every title and date is Henry's and
 every `body` is a placeholder, which shows nowhere because `body` is not rendered.
 
 **A piece's `date` is when the animation was made, not when it was added.** Both were read off the

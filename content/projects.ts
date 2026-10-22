@@ -65,15 +65,29 @@ export const PROJECTS: readonly Project[] = [
     links: [],
   },
   {
-    // FILLER, added 2026-10-21. Same as above: title and date are Henry's, the blurb
-    // is a placeholder, and there is no screenshot at art/projects/ for it yet.
+    // The blurb is still FILLER — Henry is writing it. The title and date are his,
+    // and as of 2026-10-21 the links and the screenshot are real.
+    //
+    // The screenshot is the two Blender screenshots stacked vertically into one
+    // image, which is why it is portrait (1683x2027) where the others are square or
+    // wide. The row bounds it by height and it sits narrower than its column; that
+    // is the same path the POTS phone capture takes and nothing is cropped.
     slug: 'gsoc-blender-contributions',
     title: 'GSoC and Blender Contributions',
     date: '2026-08-01',
     blurb:
       'FILLER — Google Summer of Code, and contributions to Blender. Replace this with what the work actually is.',
     tags: ['open-source', 'graphics'],
-    links: [],
+    links: [
+      {
+        label: 'GSoC Final Project',
+        href: 'https://devtalk.blender.org/t/gsoc-2026-new-edge-editing-operations/45200',
+      },
+      {
+        label: 'Extensions',
+        href: 'https://extensions.blender.org/author/65907/',
+      },
+    ],
   },
   {
     slug: 'quantconnect-models',
