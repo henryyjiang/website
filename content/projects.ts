@@ -76,7 +76,7 @@ export const PROJECTS: readonly Project[] = [
     // on top, selection propagation below — so the picture and the words have to be
     // changed together. Replacing one addon in the prose means re-stacking the image.
     slug: 'gsoc-blender-contributions',
-    title: 'GSoC and Blender Contributions',
+    title: 'Google Summer of Code and Blender Contributions',
     date: '2026-08-01',
     blurb:
       "I've been using Blender for many years as a hobbyist and was interested in becoming an open source contributor myself. I had some addons that I had created for personal use, and uploaded those to the public for others to use as well. Those were an IK/FK bone snapping tool, and a selection propagation tool, which have over 10,000 downloads as a whole. From there, I started fixing some bugs and found out about Google Summer of Code.",
