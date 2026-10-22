@@ -185,38 +185,58 @@ remembering to edit a file after finishing an episode. They are fetched now.
 
 ### The watchlist
 
-`lib/myanimelist.ts` reads the two rows from **MyAnimeList's own API v2**,
-`api.myanimelist.net/v2/users/{user}/animelist`. They render under their own `Watchlist` heading on
-the blog tab, below the favourites and never among them — a status is not a favourite, and filing
-it with things that do not change is what let it rot unnoticed.
+`lib/anilist.ts` reads the two rows from **AniList's GraphQL API**, `graphql.anilist.co`. They
+render under their own `Watchlist` heading on the News tab, below the favourites and never among
+them — a status is not a favourite, and filing it with things that do not change is what let it rot
+unnoticed.
 
-It is configured in two halves, each where it belongs:
+**It is configured in one place, and that place is not an environment variable:**
 
 | | Where | Why |
 | --- | --- | --- |
-| `MAL_CLIENT_ID` | environment (`.env.local`, Vercel) | a credential |
-| `MAL_USERNAME` | `content/about.ts` | public, and a fact about Henry |
+| `ANILIST_USERNAME` | `content/about.ts` | public, and a fact about Henry |
 
-Register an app at `https://myanimelist.net/apiconfig` — app type "other", and only the Client ID
-is needed. **There is no OAuth**: the site reads one public list and never acts as Henry, so the
-`X-MAL-CLIENT-ID` header is the whole of it and there is no token to store or refresh. The list has
-to be public, or the API answers 403.
+That is the whole of it. **AniList serves a public list unauthenticated** — no registered
+application, no client id, no token, nothing in `.env.local` and nothing in Vercel's project
+settings. The list does have to be public, or the API answers 404.
 
-**With either half missing the rows are simply absent**, which is the state of a fresh clone and
-renders correctly. So does a 401, a 403, a timeout, or a response whose shape has changed:
-`parseAnimeList` validates every row and anything unrecognised is skipped rather than rendered.
+This module was written against MyAnimeList's REST API v2 first, which was a guess about which site
+Henry keeps his list on; he keeps it on AniList (2026-10-21). The rewrite **deleted** a credential
+rather than adding one, and with it the half-configured state where the username was set and
+`MAL_CLIENT_ID` was not.
+
+**One request, two lists.** The query asks for `CURRENT` and `COMPLETED` in a single POST under two
+aliases. GraphQL resolves aliases independently and returns partial `data` beside `errors`, so one
+list failing still leaves the other usable — the independence two separate requests would have
+bought, for one round trip. `score(format: POINT_10_DECIMAL)` is named explicitly because the scale
+is an account setting on AniList and the panel renders `x/10`.
+
+**With the username missing the rows are simply absent**, which is the state of a fresh clone and
+renders correctly. So does a 403, a 404, a timeout, or a response whose shape has changed:
+`parseWatchlist` validates every row and anything unrecognised is skipped rather than rendered.
 Nothing in that module throws, and nothing in it can fail a build — a portfolio that will not
 deploy because someone else's API is having an afternoon is the worse outcome.
 
-**It is fetched hourly, not per request.** `revalidate: 3600` keeps `/updates` prerendered and
-makes it ISR: the hit happens on revalidation rather than in front of a reader, a stale page is
-served while it happens, and MyAnimeList sees two requests an hour rather than two per visitor.
-With no credentials configured the route is plain static again, which is a quick way to tell at a
-glance whether the integration is on — `npm run build` prints a `Revalidate` column for `/updates`
-only when it is.
+**AniList's API is switched off as of 2026-10-21**, answering every query with HTTP 403 and `The
+AniList API has been temporarily disabled due to severe stability issues.` So this pipeline is
+written but **unverified against live data**, and the rows will not appear until AniList turns it
+back on. `parseWatchlist` is exported and pure, and that half — ours — is checked against recorded
+payloads; the query itself has never met the real schema, so the field names and enums are from
+AniList's documented schema rather than from a response. When the rows stay missing, the log line
+says which side is at fault: `lib/anilist.ts` § `hint` spells the status codes out.
 
-**Not Jikan.** The unofficial MAL API is read-only and dropped its user-list endpoints in v3, so it
-cannot serve this. Don't plan around it.
+**It is fetched hourly, not per request.** `export const revalidate = 3600` in
+`app/updates/page.tsx` keeps the route prerendered and makes it ISR: the hit happens on
+revalidation rather than in front of a reader, and a stale page is served while it happens. **That
+line has to be on the route, not on the fetch** — Next's Data Cache only keys GET requests, so a
+`next: { revalidate }` on a GraphQL POST is accepted and then quietly ignored, and the page would
+bake once at build and never move again. One consequence: `/updates` is ISR whether or not the
+username is set, so the build's `Revalidate` column no longer tells you whether the integration is
+on. `ANILIST_USERNAME` does.
+
+**Not Jikan, and not MyAnimeList.** Jikan — the unofficial MAL API — is read-only and dropped its
+user-list endpoints in v3, so it could not have served this either. Both are moot now the list
+lives on AniList; don't plan around them.
 
 ## Images
 

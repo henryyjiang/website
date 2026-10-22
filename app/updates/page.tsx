@@ -6,8 +6,22 @@ import { FAVOURITES, NAME, PORTRAIT } from '@/content/about'
 import { POSTS } from '@/content/posts'
 import { byDateDesc, type Post, type PostTarget } from '@/content/types'
 import { imageFor, imageForPost } from '@/lib/content-images'
-import { fetchWatchlist, type Watchlist } from '@/lib/myanimelist'
+import { fetchWatchlist, type Watchlist } from '@/lib/anilist'
 import { isExternalTarget, postHref } from '@/lib/post-target'
+
+/**
+ * Regenerated hourly, which is how often the watchlist is re-read (`lib/anilist.ts`).
+ *
+ * It lives here rather than on the fetch because Next's Data Cache only keys GET
+ * requests: a `next: { revalidate }` on that module's GraphQL POST is accepted and
+ * then quietly ignored, and the page would bake once at build and never move again.
+ * A literal, because segment config has to be statically analysable.
+ *
+ * The rest of the tab is content modules and does not need this — the cost of
+ * regenerating a page that reads two arrays is nil, and the alternative is a
+ * watchlist that is only ever as current as the last deploy.
+ */
+export const revalidate = 3600
 
 /**
  * The blog: a short introduction, then the feed.
@@ -22,8 +36,8 @@ import { isExternalTarget, postHref } from '@/lib/post-target'
  * portrait is the width the feed's thumbnails are (`--post-shot`), so the tab has
  * one picture size rather than three.
  *
- * **Under it, what he is actually watching**, fetched from MyAnimeList rather than
- * typed (`lib/myanimelist.ts`). It is a second block with its own heading because a
+ * **Under it, what he is actually watching**, fetched from AniList rather than
+ * typed (`lib/anilist.ts`). It is a second block with its own heading because a
  * status is not a favourite — the thing that made those two rows wrong for years
  * was filing them next to things that do not change. The block is absent entirely
  * when the fetch has nothing, which is also a fresh clone's state.
@@ -134,7 +148,7 @@ function Readout({ rows }: { rows: readonly { label: string; value: string }[] }
  *
  * Each row is dropped when it has nothing to say rather than rendered empty: "he is
  * between shows" and "the API did not answer" look identical in an empty row, and
- * only one of them is worth a line. A score of 0 is MyAnimeList for "not rated", so
+ * only one of them is worth a line. A score of 0 is AniList for "not rated", so
  * it is a missing rating rather than a bad one and the slash-ten is left off.
  */
 function watchlistRows(watchlist: Watchlist): { label: string; value: string }[] {

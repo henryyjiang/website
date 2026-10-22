@@ -21,18 +21,20 @@
 export const NAME = 'Henry'
 
 /**
- * Henry's MyAnimeList username — the half of that integration that is content.
+ * Henry's AniList username — the whole of that integration's configuration.
  *
- * The other half is `MAL_CLIENT_ID` in the environment, and the split is on
- * purpose: a client id is a credential and belongs in a secret, a username is
- * public and is a fact about Henry, which is what this file is for.
+ * It lives here rather than in the environment because it is public and is a fact
+ * about Henry, which is what this file is for. There is no second half: AniList's
+ * API reads a public list **unauthenticated**, so there is no credential, no
+ * `.env.local` entry and nothing to set in Vercel. (It was written against
+ * MyAnimeList first, which did want a registered application; Henry uses AniList.)
  *
  * **`null` turns the feature off**, which is the state of a fresh clone and has to
  * keep rendering. Fill it in and the watchlist rows appear; the list must be public
- * on MyAnimeList, or the API answers 403 and they stay away. See
- * `lib/myanimelist.ts` and `docs/CONTENT.md` § About.
+ * on AniList, or the API answers 404 and they stay away. See `lib/anilist.ts` and
+ * `docs/CONTENT.md` § The watchlist.
  */
-export const MAL_USERNAME: string | null = null
+export const ANILIST_USERNAME: string | null = null
 
 /**
  * The portrait beside the about section, as a slug rather than a path.
@@ -71,7 +73,7 @@ export const BIO = [
  * Which is why `Currently watching` and `Last completed` are not here. They were
  * stale on the old site and stale here, because the only thing that kept them true
  * was Henry remembering to edit a file after finishing an episode. They are fetched
- * now instead — `lib/myanimelist.ts`, under their own heading in the panel, because
+ * now instead — `lib/anilist.ts`, under their own heading in the panel, because
  * a status is not a favourite.
  */
 export const FAVOURITES: readonly { label: string; value: string }[] = [

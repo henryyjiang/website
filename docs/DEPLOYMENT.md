@@ -84,12 +84,15 @@ absent. `.env.example` is the full list with the reasoning.
 
 | Variable | Where | Effect if unset |
 | --- | --- | --- |
-| `MAL_CLIENT_ID` | Vercel project settings | The News tab's watchlist rows do not render |
 | `NEXT_PUBLIC_SITE_URL` | Vercel project settings | The link preview names Vercel's own production host |
 
-`MAL_CLIENT_ID` has a second half that is **not** an environment variable: `MAL_USERNAME` in
-`content/about.ts`, which is `null` on `main`. A username is public and is a fact about Henry, so it
-is content; a client id is a credential. Both or neither — one alone does nothing.
+**There is one variable, and the watchlist is not it.** The News tab's watchlist reads AniList,
+which serves a public list unauthenticated, so its one setting is `ANILIST_USERNAME` in
+`content/about.ts` — content rather than configuration, because a username is public and is a fact
+about Henry. It is `null` on `main`. Nothing about that feature belongs in Vercel's project
+settings; a `MAL_CLIENT_ID` lived here until 2026-10-21, when the integration moved to AniList and
+the credential stopped existing, and that is the only reason anyone would come looking for a key
+(`docs/CONTENT.md` § The watchlist).
 
 `NEXT_PUBLIC_SITE_URL` is only worth setting once a custom domain is attached. Until then
 `lib/site.ts` falls back to `VERCEL_PROJECT_PRODUCTION_URL`, which Vercel sets on every deployment

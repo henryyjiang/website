@@ -387,8 +387,11 @@ Left:
 - [ ] Write the one remaining placeholder post (`content/posts.ts`). It is live on the site right
       now and points at a real piece; only its words are stand-ins. The art piece it replaced is
       done — `content/art.ts` is two real animations as of 2026-10-21
-- [ ] `MAL_CLIENT_ID` in the project's environment, and `MAL_USERNAME` in `content/about.ts`, if the
-      watchlist rows are wanted. Both or neither
+- [ ] `ANILIST_USERNAME` in `content/about.ts`, if the watchlist rows are wanted — the whole of that
+      integration's configuration, since AniList needs no credential. **Blocked at AniList's end**:
+      its API answers everything with 403 `temporarily disabled due to severe stability issues`, and
+      has since before the pipeline was rewritten from MyAnimeList to AniList on 2026-10-21. The
+      username can go in now; the rows appear when they switch the API back on
 - [x] **Accessibility audit against the commitments in `docs/DESIGN.md`**, 2026-10-21. Walked
       keyboard-only, then again with reduced motion forced, then with WebGL refused; contrast
       measured off the rendered page rather than off the palette table. Five of the six

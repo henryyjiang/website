@@ -75,7 +75,7 @@ lib/
   store.ts            Shared state between Pixi and React
   content-images.ts   Joins a content entry to its image by slug. Reads the manifest below.
   post-target.ts      Where a blog post points: the Coding row, or the Art popup.
-  myanimelist.ts      The blog tab's watchlist rows. Server-only; off without credentials.
+  anilist.ts          The News tab's watchlist rows. Server-only; off without a username.
 content/              Typed content modules. All copy and project data lives here.
 art/                  ART INBOX. Henry drops exports here; see art/README.md.
 public/scene/         Build output: optimised layers, packed atlases, manifest. Generated.
@@ -202,10 +202,18 @@ Each tab is arranged differently on purpose — the three work areas are peers b
 same kind of thing to read.
 
 **One thing on the site is fetched rather than written: the News tab's watchlist rows**, from
-MyAnimeList (`lib/myanimelist.ts`, `docs/CONTENT.md` § The watchlist). It needs `MAL_CLIENT_ID` in
-the environment and `MAL_USERNAME` in `content/about.ts`, and with either missing the rows are
-absent and everything else renders — which is the state of a fresh clone, so do not "fix" a build
-that is not showing them. Everything else on the site is a content module.
+AniList (`lib/anilist.ts`, `docs/CONTENT.md` § The watchlist). It needs **no credential** — AniList
+serves a public list unauthenticated, so `ANILIST_USERNAME` in `content/about.ts` is the whole
+configuration and there is nothing to set in the environment. It is `null` on `main`, so the rows
+are absent and everything else renders — which is the state of a fresh clone, so do not "fix" a
+build that is not showing them. Everything else on the site is a content module.
+
+It was written against MyAnimeList until 2026-10-21 and rewritten for AniList, which is where
+Henry's list actually is; that rewrite deleted `MAL_CLIENT_ID` rather than replacing it. **AniList's
+API is disabled at their end as of 2026-10-21** (403, "temporarily disabled due to severe stability
+issues"), so the pipeline is written but unverified against live data and the rows cannot appear
+yet. Do not take the missing rows as a bug here, and do not reintroduce an environment variable
+for it.
 
 **What is in `content/` is a mix of real work and placeholders, and the placeholders are marked.**
 The Art tab is entirely real: `my-first-animation` and `current-wip-animation`, both 2D animations,
