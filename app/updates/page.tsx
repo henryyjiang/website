@@ -32,7 +32,7 @@ export const revalidate = 3600
  *
  * It is a portrait, a name and a list of favourites, and no prose at all — the bio
  * went on 2026-10-21 (`content/about.ts` § BIO). The list is *headed* Favourites rather
- * than leaving a reader to work out what `Anime: Blue Lock` is asserting, and the
+ * than leaving a reader to work out what `Show: Blue Lock` is asserting, and the
  * portrait is the width the feed's thumbnails are (`--post-shot`), so the tab has
  * one picture size rather than three.
  *

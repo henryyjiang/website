@@ -68,7 +68,7 @@ export const BIO = [
  * list rather than guessing at structure.
  *
  * **Every row here is a favourite, and the panel says so** — the section is headed
- * `Favourites` rather than leaving a reader to infer it from `Anime: Blue Lock`.
+ * `Favourites` rather than leaving a reader to infer it from `Show: Blue Lock`.
  * That heading is also the rule for what belongs: a row that is a *status* rather
  * than a favourite does not.
  *
@@ -79,11 +79,11 @@ export const BIO = [
  * a status is not a favourite.
  */
 export const FAVOURITES: readonly { label: string; value: string }[] = [
-  { label: 'Anime', value: 'Blue Lock' },
-  { label: 'Manga', value: 'Tokyo Ghoul' },
+  { label: 'Show', value: 'Blue Lock' },
+  { label: 'Book', value: 'Tokyo Ghoul' },
   { label: 'Song', value: 'Shelter — Porter Robinson' },
   { label: 'Music artist', value: 'Ado' },
-  { label: 'Games', value: 'Nier: Automata' },
+  { label: 'Game', value: 'Nier: Automata' },
 ]
 
 /**

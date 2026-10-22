@@ -592,7 +592,7 @@ name, and favourites as a dense readout under their own rule. **No prose at all*
 of bio went the same day. A list of what someone likes is a claim the three tabs around it already
 demonstrate, and a photograph with a name under it says the thing the bio was reaching for.
 
-**The list is headed `Favourites`.** Without it a reader has to work out what `Anime: Blue Lock` is
+**The list is headed `Favourites`.** Without it a reader has to work out what `Show: Blue Lock` is
 asserting — and that heading is also the rule for what may go in the list. `Currently watching` and
 `Last completed` were in it and are not any more: they are *statuses*, true only for as long as
 nobody watches anything, and they were stale on the old site for exactly that reason. They belong
