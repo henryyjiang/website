@@ -81,17 +81,35 @@ export const PROJECTS: readonly Project[] = [
     // Ties with pots-flareup-predictor; this entry is first in the file and so
     // first on the tab. See the note on dates above before reordering.
     date: '2026-05-11',
+    // Henry's own prose, written 2026-10-21, replacing the spec blurb carried over
+    // from the old site. Three paragraphs: the Mandelbrotian options model, how it
+    // did once published, then the quantum walk model. This is the entry that made
+    // `detail` an array (`content/types.ts`).
+    //
+    // **Its numbers supersede the blurb's, where the two disagree.** That blurb
+    // claimed 80%+ CAGR and 1.29 Sharpe for the quantum walk model and 60%+ CAGR
+    // across 105 trades for the fractal one; Henry's text says ~55% CAGR and 1.18
+    // Sharpe for the fractal model and that the quantum one underperformed once
+    // deployed. Those figures lived nowhere else in the repo and are gone with the
+    // prose that held them. Do not restore them.
+    //
+    // The links below are in the order the prose introduces the two models, which
+    // is the reverse of the order they were in until today.
     blurb:
-      'Two systematic strategies published on QuantConnect. A mid-cap macro equity model combining BQP and discrete quantum walk strategies reaches 80%+ CAGR and 1.29 Sharpe, sizing positions by quantum stochastic walk asset correlation. A fractal regime-detection OTM options strategy classifies volatility regimes with Hurst exponents (DFA), Hill tail-index and multifractal spectral width, reaching 60%+ CAGR and 1.18 Sharpe across 105 trades from 2020–2025.',
+      'After reading The Black Swan over Christmas, I had the idea to implement an options trading model in the modern market focused on fat tails and Mandelbrotian volatility. I ended up coming up with a strategy with ~55% CAGR and 1.18 Sharpe ratio, focused on the MAG7 universe and mainly swing trading OTM call options based on signal agreement from a Hurst exponents + multifractal width based core + a technicals based confirmation.',
+    detail: [
+      "After publishing to QuantConnect, I was pleasantly surprised to see that my model was ranked in the Top 3 for a majority of May and June and I was in the top 2 users in model performance throughout. My model became one of the most popular models on the site, racking up nearly 10,000 clones! It's certainly ignited a personal interest in financial instruments and I might continue to make and deploy models in the future.",
+      "My other model I had an idea for was a quantum walk based model after taking a quantum physics course over that same Christmas break, as well as doing extensive research into quantum computers. I developed a second strategy using a Bohmian Quantum Potential strategy, a discrete time quantum walk strategy, and a simple technicals based strategy for mid cap 2x leveraged swing trades. Position sizing was done with quantum stochastic walks as well. This strategy didn't perform as well when deployed, but the community seemed interested in the quantum based experimental strategies pulled from research papers and this strategy has over 16,000 clones. The model excels at mean reversion, and also peaked at top 4 on the leaderboard at one point.",
+    ],
     tags: ['quant', 'quantum', 'ml', 'options'],
     links: [
       {
-        label: 'Quantum Walk BQP',
-        href: 'https://www.quantconnect.com/strategies/478/Quantum-Walk-BQP-Mid-Cap-Macro',
-      },
-      {
         label: 'Mandelbrotian Volatility',
         href: 'https://www.quantconnect.com/strategies/315/Mandelbrotian-Vol-Clustering-Options-Strat',
+      },
+      {
+        label: 'Quantum Walk BQP',
+        href: 'https://www.quantconnect.com/strategies/478/Quantum-Walk-BQP-Mid-Cap-Macro',
       },
     ],
   },
@@ -111,8 +129,9 @@ export const PROJECTS: readonly Project[] = [
     date: '2026-05-11',
     blurb:
       "My girlfriend has POTS and used to use this app to track her heart rate and detect flareups that cost her $5 a month. I coded her one for FREE and got her a new heart rate monitor since she always complained that the old one was uncomfortable. What's nice about the Polar H10 is that it also collects ECG data and other useful advanced metrics like time between heartbeats, perfect for training an ML model to not only alert when a POTS flareup is occurring, but also predict when one's likely to happen before it ever does.",
-    detail:
+    detail: [
       'I got the idea from a paper on heart rate monitors having a high flareup prediction likelihood for diabetes and thought, "Why not try it for POTS?" The model I used is a BoostedTreeClassifier built into Apple\'s XCode, and I collected 1M+ data entries for about 2 months on the heart monitor before training the model. After some tweaking and optimization I managed to get the prediction accuracy up to a rather unimpressive 27%, which shows just how complex POTS is as a bodily process and certainly increases my appreciation of service dogs! With more data it might be more accurate in testing, and in practice it\'s hard to know just how many flareups it\'s prevented by alerting when likelihood of flareup is high after all. Either way, I think it\'s better to have the app\'s notifications than to not.',
+    ],
     tags: ['ml', 'ios', 'health'],
     links: [{ label: 'GitHub', href: 'https://github.com/henryyjiang/potsmonitor' }],
   },

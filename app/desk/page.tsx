@@ -107,17 +107,22 @@ export default function DeskPage() {
                   <h2 className="text-xl text-active sm:text-2xl">{project.title}</h2>
 
                   {/*
-                   * `blurb` and `detail` are consecutive paragraphs of one piece of
-                   * prose, so they render identically — same size, same opacity, the
-                   * gap between them the only thing marking the break.
+                   * One list rather than a `blurb` line and a `detail` line, because
+                   * an entry's prose is one piece broken into paragraphs and they all
+                   * render identically — same size, same opacity, the gap between
+                   * them the only thing marking a break.
                    *
                    * `detail` was a dimmer, smaller second tier until 2026-10-21, when
                    * the first entry to actually use it got a two-paragraph write-up
-                   * and the second half read as fine print under the first. One
-                   * class, named once, is why they cannot drift apart again.
+                   * and the second half read as fine print under the first. Joining
+                   * the two fields into one mapped list is why they cannot drift
+                   * apart again: there is no second class to disagree with the first.
                    */}
-                  <p className={PARAGRAPH}>{project.blurb}</p>
-                  {project.detail ? <p className={PARAGRAPH}>{project.detail}</p> : null}
+                  {[project.blurb, ...(project.detail ?? [])].map((paragraph) => (
+                    <p key={paragraph} className={PARAGRAPH}>
+                      {paragraph}
+                    </p>
+                  ))}
 
                   {project.links.length > 0 ? (
                     <div className="mt-1 flex flex-wrap gap-2">

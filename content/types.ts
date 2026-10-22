@@ -28,15 +28,18 @@ export type Project = {
   date: string
   blurb: string
   /**
-   * A second paragraph, for an entry that wants one. It renders exactly as `blurb`
-   * does — same size, same opacity (`app/desk/page.tsx` § `PARAGRAPH`) — so the two
-   * are one piece of prose broken in two, not a summary and its small print. It was
-   * the small print until 2026-10-21, when the first entry to use it arrived.
+   * The paragraphs after the first. They render exactly as `blurb` does — same size,
+   * same opacity (`app/desk/page.tsx` § `PARAGRAPH`) — so an entry's prose is one
+   * piece broken into paragraphs, not a summary and its small print. It was the
+   * small print until 2026-10-21, and a single optional string until later the same
+   * day, when the QuantConnect write-up arrived wanting three paragraphs and the
+   * comment here already said what to do about it: make this an array rather than
+   * adding a `detail2`.
    *
-   * Prose only. There is no third slot: a write-up needing more than two paragraphs
-   * wants this field to become an array, not a `detail2`.
+   * Prose only, and `blurb` is still paragraph one — the render joins the two
+   * (`[blurb, ...detail]`), which is what guarantees they cannot be styled apart.
    */
-  detail?: string
+  detail?: readonly string[]
   /**
    * NOT SURFACED. The Coding rows showed these as `#ml #quant` under each entry
    * until 2026-10-21, when Henry cut them. Kept because they are the only

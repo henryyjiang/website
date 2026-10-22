@@ -20,7 +20,7 @@ type Project = {
   title: string
   date: string            // ISO. Required — the list is timestamped.
   blurb: string           // First paragraph.
-  detail?: string         // Second paragraph, if the entry wants one. Same weight as blurb.
+  detail?: string[]       // The paragraphs after the first. Same weight as blurb.
   tags: string[]          // e.g. ['ml', 'quant', 'ios']
   links: { label: string; href: string }[]
 }
