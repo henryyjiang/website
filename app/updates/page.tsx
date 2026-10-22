@@ -39,8 +39,13 @@ export const revalidate = 3600
  * **Under it, what he is actually watching**, fetched from AniList rather than
  * typed (`lib/anilist.ts`). It is a second block with its own heading because a
  * status is not a favourite — the thing that made those two rows wrong for years
- * was filing them next to things that do not change. The block is absent entirely
- * when the fetch has nothing, which is also a fresh clone's state.
+ * was filing them next to things that do not change.
+ *
+ * **Its space is held open when the fetch has nothing** (`WatchlistPending`), which
+ * is a fresh clone's state and, since 2026-10-21, everyone's: AniList have switched
+ * their API off. Henry asked for the gap rather than the clean absence the block
+ * used to have, so that the section the rows will land in is already on the page and
+ * turning them on is not a layout change.
  *
  * **The posts are news links, not articles.** A thumbnail, a date and a headline —
  * no prose at all, which is the whole difference between this tab and the Coding
@@ -96,14 +101,11 @@ export default async function UpdatesPage() {
 
             <SectionRule>Favourites</SectionRule>
 
-            <Readout rows={FAVOURITES} />
+            <Readout rows={FAVOURITES} columns={2} />
 
-            {watchlist ? (
-              <>
-                <SectionRule>Watchlist</SectionRule>
-                <Readout rows={watchlistRows(watchlist)} />
-              </>
-            ) : null}
+            <SectionRule>Watchlist</SectionRule>
+
+            {watchlist ? <Readout rows={watchlistRows(watchlist)} /> : <WatchlistPending />}
           </div>
         </div>
       </section>
@@ -124,15 +126,31 @@ export default async function UpdatesPage() {
 }
 
 /**
- * A column of label-and-value rows: the favourites, and the watchlist under them.
+ * Label-and-value rows: the favourites, and the watchlist under them.
  *
  * One component for both so the two blocks cannot drift apart — they sit directly
  * above and below each other, where a two-pixel disagreement in the label column
- * would be the only thing a reader noticed about either.
+ * would be the only thing a reader noticed about either. Which is why the label
+ * column is one width in both layouts rather than narrowing when it has half the
+ * room: the favourites' left-hand column and the watchlist's rows line up.
+ *
+ * **`columns={2}` pairs the rows up**, which is how the favourites are set — five of
+ * them down a column was a lot of height for five short facts (Henry, 2026-10-21).
+ * It pairs them only from `lg`, because narrower than that the value gets about a
+ * hundred pixels beside a 128px label and `Shelter — Porter Robinson` wraps; the
+ * saving is vertical space on a wide window, and there is none to save on a phone.
+ * An odd last row sits alone in the left-hand column, with the rule under it half
+ * the width — the end of a list, rather than a cell that failed to render.
  */
-function Readout({ rows }: { rows: readonly { label: string; value: string }[] }) {
+function Readout({
+  rows,
+  columns = 1,
+}: {
+  rows: readonly { label: string; value: string }[]
+  columns?: 1 | 2
+}) {
   return (
-    <dl className="grid">
+    <dl className={`grid ${columns === 2 ? 'lg:grid-cols-2 lg:gap-x-8' : ''}`}>
       {rows.map((row) => (
         <div key={row.label} className="flex items-baseline gap-3 border-b border-dim/15 py-1.5">
           <dt className="u-telemetry w-32 shrink-0 text-muted">{row.label}</dt>
@@ -142,6 +160,46 @@ function Readout({ rows }: { rows: readonly { label: string; value: string }[] }
     </dl>
   )
 }
+
+/**
+ * The watchlist's space, held open while there is no watchlist.
+ *
+ * Two rows the height the real ones will be, labelled, with a dash where the value
+ * goes. It is not a failure notice: AniList's API being off (2026-10-21) and Henry
+ * being between shows look identical from here, and neither is worth an apology on
+ * a portfolio — the dash says "nothing yet" and the row says where it will appear.
+ *
+ * `aria-hidden`, because an empty row is a fact about the layout rather than about
+ * Henry and there is nothing in it to read out. The heading above it stays in the
+ * tree: it labels a section of the page that exists.
+ *
+ * The labels come from `WATCHLIST_LABELS` rather than being typed again here, so the
+ * placeholder cannot end up naming a row differently from the thing that replaces it.
+ */
+function WatchlistPending() {
+  return (
+    <div aria-hidden="true" className="grid">
+      {Object.values(WATCHLIST_LABELS).map((label) => (
+        <div key={label} className="flex items-baseline gap-3 border-b border-dim/15 py-1.5">
+          <span className="u-telemetry w-32 shrink-0 text-dim">{label}</span>
+          <span className="text-sm text-dim">&mdash;</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * What the two watchlist rows are called, in the order they render.
+ *
+ * One table for the rows and for the space held open in their absence
+ * (`WatchlistPending`) — two lists of the same two labels is how the placeholder
+ * quietly stops matching what it stands in for.
+ */
+const WATCHLIST_LABELS = {
+  watching: 'Watching',
+  lastCompleted: 'Last completed',
+} as const
 
 /**
  * The fetched list, as the same label-and-value rows everything else here uses.
@@ -155,13 +213,13 @@ function watchlistRows(watchlist: Watchlist): { label: string; value: string }[]
   const rows: { label: string; value: string }[] = []
 
   if (watchlist.watching.length > 0) {
-    rows.push({ label: 'Watching', value: watchlist.watching.join(', ') })
+    rows.push({ label: WATCHLIST_LABELS.watching, value: watchlist.watching.join(', ') })
   }
 
   const last = watchlist.lastCompleted
   if (last) {
     rows.push({
-      label: 'Last completed',
+      label: WATCHLIST_LABELS.lastCompleted,
       value: last.score > 0 ? `${last.title} — ${last.score}/10` : last.title,
     })
   }

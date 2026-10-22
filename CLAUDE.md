@@ -206,7 +206,9 @@ AniList (`lib/anilist.ts`, `docs/CONTENT.md` § The watchlist). It needs **no cr
 serves a public list unauthenticated, so `ANILIST_USERNAME` in `content/about.ts` is the whole
 configuration and there is nothing to set in the environment. It is `null` on `main`, so the rows
 are absent and everything else renders — which is the state of a fresh clone, so do not "fix" a
-build that is not showing them. Everything else on the site is a content module.
+build that is not showing them. The News tab keeps the heading and two empty rows where they will
+go (2026-10-21), so an absent watchlist now looks like a section waiting for data rather than
+nothing at all. Everything else on the site is a content module.
 
 It was written against MyAnimeList until 2026-10-21 and rewritten for AniList, which is where
 Henry's list actually is; that rewrite deleted `MAL_CLIENT_ID` rather than replacing it. **AniList's

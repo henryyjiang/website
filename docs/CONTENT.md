@@ -212,7 +212,10 @@ bought, for one round trip. `score(format: POINT_10_DECIMAL)` is named explicitl
 is an account setting on AniList and the panel renders `x/10`.
 
 **With the username missing the rows are simply absent**, which is the state of a fresh clone and
-renders correctly. So does a 403, a 404, a timeout, or a response whose shape has changed:
+renders correctly — the `Watchlist` heading and two dashed rows the height of the real ones stay on
+the page in their place (`app/updates/page.tsx` § `WatchlistPending`), because Henry wanted the
+section the rows will land in visible while AniList is off rather than the clean absence it had
+before 2026-10-21. So does a 403, a 404, a timeout, or a response whose shape has changed:
 `parseWatchlist` validates every row and anything unrecognised is skipped rather than rendered.
 Nothing in that module throws, and nothing in it can fail a build — a portfolio that will not
 deploy because someone else's API is having an afternoon is the worse outcome.

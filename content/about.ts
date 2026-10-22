@@ -31,8 +31,10 @@ export const NAME = 'Henry'
  *
  * **`null` turns the feature off**, which is the state of a fresh clone and has to
  * keep rendering. Fill it in and the watchlist rows appear; the list must be public
- * on AniList, or the API answers 404 and they stay away. See `lib/anilist.ts` and
- * `docs/CONTENT.md` § The watchlist.
+ * on AniList, or the API answers 404 and they stay away. Either way the News tab
+ * holds the space open under its `Watchlist` heading, so switching the rows on is
+ * not a layout change (`app/updates/page.tsx` § `WatchlistPending`). See
+ * `lib/anilist.ts` and `docs/CONTENT.md` § The watchlist.
  */
 export const ANILIST_USERNAME: string | null = null
 
