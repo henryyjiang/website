@@ -207,13 +207,15 @@ the environment and `MAL_USERNAME` in `content/about.ts`, and with either missin
 absent and everything else renders — which is the state of a fresh clone, so do not "fix" a build
 that is not showing them. Everything else on the site is a content module.
 
-**What is in `content/` is placeholder in one place and real everywhere else.** The Coding tab was
-cut from eight entries to two on 2026-10-21 — `quantconnect-models`, which merges the two
-QuantConnect strategies into one row, and the POTS predictor — and the Art tab holds two real pieces
-since 2026-10-21 — `my-first-animation` and `current-wip-animation`, both 2D animations, which are
-also the first things to exercise the video path in anger. What is left is the blog post pointing
-at the first of them: its `target` is right and its copy is a placeholder, to be written when the
-News tab gets its pass.
+**What is in `content/` is a mix of real work and placeholders, and the placeholders are marked.**
+The Art tab is entirely real: `my-first-animation` and `current-wip-animation`, both 2D animations,
+which are also the first things to exercise the video path in anger. The Coding tab was cut from
+eight entries to two on 2026-10-21 — `quantconnect-models`, which merges the two QuantConnect
+strategies into one row, and the POTS predictor — and then two filler entries were added the same
+day: `cortex-rdm-paper` and `gsoc-blender-contributions`. Those two carry Henry's titles and dates
+and a placeholder blurb, and neither has a screenshot in `art/projects/` yet, so the import warns
+and the rows render without a picture. In `content/posts.ts` every title and date is Henry's and
+every `body` is a placeholder, which shows nowhere because `body` is not rendered.
 
 **A piece's `date` is when the animation was made, not when it was added.** Both were read off the
 source files' `creation_time` rather than typed, which is why `my-first-animation` is dated

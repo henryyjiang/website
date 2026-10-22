@@ -50,6 +50,8 @@ import {
   sceneTransform,
   visibleSlice,
 } from '../lib/scene-space.ts'
+import { DEFAULT_PALETTE, PALETTES } from '../lib/theme.ts'
+import { PROJECTS } from '../content/projects.ts'
 
 const ART_DIR = 'art'
 
@@ -96,6 +98,84 @@ function buildPieces(): Piece[] {
   })
 
   return pieces
+}
+
+// --- project screenshots --------------------------------------------------------
+
+/**
+ * Shape of a stand-in project screenshot.
+ *
+ * 16:9 rather than the scene canvas, because this is not scene art — it is a
+ * picture belonging to something written in `content/`, and `art/README.md` asks
+ * for roughly 16:9 and at least 1280px wide for anything a post points at, since
+ * the billboard projects it onto a drawn quad and crops to fill.
+ */
+const SHOT = { width: 1600, height: 900 }
+
+/**
+ * A stand-in for a project with no screenshot yet.
+ *
+ * **Deliberately crude, for the reason at the top of this file**: a placeholder that
+ * looks like a design cannot be told apart from one, and quietly becomes the design.
+ * So this is the project's own slug on a hatched ground, in the site's palette, with
+ * the word PLACEHOLDER on it — legible at a glance in the Coding row and on the
+ * billboard, and impossible to mistake for a screenshot.
+ *
+ * It is dark on purpose. These are projected onto the billboard whenever a post
+ * points at one, and the headline's contrast is measured against the image — a light
+ * stand-in would trip the import's own warning and ship an unreadable headline.
+ *
+ * Colours come from `lib/theme.ts`, never typed here, so a palette change carries.
+ */
+function projectPlaceholder(slug: string): Buffer {
+  const p = PALETTES[DEFAULT_PALETTE]
+  const { width, height } = SHOT
+
+  const hatch =
+    `<pattern id="h" width="48" height="48" patternUnits="userSpaceOnUse" ` +
+    `patternTransform="rotate(45)">` +
+    `<rect width="48" height="48" fill="${p.panel}"/>` +
+    `<rect width="12" height="48" fill="${p.ground}"/>` +
+    `</pattern>`
+
+  return Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" ` +
+      `viewBox="0 0 ${width} ${height}">` +
+      `<defs>${hatch}</defs>` +
+      `<rect width="${width}" height="${height}" fill="url(#h)"/>` +
+      `<rect x="40" y="40" width="${width - 80}" height="${height - 80}" fill="none" ` +
+      `stroke="${p.dim}" stroke-width="4" stroke-dasharray="24 16"/>` +
+      `<text x="${width / 2}" y="${height / 2 - 30}" text-anchor="middle" ` +
+      `font-family="Helvetica, Arial, sans-serif" font-size="64" font-weight="700" ` +
+      `letter-spacing="8" fill="${p.primary}">PLACEHOLDER</text>` +
+      `<text x="${width / 2}" y="${height / 2 + 50}" text-anchor="middle" ` +
+      `font-family="Helvetica, Arial, sans-serif" font-size="40" ` +
+      `fill="${p.muted}">${slug}</text>` +
+      `<text x="${width / 2}" y="${height - 70}" text-anchor="middle" ` +
+      `font-family="Helvetica, Arial, sans-serif" font-size="28" ` +
+      `fill="${p.dim}">drop a real one at art/projects/${slug}.png</text>` +
+      `</svg>`,
+  )
+}
+
+/**
+ * One stand-in per project that has no image of any kind in `art/projects/`.
+ *
+ * Reads `content/projects.ts` rather than taking a list, so adding an entry and
+ * re-running is all it takes — and a project that already has art is skipped here
+ * before the ledger ever sees it, so there is no way for this to be the thing that
+ * overwrites a screenshot.
+ */
+function buildProjectPlaceholders(): Piece[] {
+  const dir = join(ART_DIR, 'projects')
+  const extensions = ['.png', '.jpg', '.jpeg', '.webp']
+
+  return PROJECTS.filter(
+    (project) => !extensions.some((ext) => existsSync(join(dir, `${project.slug}${ext}`))),
+  ).map((project) => ({
+    path: join(dir, `${project.slug}.png`),
+    svg: projectPlaceholder(project.slug),
+  }))
 }
 
 // --- the billboard surface ------------------------------------------------------
@@ -344,7 +424,7 @@ async function main(): Promise<void> {
   let written = 0
   let skipped = 0
 
-  for (const piece of buildPieces()) {
+  for (const piece of [...buildPieces(), ...buildProjectPlaceholders()]) {
     const result = await write(piece.path, piece.svg, ledger)
     if (result === 'written') written++
     else skipped++

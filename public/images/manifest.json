@@ -1,7 +1,43 @@
 {
-  "generatedAt": "2026-10-21T22:53:38.402Z",
+  "generatedAt": "2026-10-22T00:11:09.386Z",
   "images": {
     "projects": {
+      "cortex-rdm-paper": {
+        "src": "/images/projects/cortex-rdm-paper.webp",
+        "fallback": "/images/projects/cortex-rdm-paper.png",
+        "width": 1600,
+        "height": 900,
+        "lit": {
+          "src": "/images/projects/cortex-rdm-paper--lit.webp",
+          "fallback": "/images/projects/cortex-rdm-paper--lit.png",
+          "width": 1600,
+          "height": 900,
+          "luma": 0.0738,
+          "headline": {
+            "id": "orange",
+            "hex": "#FF9B53",
+            "contrast": 9.02
+          }
+        }
+      },
+      "gsoc-blender-contributions": {
+        "src": "/images/projects/gsoc-blender-contributions.webp",
+        "fallback": "/images/projects/gsoc-blender-contributions.png",
+        "width": 1600,
+        "height": 900,
+        "lit": {
+          "src": "/images/projects/gsoc-blender-contributions--lit.webp",
+          "fallback": "/images/projects/gsoc-blender-contributions--lit.png",
+          "width": 1600,
+          "height": 900,
+          "luma": 0.0745,
+          "headline": {
+            "id": "orange",
+            "hex": "#FF9B53",
+            "contrast": 9.02
+          }
+        }
+      },
       "pots-flareup-predictor": {
         "src": "/images/projects/pots-flareup-predictor.webp",
         "fallback": "/images/projects/pots-flareup-predictor.png",
@@ -33,6 +69,18 @@
         "fallback": "/images/pieces/current-wip-animation.png",
         "width": 1600,
         "height": 900,
+        "lit": {
+          "src": "/images/pieces/current-wip-animation--lit.webp",
+          "fallback": "/images/pieces/current-wip-animation--lit.png",
+          "width": 1600,
+          "height": 900,
+          "luma": 0.6537,
+          "headline": {
+            "id": "yellow",
+            "hex": "#FBF653",
+            "contrast": 4.56
+          }
+        },
         "video": {
           "src": "/images/pieces/current-wip-animation.mp4",
           "type": "video/mp4",
@@ -45,18 +93,6 @@
         "fallback": "/images/pieces/my-first-animation.png",
         "width": 1600,
         "height": 900,
-        "lit": {
-          "src": "/images/pieces/my-first-animation--lit.webp",
-          "fallback": "/images/pieces/my-first-animation--lit.png",
-          "width": 1600,
-          "height": 900,
-          "luma": 0.1011,
-          "headline": {
-            "id": "red",
-            "hex": "#FF406D",
-            "contrast": 5.35
-          }
-        },
         "video": {
           "src": "/images/pieces/my-first-animation.mp4",
           "type": "video/mp4",

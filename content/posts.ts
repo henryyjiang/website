@@ -22,15 +22,26 @@
  * what makes the blog worth having next to the other two tabs instead of repeating
  * them. `npm run art` checks every one of those slugs.
  *
- * **Posts do not get their own URLs.** The blog is one page holding a series of
- * posts, so `slug` is a join key and never a route segment — it ties a post to its
- * image at `art/posts/<slug>.png` and has to stay stable for that reason alone.
+ * **Posts do not get their own URLs.** The News tab is one page holding a series of
+ * posts, so `slug` is a join key and never a route segment. It still has to be
+ * unique and stable, because it is this entry's identity everywhere a post is
+ * listed — but it joins to nothing on disk. There is no `art/posts/`; a post borrows
+ * the picture of whatever `target` names (`lib/content-images.ts`). This comment
+ * claimed an inbox that has never existed and was corrected on 2026-10-21.
  * The route stays /updates so links already shared keep working; the nav labels it
  * News, renamed from "Blog" on 2026-10-21 because an entry here is a notice
  * pointing elsewhere rather than an article.
  *
- * SEED CONTENT. These entries describe the rebuild itself, because the feed needs
- * something real to render before Henry writes his own. Replace them.
+ * **Titles and dates are Henry's; the bodies are placeholders.** The feed was seed
+ * content describing the rebuild itself until 2026-10-21, when he replaced it with
+ * what the posts are actually about. `body` is not rendered anywhere, so the
+ * placeholder text costs nothing on screen — see `content/types.ts`.
+ *
+ * **Two of the four point at filler projects** (`cortex-rdm-paper`,
+ * `gsoc-blender-contributions`). Those have no screenshot yet, so those two posts
+ * have no picture, which means the feed renders them without one and the billboard
+ * skips them. Dropping a screenshot into `art/projects/` is all it takes to put them
+ * on the carousel.
  *
  * See docs/CONTENT.md.
  */
@@ -39,31 +50,37 @@ import type { Post } from './types'
 
 export const POSTS: readonly Post[] = [
   {
-    // Rewrite this when the News tab gets its pass — the copy is a placeholder, the
-    // piece it points at is not. It is also the one link the blog has that nothing
-    // else does: a post opening a piece in the Art popup rather than navigating to
-    // a page, so keep a post pointing at a piece here.
-    slug: 'first-animation',
+    // Titles and dates below are Henry's, set 2026-10-21. The bodies are
+    // placeholders — `body` is written but not rendered (`content/types.ts`), so
+    // they cost nothing on screen and are there if the feed ever wants prose again.
+    slug: 'custom-models-trained',
     date: '2026-10-21',
-    title: 'My first animation',
-    body: 'Five shots of line animation, start to finish.',
-    target: { to: 'piece', slug: 'my-first-animation' },
+    title: 'Custom Models Finally Trained',
+    body: 'The models behind the Cortex RDM paper are trained.',
+    target: { to: 'project', slug: 'cortex-rdm-paper' },
   },
   {
-    slug: 'rebuilding-the-site',
-    date: '2026-10-17',
-    title: 'Rebuilding the site',
-    body: 'Starting over with a painted apartment, a real parallax scene, and an animation pipeline that survives a tab switch.',
+    // The one link the News tab has that nothing else does: a post that opens a
+    // piece in the Art popup rather than navigating to a page. Keep a post pointing
+    // at a piece here.
+    slug: 'wip-animation-sneak-peek',
+    date: '2026-10-10',
+    title: "A Sneak Peek on What I'm Working On...",
+    body: 'Four shots of the animation in progress.',
+    target: { to: 'piece', slug: 'current-wip-animation' },
   },
   {
-    // Was "Three quant models shipped", pointing at the Hawkes/kinetic entry. That
-    // entry came off the Coding tab on 2026-10-21 and two of the three models it
-    // named are no longer on the site, so this points at what is: the combined
-    // QuantConnect row. Rewritten rather than deleted because the thing it
-    // announces still happened and is still listed.
+    slug: 'gsoc-completion',
+    date: '2026-08-13',
+    title: 'Google Summer of Code Completion :D',
+    body: 'Google Summer of Code, finished.',
+    target: { to: 'project', slug: 'gsoc-blender-contributions' },
+  },
+  {
     slug: 'quantconnect-models',
     date: '2026-05-11',
-    title: 'Two models on QuantConnect',
+    // "Model", singular, is correct: one of the two placed top 3.
+    title: 'Top 3 Model on QuantConnect!',
     body: 'A quantum walk macro equity model and a fractal volatility options strategy, both published.',
     target: { to: 'project', slug: 'quantconnect-models' },
   },

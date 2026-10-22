@@ -3,6 +3,8 @@
   "files": {
     "art/TEMPLATE.png": "15a96f1ee1b8e8d0286e8073f77472ab74cc8c94c59624001acee6f880748d2d",
     "art/background/sky.png": "70e611a236318df0d8a95fced210d271d6c535b63eec1b5397400f88d70f0f01",
-    "art/objects/billboard.png": "1eb7878a850926220fc0936a5c72bfef342bd48d3e12f941dc862643a1369642"
+    "art/objects/billboard.png": "1eb7878a850926220fc0936a5c72bfef342bd48d3e12f941dc862643a1369642",
+    "art/projects/cortex-rdm-paper.png": "5fd9cbf54addb4f2289fd38f36f64c6725c4b8ea15edaac248866298b3205411",
+    "art/projects/gsoc-blender-contributions.png": "fba353b41115f29a1ec645604a38f6595e7507ccc60ad6bf957467e896a9d054"
   }
 }

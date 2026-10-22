@@ -36,6 +36,34 @@ import type { Project } from './types'
 
 export const PROJECTS: readonly Project[] = [
   {
+    // FILLER, added 2026-10-21. The title and the date are Henry's; everything else
+    // is a placeholder written to hold the row's shape until he fills it in. It has
+    // no screenshot yet, which the import warns about and the row renders without —
+    // drop one at art/projects/cortex-rdm-paper.png to give it a picture.
+    //
+    // Dated ahead of today on purpose: the paper is in progress and November is when
+    // he expects it. The list sorts on `date`, so it leads until something newer
+    // lands.
+    slug: 'cortex-rdm-paper',
+    title: 'Cortex RDM Architecture WIP Paper',
+    date: '2026-11-01',
+    blurb:
+      'FILLER — a paper in progress on the Cortex RDM architecture. Replace this with what the work actually is.',
+    tags: ['research', 'ml', 'architecture'],
+    links: [],
+  },
+  {
+    // FILLER, added 2026-10-21. Same as above: title and date are Henry's, the blurb
+    // is a placeholder, and there is no screenshot at art/projects/ for it yet.
+    slug: 'gsoc-blender-contributions',
+    title: 'GSoC and Blender Contributions',
+    date: '2026-08-01',
+    blurb:
+      'FILLER — Google Summer of Code, and contributions to Blender. Replace this with what the work actually is.',
+    tags: ['open-source', 'graphics'],
+    links: [],
+  },
+  {
     slug: 'quantconnect-models',
     title: 'QuantConnect Models',
     date: '2026-06-11',
