@@ -500,16 +500,8 @@ is `--active`, a date is mono and dim, a rule is a hairline. Nothing below re-de
 
 ### Coding — rows, newest first
 
-A chronological list. Each entry is **one box with the image floated inside it**: title, date, body,
-then its links, with the image at the top left and the prose wrapping beside it and then running the
-full width of the row once it is past the bottom of the image.
-
-It was two boxes in a two-column grid until 2026-10-21. A grid item is a rectangle, so the text
-column kept the image's width for its whole height however far past the image it ran, and a long
-entry was a thin column of text beside a large empty space. Text that runs beside an image and then
-under it is an L-shape, which neither grid nor flex can produce — **a float is the only thing in CSS
-that does this**, and a float affects line boxes rather than blocks, so the prose cannot be a box of
-its own any more. Hence one border around the pair rather than one around each.
+A chronological list. Each entry is **an image on the left and a text box on the right**: title,
+date, body, then its links.
 
 **The body is one or two paragraphs at a single weight.** `Project` has two prose fields, `blurb`
 and `detail`, and they render identically — the gap between them is the only thing marking the
@@ -518,9 +510,17 @@ paragraph is supporting material; the first entry to actually use it, the POTS p
 two-paragraph story whose second half was being drawn as a disclaimer. An entry either has more to
 say or it does not, and when it does, it is still the entry talking.
 
+**The text box keeps the image's column width for its whole height**, so an entry whose prose runs
+well past the bottom of its screenshot is a tall narrow column beside empty space. Floating the
+image so the prose wrapped beside it and then ran the row's full width was tried on 2026-10-21 and
+reverted the same day: it works, and it reads worse — a float dissolves the text box into the row,
+costing the two-panel structure the rest of the tab is built on, and the lines below the image come
+out far longer than the lines beside it. **The empty space is the better of the two.** Reach for a
+shorter `detail`, not a wider column.
+
 The image is whatever shape it was exported — square screenshots and wide ones both occur in
 `art/projects/`, and the pipeline deliberately does not crop (`docs/CONTENT.md` § Images). So the
-row gives the image a **fixed width and a ceiling on its height**, rather than forcing a ratio and
+row gives the image a **column width and a ceiling on its height**, rather than forcing a ratio and
 cropping a screenshot whose content reaches its edges. The ceiling is what stops a portrait phone
 capture — one of them is 684 x 1490 — from making its row three times the height of the text beside
 it; a tall image simply sits narrower than the column, and nothing is cropped.
@@ -531,28 +531,9 @@ than of the panel, so it is written in `vw`: `clamp(16rem, 33vw, 46rem)` in `app
 29vw for a day, then the top of the band on Henry's say-so the same evening. It
 was a flat 19rem column against a 22rem ceiling, two numbers that disagreed — a 600 x 600
 screenshot came out 304 wide and the ceiling above it went unused. One number means a square
-screenshot fills it exactly and a portrait one is bounded by that same square and centred in it. It
-governs from `sm` up; below that there is no float, the row stacks, and the plain 22rem ceiling it
-always had is what remains.
-
-**The row is capped at 56rem, and the cap is on the row rather than on the prose.** Without it the
-measure grew with the monitor, because the panel is nearly full-screen and prose below the image
-runs the full width of its row: about 136 characters a line at 1024px, 264 at 1920px and 355 at
-2560px, against the 45–75 that reads comfortably. The two-column grid was not innocent either —
-beside the image it was already about 170 characters at 1920px — so this is a pre-existing problem
-the float exposed rather than one it introduced.
-
-**Why the cap cannot go on the paragraph**, which is where it looks like it belongs: a `max-width`
-on a paragraph is measured from the container's left content edge, and with a float that edge is
-*behind the image*. So a paragraph cap shortens the lines running beside the image — the ones that
-were already fine — and leaves the lines below it exactly as long. Capping the row caps both.
-
-Measured at the cap: **73 characters beside the image, 122 below it**, and both now hold at every
-width above it — 1680px measures identically to 1024px. 122 is still long, and the dial is the one
-number: lower `max-w-[56rem]` and both fall together. What it costs is that rows no longer span a
-wide panel, so there is empty ground to their right on a large monitor — the price of a bounded
-measure in a full-screen frame, and the reason the number is worth revisiting with real content in
-front of it.
+screenshot fills its column exactly and a portrait one is bounded by that same square. It governs
+from `sm` up; below that the row stacks, there is no column, and the plain 22rem ceiling it always
+had is what remains.
 
 **No tag row and no skills grid.** Both were there and both were cut on 2026-10-21. A list of
 languages above the list, and `#ml #quant` under every entry, are claims the projects
@@ -592,7 +573,7 @@ name, and favourites as a dense readout under their own rule. **No prose at all*
 of bio went the same day. A list of what someone likes is a claim the three tabs around it already
 demonstrate, and a photograph with a name under it says the thing the bio was reaching for.
 
-**The list is headed `Favourites`.** Without it a reader has to work out what `Show: Blue Lock` is
+**The list is headed `Favourites`.** Without it a reader has to work out what `Anime: Blue Lock` is
 asserting — and that heading is also the rule for what may go in the list. `Currently watching` and
 `Last completed` were in it and are not any more: they are *statuses*, true only for as long as
 nobody watches anything, and they were stale on the old site for exactly that reason. They belong
